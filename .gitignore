@@ -30,3 +30,12 @@
 *.exe
 *.out
 *.app
+
+# Output plots
+*.png
+*.pdf
+*.eps
+
+# Gnuplot/GLE scripts
+*.gp
+*.gle
