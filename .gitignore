@@ -39,3 +39,9 @@
 # Gnuplot/GLE scripts
 *.gp
 *.gle
+
+# Output files
+*.dat
+*.out
+*.z
+out
