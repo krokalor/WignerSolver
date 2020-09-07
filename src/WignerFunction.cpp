@@ -171,35 +171,36 @@ void WignerFunction::diffusionTerm(size_t i, size_t j, double dt){
 void WignerFunction::driftTerm(size_t i, size_t j, double dt){
   // Fills Boltzmann equation matrix with drift terms
   size_t r = i*nk_ + j;
-  if (driftTermType_ == 1) {
+  if (useNLP_) {
     // Non-local potential
-    size_t g, h, q;
+    size_t v;
     double sum, u1, u2;
     double C;
-    for (g=0; g<nk_; g++){
-      q = i*nk_+g;
-      if (q <= r) {
+    #pragma omp parallel for num_threads(N_THREADS)
+    for (size_t l=0; l<nk_; l++){  // TODO: 0 -> 1 ?
+      v = i*nk_+l;
+      if (v <= r) {
         sum = 0;
-        for (h=0; h<nk2_; h++){
-          if (i+h > nx_-1)
+        for (size_t q=0; q<nk2_; q++){
+          if (i+q > nx_-1)
             u1 = u_(nx_-1);
           else
-            u1 = u_(i+h);
-          if ( int(i-h) < 0)
+            u1 = u_(i+q);
+          if ( int(i-q) < 0)
             u2 = u_(0);
           else
-            u2 = u_(i-h);
-          sum += sin_(j,g*nk2_+h) * (u1 - u2);
-        }  // end h loop
-        C = 2./(float)nk_ * sum;
-        if (q < r){  // To avoid taking diagonal term twice
-          a_(r, q) += C;
-          a_(q, r) += -C;
+            u2 = u_(i-q);
+          sum += sin_(j,l*nk2_+q) * (u1 - u2);  // sin(2*M_PI/nk_*q*(j-l))
+        }  // end q loop
+        C = 2./float(nk_) * sum;
+        if (v < r){  // To avoid taking diagonal term twice
+          a_(r, v) += C;
+          a_(v, r) += -C;
         }
         else
           a_(r, r) += C;
       }  // end if
-    }  // end g loop
+    }  // end l loop
   }  // end if
   else {
     // Classical force

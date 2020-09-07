@@ -22,7 +22,7 @@ typedef std::vector<double>::size_type size_t_vec_d;
 
 // ############################## GLOBAL VARIABLES ##############################
 // #define ARMA_USE_SUPERLU 1
-#define N_THREADS 8
+#define N_THREADS 2
 
 // ############################## CONSTANTS ##############################
 

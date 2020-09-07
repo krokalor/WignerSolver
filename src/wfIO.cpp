@@ -95,27 +95,27 @@ std::map<std::string, double> readParam(std::string filename){
 
 void WignerFunction::saveWignerFun() {
   size_t i, j;
-  std::ofstream file;
-  file.open("wyniki/wf.out", std::ios::out);
-  file<<"# Norma [cm^-2]: "<<calcNorm()/AU_cm2<<'\n';
-  file<<"# x [nm] k [a.u.] f [a.u.]\n";
+  std::ofstream wf;
+  wf.open("wyniki/wf.out", std::ios::out);
+  wf<<"# Norma [cm^-2]: "<<calcNorm()/AU_cm2<<'\n';
+  wf<<"# x [nm] k [a.u.] f [a.u.]\n";
   for (i=0; i<nx_; ++i){
     // file<<"# "<<i<<' '<<x_(i)*AU_nm<<'\n';
     for (j=0; j<nk_; ++j)
-      file<<x_(i)<<' '<<k_(j)<<' '<<f_(i,j)<<'\n';
+      wf<<x_(i)<<' '<<k_(j)<<' '<<f_(i,j)<<'\n';
       // file<<i*dx_<<' '<<dk_*(j-(nk_-1)*.5)<<' '<<f_(i,j)/s<<"  ! "<<f_(i,j)<<'\n';
-    file<<"\n";
+    wf<<"\n";
   }
-  file.close();
-  file.open("wyniki/wf.z", ios::out);
-  file<<"# nx "<<nx_<<" ny "<<nk_<<" xmin "<<0<<" xmax "<<l_*AU_nm<<" ymin "<<-kmax_<<" ymax "<<kmax_<<'\n';
+  wf.close();
+  wf.open("wyniki/wf.z", ios::out);
+  wf<<"# nx "<<nx_<<" ny "<<nk_<<" xmin "<<0<<" xmax "<<l_*AU_nm<<" ymin "<<-kmax_<<" ymax "<<kmax_<<'\n';
   for (j=0; j<nk_; ++j){
     for (i=0; i<nx_; ++i)
-      file<<f_(i,j)<<' ';
+      wf<<f_(i,j)<<' ';
       // file<<i*dx_<<' '<<dk_*(j-(nk_-1)*.5)<<' '<<f_(i,j)/s<<"  ! "<<f_(i,j)<<'\n';
-    file<<'\n';
+    wf<<'\n';
   }
-  file.close();
+  wf.close();
 }
 
 
@@ -270,8 +270,8 @@ void WignerFunction::printParam()
     cout.width(cw_v); cout<<gwp_A_;
     cout.width(cw_v); cout<<'-'<<'#'<<endl;
     // ////////// Potential //////////
-    cout.width(cw_n); cout<<"# pot_type";
-    cout.width(cw_v); cout<<driftTermType_;
+    cout.width(cw_n); cout<<"# use NLP?";
+    cout.width(cw_v); cout<<useNLP_;
     cout.width(cw_v); cout<<'-'<<'#'<<endl;
     // ////////// Dissipation //////////
     cout.width(cw_n); cout<<"# rR";

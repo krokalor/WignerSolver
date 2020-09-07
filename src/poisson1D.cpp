@@ -91,8 +91,9 @@ void Poisson1D::solve_tridiag() {
   }
 
   x(nx_-1) = d(nx_-1);
-  for (int i=nx_-2; i>-1; --i)
+  for (size_t i=nx_-2; i>0; --i)
     x(i) = d(i) - c(i)*x(i+1);
+  x(0) = d(0) - c(0)*x(1);
 
   for (size_t i=0; i<nx_; ++i)  // mixing old and new potential
     uNew_(i) = (1-beta_)*uOld_(i) + beta_*x(i);

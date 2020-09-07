@@ -1,0 +1,132 @@
+
+std::map<std::string, double> initParams() {
+  return {
+      {"contact_temp", 300},
+      {"fermi_level", .00316},  // 0.086 eV
+      {"effective_mass", 0.067},
+      {"device_lenght", 30/AU_nm},  // 200 nm
+      {"contact_lenght", 15/AU_nm},
+      {"max_k", -1},
+      {"xspace_step_nr", 200},
+      {"kspace_step_nr", 200},
+      {"max_voltage", 0.4/AU_eV},  //  3*0.132/AU_eV approx. 0.4 V
+      {"min_voltage", 0.4/AU_eV},  //  3*0.132/AU_eV approx. 0.4 V
+      {"voltage_step_nr", 10},
+      {"courant_num", 1},
+      {"gwp_x0", 10/AU_nm},  // 22
+      {"gwp_dx", 4/AU_nm},  // 8
+      {"gwp_p0", 0.04},
+      {"gwp_dp", 0.003},
+      {"part_num",1000},
+      {"inelastic_sc", 0},  // 2,27425202e-11
+      {"elastic_sc", 0},
+      {"spatial_decoh", 0},  // [nm^-2*s^-1 -> a.u.]
+      {"contact_diss", 0},  // 1/(1e-13/AU_s)
+      {"contact_dist", 1},  // 0- sf, 1 - Lorentz, 2 - Gauss, 3 - Voigt, 4 - zero
+      {"dconc", 2e18*AU_cm3},
+      // {"dconc_right", 2e18*AU_cm3},
+      {"v_bias", 0.2/AU_eV},
+      {"rel_diel_per", 13.1}
+  };
+}
+
+
+	WignerFunction(std::map<std::string, double> iv) :
+    m_ (iv["effective_mass"]),
+    lD_ (iv["device_lenght"]),
+    lC_ (iv["contact_lenght"]),
+    l_ (lD_ + 2*lC_),
+    kmax_ (iv["max_k"]),
+    nx_ (size_t(iv["xspace_step_nr"])),
+    nk_ (size_t(iv["kspace_step_nr"])),
+    nk2_ (size_t(nk_/2.)),
+    nxk_ (nx_*nk_),
+    dx_ (0), dk_ (0), dt_ (0),  // To po to żeby uniknąć warningów
+    courant_num_ (iv["courant_num"]),
+    uF_ (iv["fermi_level"]), uR_ (0), uL_ (0),
+    cD_(iv["dconc"]),
+    temp_ (iv["contact_temp"]), beta_ (0),
+		epsilonR_(iv["rel_diel_per"]),
+    uB_(iv["v_bias"]),
+    gwp_x0_ (iv["gwp_x0"]),
+    gwp_dx_ (iv["gwp_dx"]),
+    gwp_p0_ (iv["gwp_p0"]),
+    gwp_dp_ (iv["gwp_dp"]),
+    gwp_tl_ (0), gwp_A_(0),
+    v_max_ (iv["max_voltage"]),
+    v_min_ (iv["min_voltage"]),
+    nv_ (size_t(iv["voltage_step_nr"])),
+    part_num_(size_t(iv["part_num"])),
+    rR_(iv["inelastic_sc"]),
+    rM_(iv["elastic_sc"]),
+    rG_(iv["contact_diss"]), Gamma_ (rG_*.5), rF_(0),
+    lambda_(iv["spatial_decoh"]),
+    bcType_(iv["contact_dist"]),
+		driftTermType_(0)
+    // cR_(iv["dconc_right"]),
+    {
+
+    // ########## nm, eV, s -> a.u. ##########
+    // uF_ = uF_/ha_;
+    // kmax_ = kmax_*a0_;
+    // lC_ = lC_/a0_;
+    // lD_ = lD_/a0_;
+    // gwp_x0_ = gwp_x0_/a0_;
+    // gwp_dx_ = gwp_dx_/a0_;
+    // rR_ = rR_*t0_;
+    // rM_ = rM_*t0_;
+    // rG_ = rG_*t0_, Gamma_ = rG_*.5;
+    // lambda_ = lambda_*a0_*a0_*t0_;
+
+    // ########## setting up parameters ##########
+    dx_ = l_/float(nx_-1);
+ 		kmax_ = kmax_ < 0 ? M_PI/2./dx_ : kmax_;
+    dk_ = 2.*kmax_/float(nk_-1);
+    nk2_ = size_t(nk_/2.);
+    nxk_ = size_t(nx_*nk_);
+    beta_ = 1./KB/temp_*AU_eV;
+
+		if (gwp_dx_ < 0)
+		{
+			gwp_tl_ = sqrt(2*M_PI*beta_/m_);
+			gwp_dx_ = 0.28 * gwp_tl_;  // 0.28
+		}
+		if (gwp_dp_ < 0)
+			gwp_dp_ = sqrt(2.*m_/beta_);
+		if (gwp_x0_ < 0)
+			gwp_x0_ = 3*gwp_dx_;
+		if (gwp_p0_ < 0)
+			gwp_p0_ = sqrt(2*m_*uL_);
+
+		gwp_A_ = part_num_ / (2.*M_PI*gwp_dx_*gwp_dp_);
+
+		driftTermType_ = 0;
+
+    // ########## Courant-Friedricks-Lewy ##########
+    dt_ = dx_/kmax_*m_*courant_num_;
+
+    // ########## Arrays initialization ##########
+    bc_ = array<double>(nk_);
+    fe_ = matrix<double>(nx_, nk_);		// Equilibrium WF depends only on k
+    f_ = matrix<double>(nx_, nk_);
+    f0_ = f_,  fL_ = f_,  fR_ = f_;
+    u_ = array<double>(nx_), du_ = u_, uStart_ = u_;
+
+    // ########## Wave vector array values ##########
+    k_ = array<double>(nk_);
+    for (size_t j=0; j<nk_; ++j) k_(j) = dk_*(j-(nk_-1)*.5);
+
+    // ########## Wave vector array values ##########
+    x_ = array<double>(nx_);
+    for (size_t i=0; i<nx_; ++i) x_(i) = i*dx_;
+
+    // ########## NLP sinus values ##########
+    sin_ = matrix<double>(nk_,nk_*nk2_);
+		// num_threads(3)
+    #pragma omp parallel for collapse(3) num_threads(N_THREADS)
+    for (size_t j=0; j<nk_; ++j)
+        for (size_t g=0; g<nk_; g++)
+            for (size_t h=0; h<nk2_; h++)
+                sin_(j,g*nk2_+h) = sin(2*M_PI/nk_*h*(j-g));
+
+    }  // End of constructor

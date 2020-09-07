@@ -33,7 +33,7 @@ void WignerFunction::setEquilibriumFunction(){
     std::ofstream file;
     file.open("data/data_files/FE.out", std::ios::out);
     for (size_t j=0; j<nk_; ++j)
-        file<<k_(j)<<' '<<fe_(int(nx_/2), j)<<'\n';
+        file<<k_(j)<<' '<<fe_(size_t(nx_/2), j)<<'\n';
     file.close();
 
 }
@@ -282,7 +282,7 @@ void WignerFunction::setRTD(double w1i, double w2i, double w3i, double w4i,  dou
   lD_ = 2*w2 + 2*w3 + w4, lC_ = w1, l_ = lD_+2*lC_ ;
   dx_ = l_/nx_;
   kmax_ = M_PI/2./dx_;
-  dk_ = 2*kmax_/(float)nk_;
+  dk_ = 2*kmax_/float(nk_);
   double e1, e2, x;
   for (size_t i = 0; i < nx_; ++i) {
     x = x_(i);
@@ -362,7 +362,9 @@ void WignerFunction::calc_IVchar(){
     cout<<v*AU_eV<<' '<<calcCurr()*AU_Acm2<<endl;  // <<' '<<calcNorm()/AU_cm2<<endl;
     for (size_t j=0; j<nk_; ++j) {
         vpMap<<v*AU_eV<<' '<<k_(j)
-          <<' '<<f_(int(nx_/4.),j)<<' '<<f_(int(nx_/2.),j)<<' '<<f_(int(nx_*3/4.),j)<<'\n';
+          <<' '<<f_(size_t(nx_/4.),j)
+          <<' '<<f_(size_t(nx_/2.),j)
+          <<' '<<f_(size_t(nx_*3/4.),j)<<'\n';
     }
     vpMap<<'\n';
   }

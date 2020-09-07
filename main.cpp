@@ -8,38 +8,6 @@ using namespace wigner;
 using namespace poisson;
 using namespace std::chrono;
 
-std::map<std::string, double> initParams() {
-  return {
-      {"contact_temp", 300},
-      {"fermi_level", .00316},  // 0.086 eV
-      {"effective_mass", 0.067},
-      {"device_lenght", 3000/AU_nm},  // 200 nm
-      {"contact_lenght", 500/AU_nm},
-      {"max_k", 0.1},
-      {"xspace_step_nr", 200},
-      {"kspace_step_nr", 200},
-      {"max_voltage", 0.4/AU_eV},  //  3*0.132/AU_eV approx. 0.4 V
-      {"min_voltage", 0.4/AU_eV},  //  3*0.132/AU_eV approx. 0.4 V
-      {"voltage_step_nr", 10},
-      {"courant_num", 1},
-      {"gwp_x0", 10/AU_nm},  // 22
-      {"gwp_dx", 4/AU_nm},  // 8
-      {"gwp_p0", 0.04},
-      {"gwp_dp", 0.003},
-      {"part_num",1000},
-      {"inelastic_sc", 0},  // 2,27425202e-11
-      {"elastic_sc", 0},
-      {"spatial_decoh", 0},  // [nm^-2*s^-1 -> a.u.]
-      {"contact_diss", 0},  // 1/(1e-13/AU_s)
-      {"contact_dist", 1},  // 0- sf, 1 - Lorentz, 2 - Gauss, 3 - Voigt, 4 - zero
-      {"dconc", 2e18*AU_cm3},
-      // {"dconc_right", 2e18*AU_cm3},
-      {"v_bias", 0.2/AU_eV},
-      {"rel_diel_per", 13.1}
-  };
-}
-
-
 void simGWP(WignerFunction&);
 void dissDecoh(WignerFunction&);
 void simGWP(WignerFunction&, WignerFunction&, WignerFunction&);
@@ -52,27 +20,33 @@ int main(){
 
 	t_start = high_resolution_clock::now();
 
-	WignerFunction f1(initParams());
+	WignerFunction f1;
 
-	// f.printParam();
-	// f.setGaussPot(0.1/AU_eV, 800, 50);
-	// f.setGaussPot(0.1/AU_eV, 1200, 50);
+  f1.set_m(0.067);
+  f1.set_nx(200), f1.set_nk(200);
+  f1.set_lD(60/AU_nm), f1.set_lC(20/AU_nm);
+  f1.set_kmax(0.1);
+  f1.set_temp(300);
+  f1.set_cD(2e18*AU_cm3);
+  f1.set_useNLP(true);
+  f1.update();
+
+	f1.printParam();
+	// // f.setGaussPot(0.1/AU_eV, 800, 50);
+	// // f.setGaussPot(0.1/AU_eV, 1200, 50);
 	// f1.driftTermType_ = 0; // 1 - NLP, else - Classic
-	f1.bcType_ = 0, f1.rG_ = 0;  // 1./(1e15/AU_s);
-	f1.gwp_x0_ = 150;
-	f1.gwp_dx_ = 50;
-	f1.gwp_p0_ = 0.04;
-	// f1.gwp_dp_ = 0.01;  // a.u.
-	f1.dt_ = 1e-15/AU_s;   // [au]
-	// f1.rR_ = 1./(1e-13/AU_s);  // 1./(1e-12/AU_s);
-	// f1.lambda_ = 0*AU_nm*AU_nm*AU_s;  // [nm^-2*s^-1]
-
-	f1.v_max_ = 0.4/AU_eV;
-	f1.v_min_ = 0.0/AU_eV;
-	f1.nv_ = 10;
-
-	// simGWP(f1), simGWP(f2), simGWP(f3);
-	// ssimGWP(f1, f2, f3);
+	// f1.bcType_ = 0, f1.rG_ = 0;  // 1./(1e15/AU_s);
+	// f1.gwp_x0_ = 150;
+	// f1.gwp_dx_ = 50;
+	// f1.gwp_p0_ = 0.04;
+	// // f1.gwp_dp_ = 0.01;  // a.u.
+	// f1.dt_ = 1e-15/AU_s;   // [au]
+	// // f1.rR_ = 1./(1e-13/AU_s);  // 1./(1e-12/AU_s);
+	// // f1.lambda_ = 0*AU_nm*AU_nm*AU_s;  // [nm^-2*s^-1]
+  //
+	// f1.v_max_ = 0.4/AU_eV;
+	// f1.v_min_ = 0.0/AU_eV;
+	// f1.nv_ = 10;
 
 	// FUNKCJA RÓWNOWAGOWA
 	/*
@@ -86,7 +60,7 @@ int main(){
 
 	cout<<"Setting up potential"<<endl;
 	// f1.rR_ = 1./(1e-12/AU_s);
-	f1.setLinPot(.1/AU_eV);
+	f1.setLinPot(.2/AU_eV);
 	// f1.readPotential("potentials/pot_02V_tR_1e-12.in");
 	// f1.u_ = f1.u_ + f1.uStart_;
 	// f1.uStart_.zero();
@@ -164,9 +138,11 @@ void dissDecoh(WignerFunction& f) {
     j = f.calcCurr(), n = f.calcNorm();
     out<<i<<' '<<tS<<' '<<j/j0<<' '<<n/n0<<' '<<j<<' '<<n<<endl;
     cout<<i<<' '<<tS<<' '<<j/j0<<' '<<n/n0<<' '<<j<<' '<<n<<endl;
-    for (size_t j=0; j<f.nk_; ++j) {
+    for (size_t l=0; l<f.nk_; ++l) {
         tpMap<<tS<<' '<<f.k_(j)
-          <<' '<<f.f_(int(f.nx_/4.),j)<<' '<<f.f_(int(f.nx_/2.),j)<<' '<<f.f_(int(f.nx_*3/4.),j)<<'\n';
+          <<' '<<f.f_(size_t(f.nx_/4.),l)
+          <<' '<<f.f_(size_t(f.nx_/2.),l)
+          <<' '<<f.f_(size_t(f.nx_*3/4.),l)<<'\n';
     }
     tpMap<<'\n';
     tS *= dt;  // tS *= 1.3
