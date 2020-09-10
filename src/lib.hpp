@@ -47,99 +47,97 @@ double const AU_cm {5.29e-9};      // [cm]  au_nm*1e-7
 
 // #################### klasa array ####################
 template <class T>
-class array
-{
-private:
-    std::vector<T> a;
-    size_t n_row;
-public:
-    array() {}
-    array(size_t n) : a (std::vector<T>(n)), n_row (n) {}
-    array(size_t n, T v) : a (std::vector<T>(n, v)), n_row (n) {}
-    ~array() { a.clear(); }
-    T& operator () (size_t i) { return a.at(i); }
-    // Vector addition
-    array<T> operator-(array<T> ai) {
-      array<T> af(n_row);
-      for (size_t i=0; i<n_row; ++i) af.at(i) = a.at(i)-ai.at(i);
-      return af;
-    }
-    // Vector substraction
-    array<T> operator+(array<T> ai) {
-      array<T> af(n_row);
-      for (size_t i=0; i<n_row; ++i) af.at(i) = a.at(i)+ai.at(i);
-      return af;
-    }
-    // Multiplying vector by scalar
-    // array<T> operator*(Q s) {
-    //   array<T> af(n_row);
-    //   for (size_t i=0; i<n_row; ++i) af.at(i) = s*a.at(i);
-    //   return af;
-    // }
-    T& at(size_t i) { return a.at(i); }
-    size_t size() { return a.size(); }
-    void add(T x) { a.push_back(x); }
-    void copy(array<T> ac) { for (size_t i=0; i<n_row; ++i) a.at(i) = ac(i); }
-    void zero() { for (size_t i=0; i<n_row; ++i) a.at(i) = 0.; }
+class array {
+	private:
+		std::vector<T> a;
+		size_t n_row;
+	public:
+		array() {}
+		array(size_t n) : a (std::vector<T>(n)), n_row (n) {}
+		array(size_t n, T v) : a (std::vector<T>(n, v)), n_row (n) {}
+		~array() { a.clear(); }
+		T& operator () (size_t i) { return a.at(i); }
+		// Vector addition
+		array<T> operator-(array<T> ai) {
+			array<T> af(n_row);
+			for (size_t i=0; i<n_row; ++i) af.at(i) = a.at(i)-ai.at(i);
+			return af;
+		}
+		// Vector substraction
+		array<T> operator+(array<T> ai) {
+			array<T> af(n_row);
+			for (size_t i=0; i<n_row; ++i) af.at(i) = a.at(i)+ai.at(i);
+			return af;
+		}
+		// Multiplying vector by scalar
+		// array<T> operator*(Q s) {
+		//   array<T> af(n_row);
+		//   for (size_t i=0; i<n_row; ++i) af.at(i) = s*a.at(i);
+		//   return af;
+		// }
+		T& at(size_t i) { return a.at(i); }
+		size_t size() { return a.size(); }
+		void add(T x) { a.push_back(x); }
+		void copy(array<T> ac) { for (size_t i=0; i<n_row; ++i) a.at(i) = ac(i); }
+		void zero() { for (size_t i=0; i<n_row; ++i) a.at(i) = 0.; }
 };
 
 // #################### klasa matrix ####################
 template <class T>
-class matrix
-{
-private:
-    array< array<T> > m;
-    size_t n_row, n_col;
-public:
-    matrix() {}
-    matrix(size_t n1, size_t n2) : n_row (n1), n_col (n2)
-        { for (size_t i=0; i<n_row; ++i) m.add( array<T>(n_col) ); }
-    ~matrix() {}
-    array<T>& operator () (size_t i) { return m.at(i); }
-    T& operator () (size_t i, size_t j) { return m.at(i).at(j); }
-    array<T>& at(size_t i) { return m.at(i); }
-    matrix<T> operator-(matrix<T> mi) {
-      matrix<T> mf(n_row, n_col);
-      for (size_t i=0; i<n_row; ++i)
-        for (size_t j=0; j<n_col; ++j)
-          mf.at(i) = m.at(i)-mi.at(i);
-      return mf;
-    }
-    matrix<T> operator+(matrix<T> mi) {
-      matrix<T> mf(n_row, n_col);
-      for (size_t i=0; i<n_row; ++i)
-        for (size_t j=0; j<n_col; ++j)
-          mf.at(i) = m.at(i)+mi.at(i);
-      return mf;
-    }
-    T& at(size_t i, size_t j) { return m.at(i).at(j); }
-    size_t size() { return n_col*n_row; }
-    void copy(matrix<T> mc) { for (size_t i=0; i<n_row; ++i) m(i).copy(mc(i)); }
-    // void add(T x){ m.push_back(x); }
-    void zero() { for (size_t i=0; i<n_row; ++i) m(i).zero(); }
+class matrix {
+	private:
+		array< array<T> > m;
+		size_t n_row, n_col;
+	public:
+		matrix() {}
+		matrix(size_t n1, size_t n2) : n_row (n1), n_col (n2)
+				{ for (size_t i=0; i<n_row; ++i) m.add( array<T>(n_col) ); }
+		~matrix() {}
+		array<T>& operator () (size_t i) { return m.at(i); }
+		T& operator () (size_t i, size_t j) { return m.at(i).at(j); }
+		array<T>& at(size_t i) { return m.at(i); }
+		matrix<T> operator-(matrix<T> mi) {
+			matrix<T> mf(n_row, n_col);
+			for (size_t i=0; i<n_row; ++i)
+				for (size_t j=0; j<n_col; ++j)
+					mf.at(i) = m.at(i)-mi.at(i);
+			return mf;
+		}
+		matrix<T> operator+(matrix<T> mi) {
+			matrix<T> mf(n_row, n_col);
+			for (size_t i=0; i<n_row; ++i)
+				for (size_t j=0; j<n_col; ++j)
+					mf.at(i) = m.at(i)+mi.at(i);
+			return mf;
+		}
+		T& at(size_t i, size_t j) { return m.at(i).at(j); }
+		size_t size() { return n_col*n_row; }
+		void copy(matrix<T> mc) { for (size_t i=0; i<n_row; ++i) m(i).copy(mc(i)); }
+		// void add(T x){ m.push_back(x); }
+		void zero() { for (size_t i=0; i<n_row; ++i) m(i).zero(); }
 };
 
 
 // #################### funkcja do liczenia całki ####################
 template <class T, class Q>
 T calcInt(array<T> f, Q h){
-  size_t n = f.size();
-  T ig = 0;
-  for (size_t i=1; i<n; ++i)
-    ig += (f(i-1) + f(i))*h/2.;
-  return ig;
+	size_t n = f.size();
+	T ig = 0;
+	for (size_t i=1; i<n; ++i)
+		ig += (f(i-1) + f(i))*h/2.;
+	return ig;
 }
 
 // #################### funkcja do liczenia pochodnej ####################
 template <class T, class Q>
 array<T> calcDer(array<T> f, Q h){
-  size_t n = f.size();
-  array<T> df(n);
-  for (size_t i=1; i<n-1; ++i)
-    df(i) =(-f(i-1)+f(i+1))/h/2.;
-  df(0) = (-3.*f(0)+4.*f(1)-f(2))/h/2.;
-  df(n-1) = (3.*f(n-1)-4.*f(n-2)+f(n-3))/h/2.;
-  return df;
+	size_t n = f.size();
+	array<T> df(n);
+	for (size_t i=1; i<n-1; ++i)
+		df(i) =(-f(i-1)+f(i+1))/h/2.;
+	df(0) = (-3.*f(0)+4.*f(1)-f(2))/h/2.;
+	df(n-1) = (3.*f(n-1)-4.*f(n-2)+f(n-3))/h/2.;
+	return df;
 }
 
 
