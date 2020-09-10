@@ -26,7 +26,7 @@ void WignerFunction::solveWignerEq(){
   // setBoundCond();
   // setEquilibriumFunction();
 
-  #pragma omp parallel for collapse(2) num_threads(N_THREADS)
+  #pragma omp parallel for collapse(2)
   for (i=0; i<nx_; ++i) {
     for (j=0; j<nk_; ++j) {
       // cout<<"omp_get_num_threads(): "<<omp_get_num_threads()<<endl;
@@ -88,7 +88,7 @@ void WignerFunction::solveTimeEv(){
   // setBoundCond();
   // setEquilibriumFunction();
 
-  #pragma omp parallel for collapse(2) num_threads(N_THREADS)
+  #pragma omp parallel for collapse(2)
   for (i=0; i<nx_; ++i) {
     for (j=0; j<nk_; ++j) {
       a_(i*nk_+j, i*nk_+j) += 1.;
@@ -176,7 +176,7 @@ void WignerFunction::driftTerm(size_t i, size_t j, double dt){
     size_t v;
     double sum, u1, u2;
     double C;
-    #pragma omp parallel for num_threads(N_THREADS)
+    #pragma omp parallel for
     for (size_t l=0; l<nk_; l++){  // TODO: 0 -> 1 ?
       v = i*nk_+l;
       if (v <= r) {

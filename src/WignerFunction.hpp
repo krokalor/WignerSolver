@@ -80,8 +80,8 @@ public:
     for (size_t j=0; j<nk_; ++j) k_(j) = dk_*(j-(nk_-1)*.5);
 
     // ########## NLP sinus values ##########
-		// num_threads(3)
-    #pragma omp parallel for collapse(3) num_threads(N_THREADS)
+		// #pragma omp parallel for collapse(3) num_threads(N_THREADS)
+    #pragma omp parallel for collapse(3)
     for (size_t j=0; j<nk_; ++j)
         for (size_t g=0; g<nk_; g++)
             for (size_t h=0; h<nk2_; h++)
@@ -137,7 +137,7 @@ public:
 		sin_ = matrix<double>(nk_,nk_*nk2_);
     for (size_t i=0; i<nx_; ++i) x_(i) = i*dx_;
 		for (size_t j=0; j<nk_; ++j) k_(j) = dk_*(j-(nk_-1)*.5);
-    #pragma omp parallel for collapse(3) num_threads(N_THREADS)
+    #pragma omp parallel for collapse(3)
     for (size_t j=0; j<nk_; ++j)
         for (size_t g=0; g<nk_; g++)
             for (size_t h=0; h<nk2_; h++)

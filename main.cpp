@@ -20,67 +20,70 @@ int main(){
 
 	t_start = high_resolution_clock::now();
 
-	WignerFunction f1;
+	WignerFunction f;
 
-  f1.set_m(0.067);
-  f1.set_nx(200), f1.set_nk(200);
-  f1.set_lD(60/AU_nm), f1.set_lC(20/AU_nm);
-  f1.set_kmax(0.1);
-  f1.set_temp(300);
-  f1.set_cD(2e18*AU_cm3);
-  f1.set_useNLP(true);
-  f1.update();
+  f.set_m(0.067);
+  f.set_nx(200), f.set_nk(200);
+  f.set_lD(60/AU_nm), f.set_lC(20/AU_nm);
+  f.set_kmax(0.1);
+  f.set_temp(300);
+  f.set_cD(2e18*AU_cm3);
+  f.set_useNLP(false);
+  f.update();
 
-	f1.printParam();
+	f.printParam();
 	// // f.setGaussPot(0.1/AU_eV, 800, 50);
 	// // f.setGaussPot(0.1/AU_eV, 1200, 50);
-	// f1.driftTermType_ = 0; // 1 - NLP, else - Classic
-	// f1.bcType_ = 0, f1.rG_ = 0;  // 1./(1e15/AU_s);
-	// f1.gwp_x0_ = 150;
-	// f1.gwp_dx_ = 50;
-	// f1.gwp_p0_ = 0.04;
-	// // f1.gwp_dp_ = 0.01;  // a.u.
-	// f1.dt_ = 1e-15/AU_s;   // [au]
-	// // f1.rR_ = 1./(1e-13/AU_s);  // 1./(1e-12/AU_s);
-	// // f1.lambda_ = 0*AU_nm*AU_nm*AU_s;  // [nm^-2*s^-1]
+	// f.driftTermType_ = 0; // 1 - NLP, else - Classic
+	// f.bcType_ = 0, f.rG_ = 0;  // 1./(1e15/AU_s);
+	// f.gwp_x0_ = 150;
+	// f.gwp_dx_ = 50;
+	// f.gwp_p0_ = 0.04;
+	// // f.gwp_dp_ = 0.01;  // a.u.
+	// f.dt_ = 1e-15/AU_s;   // [au]
+	// // f.rR_ = 1./(1e-13/AU_s);  // 1./(1e-12/AU_s);
+	// // f.lambda_ = 0*AU_nm*AU_nm*AU_s;  // [nm^-2*s^-1]
   //
-	// f1.v_max_ = 0.4/AU_eV;
-	// f1.v_min_ = 0.0/AU_eV;
-	// f1.nv_ = 10;
+	// f.v_max_ = 0.4/AU_eV;
+	// f.v_min_ = 0.0/AU_eV;
+	// f.nv_ = 10;
 
 	// FUNKCJA RÓWNOWAGOWA
 	/*
-	f1.setLinPot(0);
-	f1.readPotential("potentials/pot_0V.in");
-	f1.u_ = f1.u_ + f1.uStart_;
-	f1.solveWignerEq();
-	// f1.solveWignerPoisson();
-	f1.fe_ = f1.f_;
+	f.setLinPot(0);
+	f.readPotential("potentials/pot_0V.in");
+	f.u_ = f.u_ + f.uStart_;
+	f.solveWignerEq();
+	// f.solveWignerPoisson();
+	f.fe_ = f.f_;
 	*/
 
 	cout<<"Setting up potential"<<endl;
-	// f1.rR_ = 1./(1e-12/AU_s);
-	f1.setLinPot(.2/AU_eV);
-	// f1.readPotential("potentials/pot_02V_tR_1e-12.in");
-	// f1.u_ = f1.u_ + f1.uStart_;
-	// f1.uStart_.zero();
+	// f.rR_ = 1./(1e-12/AU_s);
+	f.setLinPot(.2/AU_eV);
+	// f.readPotential("potentials/pot_02V_tR_1e-12.in");
+	// f.u_ = f.u_ + f.uStart_;
+	// f.uStart_.zero();
 
 	cout<<"Solving WTE"<<endl;
-	f1.solveWignerEq();
-	// f1.solveWignerPoisson();
+	// f.solveWignerEq();
+	// f.solveWignerPoisson();
 
-	// f1.calc_IVchar();
+	f.v_max_ = 0.1/AU_eV;
+	f.v_min_ = 0.0/AU_eV;
+	f.nv_ = 10;
+	f.calc_IVchar();
 
-	// dissDecoh(f1);
+	// dissDecoh(f);
 
 	cout<<"Calulating electron density"<<endl;
-	array<double> nE_p =  f1.calcCD_K();
+	array<double> nE_p =  f.calcCD_K();
 
 	std::ofstream file;
 	file.open("wyniki/nE_p.out", std::ios::out);
 	file<<"# p  n(p)\n";
-	for (size_t i=0; i<f1.nk_; ++i)
-	  file<<f1.k_(i)<<' '<<nE_p(i)/AU_cm2<<'\n';
+	for (size_t i=0; i<f.nk_; ++i)
+	  file<<f.k_(i)<<' '<<nE_p(i)/AU_cm2<<'\n';
 	file.close();
 
 	// std::ofstream pot_out;
@@ -88,20 +91,16 @@ int main(){
 	// pot_out<<"# Input potential\n";
 	// pot_out<<"# v_b = 0.2 V; L_D = 3 um, L_C = 0.5 um; T = 300 K; m*/m0 = 0.067; n_D = 2e18 cm^-3; N = 200\n";
 	// pot_out<<"# x [a.u.]  u [a.u.]\n";
-	// for (size_t i=0; i<f1.nx_; ++i)
-	//     pot_out<<f1.x_(i)<<' '<<f1.uStart_(i)<<'\n';
+	// for (size_t i=0; i<f.nx_; ++i)
+	//     pot_out<<f.x_(i)<<' '<<f.uStart_(i)<<'\n';
 	// pot_out.close();
-
-	WignerFunction f = f1;
-	// f.f_ = f1.f_ - f2.f_;
-	// f.solveWignerEq();
 
 	cout<<"Saving wigner function"<<endl;
 	f.saveWignerFun();
 
 	cout<<"# Final current = "<<f.calcCurr()*AU_Acm2<<endl;
 	cout<<"# Electron number = "<<f.calcNorm()/AU_cm2<<endl;
-	cout<<"# Int. SF "<<calcInt(f1.bc_, f1.dk_)/2./M_PI/AU_cm3<<endl;
+	cout<<"# Int. SF "<<calcInt(f.bc_, f.dk_)/2./M_PI/AU_cm3<<endl;
 
 	t_end = high_resolution_clock::now();
 	t_elapsed =  duration_cast<duration<double>>(t_end - t_start);
@@ -159,23 +158,23 @@ void dissDecoh(WignerFunction& f) {
 }
 
 
-void simGWP(WignerFunction& f1, WignerFunction& f2, WignerFunction& f3) {
+void simGWP(WignerFunction& f, WignerFunction& f2, WignerFunction& f3) {
   // Wave packet simulation
 
   size_t nt=int(40);
   double t;
   double dp0, dx0;
 
-  f1.f_.zero(), f1.setWavePacket();
+  f.f_.zero(), f.setWavePacket();
   f2.f_.zero(), f2.setWavePacket();
   f3.f_.zero(), f3.setWavePacket();
 
   cout<<"# t x0 p0 dx dp"<<endl;
   for (size_t l = 0; l < nt+1; ++l) {
     // f.solveWignerEq();
-    f1.solveTimeEv(), f2.solveTimeEv(), f3.solveTimeEv();
-    t = l*f1.dt_;
-    dp0 = f1.gwp_dp_, dx0 = f1.gwp_dx_;
+    f.solveTimeEv(), f2.solveTimeEv(), f3.solveTimeEv();
+    t = l*f.dt_;
+    dp0 = f.gwp_dp_, dx0 = f.gwp_dx_;
     cout<<t*AU_s*1e15<<' '<<f2.calcSDX()/dx0<<' '<<f2.calcSDK()/dp0;
     cout<<' '<<f3.calcSDX()/dx0<<' '<<f3.calcSDK()/dp0;
     cout<<' '<<dx0*dp0<<' '<<f2.calcSDX()*f2.calcSDK()<<' '<<f3.calcSDX()*f3.calcSDK()<<endl;
