@@ -11,7 +11,7 @@ void WignerFunction::setBoundCond(){
 	// TODO: uL_, uR_ -> uF_
 	// double cD = cD_ * 2*lC_/l_;
 	uL_ = calcFermiEn(cD_, m_, temp_);  // Fermi levels
-  uR_ = calcFermiEn(cD_, m_, temp_);
+	uR_ = calcFermiEn(cD_, m_, temp_);
 	// cout<<"# cD = "<<cD/AU_cm3<<", uL = uR = "<<uL_*AU_eV<<endl;
 	double k;
 	if (bcType_ == 0)
@@ -83,9 +83,9 @@ double WignerFunction::supplyFunction(double k){
 
 
 // Supply function (x)
-double WignerFunction::sf_x(double mu, double x){
-double m = m_;
-double c = m/M_PI*KB/AU_eV*temp_, ex = -(x-mu)/(KB/AU_eV*temp_);	 // [au]
+inline double WignerFunction::sf_x(double mu, double x){
+	double m = m_;
+	double c = m/M_PI*KB/AU_eV*temp_, ex = -(x-mu)/(KB/AU_eV*temp_);	 // [au]
 	if (ex < 700)
 		return c * log(exp(ex)+1);
 	else{
@@ -172,10 +172,10 @@ double WignerFunction::voigt(double k) {
 		x0 = i*h, x1 = (i+1)*h;
 		xm2 = (x0+x1)/2., xm1 = (x0+xm2)/2., xm3 = (xm2+x1)/2.;
 		fb += 7*f(x0-u) * sf_x(mu, x0) +
-					32*f(xm1-u) * sf_x(mu, xm1) +
-					12*f(xm2-u) * sf_x(mu, xm2) +
-					32*f(xm3-u) * sf_x(mu, xm3) +
-					7*f(x1-u) * sf_x(mu, x1);
+			32*f(xm1-u) * sf_x(mu, xm1) +
+			12*f(xm2-u) * sf_x(mu, xm2) +
+			32*f(xm3-u) * sf_x(mu, xm3) +
+			7*f(x1-u) * sf_x(mu, x1);
 	}
 	return fb*2*h/4./45.;
 }
