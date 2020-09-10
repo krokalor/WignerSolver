@@ -284,7 +284,7 @@ inline void WignerFunction::scatteringTerm(size_t i, size_t j, double dt){
     b_(r) += fe_(i, j)*cR;
     // #################### rM term ####################
     a_(r, r) += cM;
-		a_(r, i*nk_+(nk_-j-1)) += -cM;
+    a_(r, i*nk_+(nk_-j-1)) += -cM;
     // #################### Lambda term ####################
     a_(r, r) += 2*cL;
     if (j==0)
