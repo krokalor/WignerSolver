@@ -46,7 +46,7 @@ void WignerFunction::solveWignerPoisson(){
 
 	dt_ = 1e-15/AU_s;
 
-	std::ofstream poisson_step("wyniki/poisson_step_.out");  // "+std::to_string(uB_*AU_eV)+"
+	std::ofstream poisson_step("wyniki/dane/poisson_step_.out");  // "+std::to_string(uB_*AU_eV)+"
 	while ( !(conv_pot && conv_J) && (n_it < n_max) ) {
 
 		//
@@ -151,7 +151,7 @@ void WignerFunction::solveWignerPoisson(){
 	// cout<<"# rho_sum = "<<rho_sum<<endl;
 
 	std::ofstream file;
-	file.open("wyniki/poisson_tranChar.out", std::ios::out);
+	file.open("wyniki/dane/poisson_tranChar.out", std::ios::out);
 	file<<"# i j(i) n(i)\n";
 	for (size_t i=0; i<jt.size(); ++i)
 			file<<i<<' '<<jt(i)<<' '<<nt(i)<<'\n';

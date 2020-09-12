@@ -15,6 +15,11 @@ void simGWP(WignerFunction&, WignerFunction&, WignerFunction&);
 
 int main(){
 
+	// omp_set_dynamic(0);
+	// omp_set_num_threads(1);
+	// cout<<"omp_get_max_threads(): "<<omp_get_max_threads() <<endl;
+	// cout<<"omp_get_num_threads(): "<<omp_get_num_threads()<<endl;
+
 	high_resolution_clock::time_point t_start, t_end;
 	duration<double> t_elapsed;
 
@@ -59,8 +64,8 @@ int main(){
 	*/
 
 	cout<<"Setting up potential"<<endl;
-	// f.rR_ = 1./(1e-12/AU_s);
-	f.setLinPot(.2/AU_eV);
+	// f.rF_ = 1./(1e-11/AU_s);
+	f.setLinPot(0/AU_eV);
 	// f.readPotential("potentials/pot_02V_tR_1e-12.in");
 	// f.u_ = f.u_ + f.uStart_;
 	// f.uStart_.zero();
@@ -71,19 +76,19 @@ int main(){
 
 	f.v_max_ = 0.1/AU_eV;
 	f.v_min_ = 0.0/AU_eV;
-	f.nv_ = 10;
-	f.calc_IVchar();
+	f.nv_ = 20;
 
+	f.calc_IVchar();
 	// dissDecoh(f);
 
 	cout<<"Calulating electron density"<<endl;
 	array<double> nE_p =  f.calcCD_K();
 
 	std::ofstream file;
-	file.open("wyniki/nE_p.out", std::ios::out);
-	file<<"# p  n(p)\n";
+	file.open("wyniki/dane/nE_p.out", std::ios::out);
+	file<<"# p  n(p) [cm^-1]\n";
 	for (size_t i=0; i<f.nk_; ++i)
-		file<<f.k_(i)<<' '<<nE_p(i)/AU_cm2<<'\n';
+		file<<f.k_(i)<<' '<<nE_p(i)/AU_cm<<'\n';
 	file.close();
 
 	// std::ofstream pot_out;
@@ -123,8 +128,8 @@ void dissDecoh(WignerFunction& f) {
 	double j=0, n=0;
 
 	std::ofstream out, tpMap;
-	out.open("wyniki/diss_tF.out", std::ios::out);
-	tpMap.open("wyniki/tpMap.out", std::ios::out);
+	out.open("wyniki/dane/diss_tF.out", std::ios::out);
+	tpMap.open("wyniki/dane/tpMap.out", std::ios::out);
 	out<<"## j0 = "<<j0*AU_Acm2<<"  n0 = "<<n0/AU_cm2<<endl;
 	cout<<"## j0 = "<<j0*AU_Acm2<<"  n0 = "<<n0/AU_cm2<<endl;
 	out<<"# i  tS [s]  J [Acm^-2]  N [cm^-2]\n";

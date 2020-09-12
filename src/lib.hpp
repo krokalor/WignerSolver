@@ -9,8 +9,15 @@
 #include <ctime>
 #include <map>
 
+/*
+#include <omp.h>
+export OMP_NUM_THREADS = 6
+export OMP_DYNAMIC = false
+export OMP_NESTED = false
+*/
+
+#define ARMA_USE_SUPERLU 1
 #include <armadillo>
-// #include<omp.h>
 
 // using namespace std;
 using std::cout;
@@ -21,8 +28,7 @@ using std::endl;
 typedef std::vector<double>::size_type size_t_vec_d;
 
 // ############################## GLOBAL VARIABLES ##############################
-// #define ARMA_USE_SUPERLU 1
-// #define N_THREADS 2
+#define N_THREADS 4
 
 // ############################## CONSTANTS ##############################
 

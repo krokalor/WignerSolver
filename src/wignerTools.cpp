@@ -360,8 +360,8 @@ void WignerFunction::calc_IVchar(){
 	double dv = (v_max_-v_min_)/(nv_-1), v = 0;
 	// double E;
 	std::ofstream ivChar, vpMap;
-	vpMap.open("wyniki/vpMap.out", std::ios::out);
-	ivChar.open("wyniki/ivChar.out", std::ios::out);
+	vpMap.open("wyniki/dane/vpMap.out", std::ios::out);
+	ivChar.open("wyniki/dane/ivChar.out", std::ios::out);
 	vpMap<<"# v_B [V]  p [a.u]  1/4  1/2  3/4\n";
 	ivChar<<"# v_B [V]  J [Acm^{-2}]\n";
 	cout<<"# v_B [V]  J [Acm^{-2}]\n";
@@ -369,8 +369,8 @@ void WignerFunction::calc_IVchar(){
 		// setGaussPot(i*dv);
 		v = v_min_+i*dv;
 		setLinPot(v);
-		// solveWignerEq();
-		solveWignerPoisson();
+		solveWignerEq();
+		// solveWignerPoisson();
 		// E = i*dv/lD_ * AU_eV/1e3 / AU_cm;
 		ivChar<<v*AU_eV<<' '<<calcCurr()*AU_Acm2<<endl;  // <<' '<<calcNorm()/AU_cm2<<endl;
 		cout<<v*AU_eV<<' '<<calcCurr()*AU_Acm2<<endl;  // <<' '<<calcNorm()/AU_cm2<<endl;

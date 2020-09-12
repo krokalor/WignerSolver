@@ -89,7 +89,7 @@ std::map<std::string, double> readParam(std::string filename){
 void WignerFunction::saveWignerFun() {
 	size_t i, j;
 	std::ofstream wf;
-	wf.open("wyniki/wf.out", std::ios::out);
+	wf.open("wyniki/dane/wf.out", std::ios::out);
 	wf<<"# Norma [cm^-2]: "<<calcNorm()/AU_cm2<<'\n';
 	wf<<"# x [nm] k [a.u.] f [a.u.]\n";
 	for (i=0; i<nx_; ++i){
@@ -100,7 +100,7 @@ void WignerFunction::saveWignerFun() {
 		wf<<"\n";
 	}
 	wf.close();
-	wf.open("wyniki/wf.z", ios::out);
+	wf.open("wyniki/dane/wf.z", ios::out);
 	wf<<"# nx "<<nx_<<" ny "<<nk_<<" xmin "<<0<<" xmax "<<l_*AU_nm<<" ymin "<<-kmax_<<" ymax "<<kmax_<<'\n';
 	for (j=0; j<nk_; ++j){
 		for (i=0; i<nx_; ++i)
@@ -143,7 +143,7 @@ void WignerFunction::readPotential(std::string input_file){
 			}
 
 		}
-		std::ofstream test ("test.out");
+		std::ofstream test ("wyniki/dane/potential.out");
 		for (size_t i=0; i<x_.size(); ++i)
 			test<<x_(i)<<' '<<u_(i)<<'\n';
 		test.close();
@@ -153,7 +153,7 @@ void WignerFunction::readPotential(std::string input_file){
 	else{
 		for (size_t i=0; i<x.size(); ++i)
 			uStart_(i) = u(i);
-		std::ofstream test ("test.out");
+		std::ofstream test ("wyniki/dane/potential.out");
 		for (size_t_vec_d i=0; i<x_.size(); ++i)
 			test<<x_(i)<<' '<<uStart_(i)<<'\n';
 		test.close();
