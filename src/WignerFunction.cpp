@@ -21,15 +21,14 @@ void WignerFunction::solveWignerEq(){
 	initEq();
 	// readPotential();
 
-	size_t i, j;
 	vec x(nxk_);
 	// setBoundCond();
 	// setEquilibriumFunction();
 
-	#pragma omp parallel for collapse(2)
-	for (i=0; i<nx_; ++i) {
-		for (j=0; j<nk_; ++j) {
-			// cout<<"omp_get_num_threads(): "<<omp_get_num_threads()<<endl;
+	// TODO: OpenMP parallel calculations
+	// #pragma omp parallel for collapse(2) default(none)
+	for (size_t i=0; i<nx_; ++i) {
+		for (size_t j=0; j<nk_; ++j) {
 			diffusionTerm(i, j, -1);
 			driftTerm(i, j, -1);
 			scatteringTerm(i, j, -1);
@@ -43,12 +42,12 @@ void WignerFunction::solveWignerEq(){
 //     spsolve(x, a, b, "superlu");
 
 	f_.zero();
-	for (i=0; i<nx_; ++i)
-		for (j=0; j<nk_; ++j)
+	for (size_t i=0; i<nx_; ++i)
+		for (size_t j=0; j<nk_; ++j)
 			f_(i,j) = x(i*nk_+j);
 
 	/*
-	std::ofstream file("a_mat.out");
+	std::ofstream file("wyniki/dane/a_mat.out");
 	for (i=0; i<nxk_; ++i){
 			for (j=0; j<nxk_; ++j){
 					if (a(i,j) != 0)
@@ -82,15 +81,14 @@ void WignerFunction::solveTimeEv(){
 
 	initEq();
 
-	size_t i, j;
 	vec x(nxk_);
 
 	// setBoundCond();
 	// setEquilibriumFunction();
 
-	#pragma omp parallel for collapse(2)
-	for (i=0; i<nx_; ++i) {
-		for (j=0; j<nk_; ++j) {
+	// #pragma omp parallel for collapse(2)
+	for (size_t i=0; i<nx_; ++i) {
+		for (size_t j=0; j<nk_; ++j) {
 			a_(i*nk_+j, i*nk_+j) += 1.;
 			b_(i*nk_+j) = 2.*f_(i, j);
 			diffusionTerm(i, j, dt_);
@@ -105,8 +103,8 @@ void WignerFunction::solveTimeEv(){
 	spsolve(x, a_, b_, "superlu", opts);
 	// spsolve(x, a, b, "superlu");
 
-	for (i=0; i<nx_; ++i)
-			for (j=0; j<nk_; ++j)
+	for (size_t i=0; i<nx_; ++i)
+			for (size_t j=0; j<nk_; ++j)
 					f_(i,j) = x(i*nk_+j) - f_(i,j);
 }
 
@@ -176,7 +174,7 @@ void WignerFunction::driftTerm(size_t i, size_t j, double dt){
 		size_t v;
 		double sum, u1, u2;
 		double C;
-		#pragma omp parallel for
+		// #pragma omp parallel for
 		for (size_t l=0; l<nk_; l++){  // TODO: 0 -> 1 ?
 			v = i*nk_+l;
 			if (v <= r) {
@@ -207,53 +205,54 @@ void WignerFunction::driftTerm(size_t i, size_t j, double dt){
 		double F = -du_(i);  // klasyczna siła równa -du/dx
 		double C = F/dk_/1.;
 		if (dt > 0) C *= dt/2.;
-		// double alpha = 2., beta = 1.;
-		// double D = C/(alpha+beta);
-		// // HDS1
-		// if (F < 0.) {
-		//   if (j==0) {
-		//     a_(r, r) += -3.*C;
-		//     a_(r, r+1) += 4.*C;
-		//     a_(r, r+2) += -C;
-		//   }
-		//   else if (j==nk_-1) {
-		//     a_(r, r) += -3.*C;
-		//     // b_(r) += -3.*b_ij;
-		//   }
-		//   else if (j==nk_-2) {
-		//     a_(r, r) += -3.*C;
-		//     a_(r, r+1) += 4.*C;
-		//     // b_(r) += b_ij;
-		//   }
-		//   else {
-		//     a_(r, r-1) += -alpha*D;
-		//     a_(r, r) += -3.*beta*D;
-		//     a_(r, r+1) += (alpha+4.*beta)*D;
-		//     a_(r, r+2) += -beta*D;
-		//   }
-		// }
-		// if (F > 0.) {
-		//   if (j==nk_-1) {
-		//     a_(r, r) += 3.*C;
-		//     a_(r, r-1) += -4.*C;
-		//     a_(r, r-2) += C;
-		//   }
-		//   else if (j==0) {
-		//     a_(r, r) += 3.*C;
-		//     // b_(r) += 3.*b_ij;
-		//   }
-		//   else if (j==1) {
-		//     a_(r, r) += 3.*C;
-		//     a_(r, r-1) += -4.*C;
-		//     // b_(r) += -b_ij;
-		//   }
-		//   else {
-		//     a_(r, r+1) += alpha*D;
-		//     a_(r, r) += 3.*beta*D;
-		//     a_(r, r-1) += -(alpha+4.*beta)*D;
-		//     a_(r, r-2) += beta*D;
-		//   }
-		// }
+		// HDS1
+		double alpha = 2., beta = 1.;
+		double D = C/(alpha+beta);
+		if (F < 0.) {
+		  if (j==0) {
+		    a_(r, r) += -3.*C;
+		    a_(r, r+1) += 4.*C;
+		    a_(r, r+2) += -C;
+		  }
+		  else if (j==nk_-1) {
+		    a_(r, r) += -3.*C;
+		    // b_(r) += -3.*b_ij;
+		  }
+		  else if (j==nk_-2) {
+		    a_(r, r) += -3.*C;
+		    a_(r, r+1) += 4.*C;
+		    // b_(r) += b_ij;
+		  }
+		  else {
+		    a_(r, r-1) += -alpha*D;
+		    a_(r, r) += -3.*beta*D;
+		    a_(r, r+1) += (alpha+4.*beta)*D;
+		    a_(r, r+2) += -beta*D;
+		  }
+		}
+		if (F > 0.) {
+		  if (j==nk_-1) {
+		    a_(r, r) += 3.*C;
+		    a_(r, r-1) += -4.*C;
+		    a_(r, r-2) += C;
+		  }
+		  else if (j==0) {
+		    a_(r, r) += 3.*C;
+		    // b_(r) += 3.*b_ij;
+		  }
+		  else if (j==1) {
+		    a_(r, r) += 3.*C;
+		    a_(r, r-1) += -4.*C;
+		    // b_(r) += -b_ij;
+		  }
+		  else {
+		    a_(r, r+1) += alpha*D;
+		    a_(r, r) += 3.*beta*D;
+		    a_(r, r-1) += -(alpha+4.*beta)*D;
+		    a_(r, r-2) += beta*D;
+		  }
+		}
+		/*
 		// UDS1
 		if (F > 0){
 				if (j == 0)
@@ -271,6 +270,7 @@ void WignerFunction::driftTerm(size_t i, size_t j, double dt){
 						a_(r, r+1) += C;
 				}
 		}
+		*/
 	}
 }
 
@@ -301,6 +301,24 @@ inline void WignerFunction::scatteringTerm(size_t i, size_t j, double dt){
 		a_(r,r) += C;
 		C *= k_(j)/dk_/1.;
 		if (dt > 0) C *= dt/2.;
+		// CDS1
+		if (j==0) {
+		  // a_(r, r) += -3.*C;
+		  // a_(r, r+1) += 4.*C;
+		  // a_(r, r+2) += -C;
+		  a_(r, r+1) += C/2.;
+		}
+		else if (j==nk_-1) {
+		  // a_(r, r) += 3.*C;
+		  // a_(r, r-1) += -4.*C;
+		  // a_(r, r-2) += C;
+		  a_(r, r-1) += -C/2.;
+		}
+		else {
+		  a_(r, r-1) += -C/2.;
+		  a_(r, r+1) += C/2.;
+		}
+		/*
 		double F = -du_(i);  // klasyczna siła równa -du/dx
 		// UDS1
 		if (F > 0){
@@ -319,68 +337,54 @@ inline void WignerFunction::scatteringTerm(size_t i, size_t j, double dt){
 						a_(r, r+1) += C;
 				}
 		}
-		// // HDS1
-		// double alpha = 2., beta = 1.;
-		// double D = C/(alpha+beta);
-		// if (F < 0.) {
-		//   if (j==0) {
-		//     a_(r, r) += -3.*C;
-		//     a_(r, r+1) += 4.*C;
-		//     a_(r, r+2) += -C;
-		//   }
-		//   else if (j==nk_-1) {
-		//     a_(r, r) += -3.*C;
-		//     // b_(r) += -3.*b_ij;
-		//   }
-		//   else if (j==nk_-2) {
-		//     a_(r, r) += -3.*C;
-		//     a_(r, r+1) += 4.*C;
-		//     // b_(r) += b_ij;
-		//   }
-		//   else {
-		//     a_(r, r-1) += -alpha*D;
-		//     a_(r, r) += -3.*beta*D;
-		//     a_(r, r+1) += (alpha+4.*beta)*D;
-		//     a_(r, r+2) += -beta*D;
-		//   }
-		// }
-		// if (F > 0.) {
-		//   if (j==nk_-1) {
-		//     a_(r, r) += 3.*C;
-		//     a_(r, r-1) += -4.*C;
-		//     a_(r, r-2) += C;
-		//   }
-		//   else if (j==0) {
-		//     a_(r, r) += 3.*C;
-		//     // b_(r) += 3.*b_ij;
-		//   }
-		//   else if (j==1) {
-		//     a_(r, r) += 3.*C;
-		//     a_(r, r-1) += -4.*C;
-		//     // b_(r) += -b_ij;
-		//   }
-		//   else {
-		//     a_(r, r+1) += alpha*D;
-		//     a_(r, r) += 3.*beta*D;
-		//     a_(r, r-1) += -(alpha+4.*beta)*D;
-		//     a_(r, r-2) += beta*D;
-		//   }
-		// }
-		// // CDS1
-		// if (j==0) {
-		//   // a_(r, r) += -3.*C;
-		//   // a_(r, r+1) += 4.*C;
-		//   // a_(r, r+2) += -C;
-		//   a_(r, r+1) += C/2.;
-		// }
-		// else if (j==nk_-1) {
-		//   // a_(r, r) += 3.*C;
-		//   // a_(r, r-1) += -4.*C;
-		//   // a_(r, r-2) += C;
-		//   a_(r, r-1) += -C/2.;
-		// }
-		// else {
-		//   a_(r, r-1) += -C/2.;
-		//   a_(r, r+1) += C/2.;
-		// }
+		*/
+		/*
+		// HDS1
+		double alpha = 2., beta = 1.;
+		double D = C/(alpha+beta);
+		if (F < 0.) {
+		  if (j==0) {
+		    a_(r, r) += -3.*C;
+		    a_(r, r+1) += 4.*C;
+		    a_(r, r+2) += -C;
+		  }
+		  else if (j==nk_-1) {
+		    a_(r, r) += -3.*C;
+		    // b_(r) += -3.*b_ij;
+		  }
+		  else if (j==nk_-2) {
+		    a_(r, r) += -3.*C;
+		    a_(r, r+1) += 4.*C;
+		    // b_(r) += b_ij;
+		  }
+		  else {
+		    a_(r, r-1) += -alpha*D;
+		    a_(r, r) += -3.*beta*D;
+		    a_(r, r+1) += (alpha+4.*beta)*D;
+		    a_(r, r+2) += -beta*D;
+		  }
+		}
+		if (F > 0.) {
+		  if (j==nk_-1) {
+		    a_(r, r) += 3.*C;
+		    a_(r, r-1) += -4.*C;
+		    a_(r, r-2) += C;
+		  }
+		  else if (j==0) {
+		    a_(r, r) += 3.*C;
+		    // b_(r) += 3.*b_ij;
+		  }
+		  else if (j==1) {
+		    a_(r, r) += 3.*C;
+		    a_(r, r-1) += -4.*C;
+		    // b_(r) += -b_ij;
+		  }
+		  else {
+		    a_(r, r+1) += alpha*D;
+		    a_(r, r) += 3.*beta*D;
+		    a_(r, r-1) += -(alpha+4.*beta)*D;
+		    a_(r, r-2) += beta*D;
+		  }
+		}
+		*/
 }

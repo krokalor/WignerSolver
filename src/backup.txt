@@ -123,7 +123,7 @@ std::map<std::string, double> initParams() {
     // ########## NLP sinus values ##########
     sin_ = matrix<double>(nk_,nk_*nk2_);
 		// num_threads(3)
-    #pragma omp parallel for collapse(3) # num_threads(N_THREADS)
+    // #pragma omp parallel for collapse(3) # num_threads(N_THREADS)
     for (size_t j=0; j<nk_; ++j)
         for (size_t g=0; g<nk_; g++)
             for (size_t h=0; h<nk2_; h++)
