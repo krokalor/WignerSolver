@@ -35,11 +35,12 @@ void WignerFunction::solveWignerEq(){
 		}  // end j loop
 	}  // end i loop
 
-	superlu_opts settings;
-	settings.symmetric = false;
-//    settings.refine = superlu_opts::REF_DOUBLE;
-	spsolve(x, a_, b_, "superlu", settings);
-//     spsolve(x, a, b, "superlu");
+	superlu_opts opts;
+	opts.symmetric = false;
+	opts.refine = superlu_opts::REF_EXTRA;  // 	iterative refinement in extra precision
+	// opts.allow_ugly  = true;
+	spsolve(x, a_, b_, "superlu", opts);  // use SuperLU solver
+	//     spsolve(x, a, b, "superlu");
 
 	f_.zero();
 	for (size_t i=0; i<nx_; ++i)
@@ -101,9 +102,9 @@ void WignerFunction::solveTimeEv(){
 	opts.symmetric = false;
 	opts.equilibrate = true;
 	// opts.refine = superlu_opts::REF_NONE;
-	opts.refine = superlu_opts::REF_EXTRA;  // 	iterative refinement in extra precision
+	// opts.refine = superlu_opts::REF_EXTRA;  // 	iterative refinement in extra precision
     // opts.allow_ugly  = true;
-	spsolve(x, a_, b_, "superlu", opts);  // use SuperLU solver 
+	spsolve(x, a_, b_, "superlu", opts);  // use SuperLU solver
 	// spsolve(x, a, b, "superlu");
 
 	for (size_t i=0; i<nx_; ++i)
