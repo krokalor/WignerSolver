@@ -99,8 +99,11 @@ void WignerFunction::solveTimeEv(){
 
 	superlu_opts opts;
 	opts.symmetric = false;
-//     opts.allow_ugly  = true;
-	spsolve(x, a_, b_, "superlu", opts);
+	opts.equilibrate = true;
+	// opts.refine = superlu_opts::REF_NONE;
+	opts.refine = superlu_opts::REF_EXTRA;  // 	iterative refinement in extra precision
+    // opts.allow_ugly  = true;
+	spsolve(x, a_, b_, "superlu", opts);  // use SuperLU solver 
 	// spsolve(x, a, b, "superlu");
 
 	for (size_t i=0; i<nx_; ++i)

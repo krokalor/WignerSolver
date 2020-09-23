@@ -29,7 +29,7 @@ int main(){
 
 	f.set_m(0.067);
 	f.set_nx(200), f.set_nk(200);
-	f.set_lD(60/AU_nm), f.set_lC(20/AU_nm);
+	f.set_lD(3000/AU_nm), f.set_lC(500/AU_nm);
 	f.set_kmax(0.1);
 	f.set_temp(300);
 	f.set_cD(2e18*AU_cm3);
@@ -63,25 +63,25 @@ int main(){
 	f.fe_ = f.f_;
 	*/
 
-	cout<<"Setting up potential"<<endl;
+	cout<<"# Setting up potential"<<endl;
 	// f.rF_ = 1./(1e-11/AU_s);
-	f.setLinPot(0/AU_eV);
+	f.setLinPot(0.01/AU_eV);
 	// f.readPotential("potentials/pot_02V_tR_1e-12.in");
 	// f.u_ = f.u_ + f.uStart_;
 	// f.uStart_.zero();
 
-	cout<<"Solving WTE"<<endl;
-	// f.solveWignerEq();
+	cout<<"# Solving WTE"<<endl;
+	f.solveWignerEq();
 	// f.solveWignerPoisson();
 
 	f.v_max_ = 0.1/AU_eV;
 	f.v_min_ = 0.0/AU_eV;
 	f.nv_ = 20;
 
-	f.calc_IVchar();
+	// f.calc_IVchar();
 	// dissDecoh(f);
 
-	cout<<"Calulating electron density"<<endl;
+	cout<<"# Calulating electron density"<<endl;
 	array<double> nE_p =  f.calcCD_K();
 
 	std::ofstream file;
@@ -100,7 +100,7 @@ int main(){
 	//     pot_out<<f.x_(i)<<' '<<f.uStart_(i)<<'\n';
 	// pot_out.close();
 
-	cout<<"Saving wigner function"<<endl;
+	cout<<"# Saving wigner function"<<endl;
 	f.saveWignerFun();
 
 	cout<<"# Final current = "<<f.calcCurr()*AU_Acm2<<endl;
