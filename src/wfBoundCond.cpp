@@ -12,6 +12,7 @@ void WignerFunction::setBoundCond(){
 	// double cD = cD_ * 2*lC_/l_;
 	uL_ = calcFermiEn(cD_, m_, temp_);  // Fermi levels
 	uR_ = calcFermiEn(cD_, m_, temp_);
+	uF_ = (uL_+uR_)/2.;
 	// cout<<"# cD = "<<cD/AU_cm3<<", uL = uR = "<<uL_*AU_eV<<endl;
 	double k;
 	if (bcType_ == 0)
@@ -38,6 +39,14 @@ void WignerFunction::setBoundCond(){
 					k = k_(j);
 					bc_(j) = voigt(k);
 				}
+			// TODO: Armadillo convolution
+			// else if (bcType_ == 4)
+			// 	vec a = vec(nk_, fill::zeros), b = vec(nk_, fill::zeros), c;
+			// 	for (size_t j=0; j<nk_; ++j) {
+			// 		a(j) = supplyFunction(k_(j));
+			// 		b(j) = lorentz(k_(j));
+			// 	}
+			// 	c = conv(a, b);
 			else {
 				cout << "# bcType_ = " << bcType_
 					<< " IS WRONG BOUNDARY CONDITION TYPE INT, SETTING BC TO SUPPLY FUNCTION" << endl;
@@ -55,14 +64,12 @@ void WignerFunction::setBoundCond(){
 			}
 		}
 	}
-	double sum = 0;
 	std::ofstream file;
 	file.open("data/data_files/BC.out", std::ios::out);
 	for (size_t j=0; j<nk_; ++j) {
 		file<<k_(j)<<' '<<bc_(j)<<'\n';
-		sum += bc_(j);
 	}
-	file<<"# "<<sum;
+	file<<"# "<<calcInt(bc_, dk_)/2./M_PI/AU_cm3;
 	file.close();
 }
 
@@ -104,9 +111,9 @@ double WignerFunction::lorentz(double k){
 	// Lorentz profile
 	auto f = [g](double x) { return g/(x*x+g*g)/M_PI; };
 	// convolution
-	int N = 6E3, i;
-	double fb = 0;
+	size_t N = 1e4, i;
 	double h = (40/beta_+mu)/float(N);  // 40 from exp(x) -> 0 in SF
+	double fb = 0;
 	double x0, x1, xm1, xm2, xm3;
 	for (i=1; i<N-1; i++){
 		x0 = i*h, x1 = (i+1)*h;
@@ -117,7 +124,14 @@ double WignerFunction::lorentz(double k){
 					32*f(xm3-u) * sf_x(mu, xm3) +
 					7*f(x1-u) * sf_x(mu, x1);
 	}
-	return fb*2*h/4./45.;
+	fb *= 2*h/4./45.;
+	// vec a(N, fill::zeros), b(N, fill::zeros), c(N, fill::zeros);
+	// for (i=0; i<N; ++i) {
+	// 	b(i) = f(i*h-u), a(i) = sf_x(mu, i*h);
+	// }
+	// c = conv(a, b, "same");
+	// fb = sum(c);
+	return fb;
 }
 
 
@@ -129,7 +143,7 @@ double WignerFunction::gauss(double k){
 	// Gauss profile
 	auto f = [g](double x) { return 1/g/sqrt(2*M_PI)*exp(-x*x/2./g/g); };
 	// convolution
-	int N = 6E3, i;
+	int N = 1e4, i;
 	double fb = 0;
 	double h = (40/beta_+mu)/float(N);  // 40 from exp(x) -> 0 in SF
 	double x0, x1, xm1, xm2, xm3;
@@ -164,7 +178,7 @@ double WignerFunction::voigt(double k) {
 		{ return eta*( g/(x*x+g*g)/M_PI ) +  // lorentz
 			(1-eta)*( 1/g/sqrt(2*M_PI)*exp(-x*x/2./g/g) ); };  // gauss
 	// convolution
-	int N = 6E3, i;
+	int N = 1e4, i;
 	double fb = 0;
 	double h = (40/beta_+mu)/float(N);  // 40 from exp(x) -> 0 in SF
 	double x0, x1, xm1, xm2, xm3;

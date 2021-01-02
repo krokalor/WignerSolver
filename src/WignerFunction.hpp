@@ -62,6 +62,7 @@ public:
 		lambda_(0),
 		bcType_(0),
 		useNLP_(false),
+		time_dependent_(false),
 		f_(matrix<double>(nx_, nk_)),
 		fe_(f_),
 		f0_(f_),  fL_(f_),  fR_(f_),
@@ -118,6 +119,7 @@ public:
 	void set_epsilonR(double epsilonR) { epsilonR_ = epsilonR; }
 	void set_uBias(double uB) { uB_ = uB; }
 	void set_useNLP(bool useNLP) { useNLP_ = useNLP; }
+	void set_time_dependent(bool time_dependent) { time_dependent_ = time_dependent; }
 
 	void update() {
 		nxk_ = nx_*nk_, nk2_ = size_t(nk_/2.);
@@ -228,6 +230,7 @@ public:
 	double lambda_;								// Localization rate
 	int bcType_;									// Distribution used as bc
 	bool useNLP_;
+	bool time_dependent_;
 
 	// private:
 

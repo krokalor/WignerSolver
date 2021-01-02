@@ -327,23 +327,29 @@ void WignerFunction::setWavePacket() {
 	gwp_dx_ = 0.28 * gwp_tl_;  // 0.28
 	gwp_dp_ = sqrt(2*m_/beta_);
 	gwp_x0_ = 3*gwp_dx_;
-	gwp_p0_ = sqrt(2*m_*uL_);
 	gwp_A_ = part_num_ /
 					(2.*M_PI*gwp_dx_*gwp_dp_*deviceHW*deviceHW*gwp_p0_*gwp_p0_);
-	cout<<"Setting up GWP with parameters:\n"
-			<<"gwp_x0 = "<<gwp_x0_*a0_<<" nm, "<<gwp_x0_<<" a.u.\n"
-			<<"gwp_dx = "<<gwp_dx_*a0_<<" nm, "<<gwp_dx_<<" a.u.\n"
-			<<"gwp_p0 = "<<gwp_p0_*hbar_/a0_*1e9<<" kg*m*s^-1, "<<gwp_p0_<<" a.u.\n"
-			<<"gwp_dp = "<<gwp_dp_*hbar_/a0_*1e9<<" kg*m*s^-1, "<<gwp_dp_<<" a.u.\n"
-			<<"gwp_A = "<<gwp_A_/hbar_<<" (Js)^-1, "<<gwp_A_<<endl;
 			*/
-	gwp_dp_ = 1./(2*gwp_dx_);
-	double s2 = 2*gwp_dx_*gwp_dx_;
+	// gwp_dp_ = 1./(2*gwp_dx_);
+	// gwp_p0_ = sqrt(2*m_*uF_);
+	// double deviceHW = 1e3*1e3 / AU_nm/AU_nm;  // Pole przekroju (szer. x wysokość)
+	// gwp_A_ = part_num_ /
+	// 	(2.*M_PI*gwp_dx_*gwp_dp_*deviceHW*gwp_p0_*gwp_p0_);
+	gwp_A_ = cD_*lC_ / (gwp_dx_*gwp_dp_);
+	cout<<"# Setting up GWP with parameters:\n"
+	<<"# gwp_x0 = "<<gwp_x0_*AU_nm<<" nm, "<<gwp_x0_<<" a.u.\n"
+	<<"# gwp_dx = "<<gwp_dx_*AU_nm<<" nm, "<<gwp_dx_<<" a.u.\n"
+	<<"# gwp_p0 = "<<gwp_p0_<<" a.u.\n"
+	<<"# gwp_dp = "<<gwp_dp_<<" a.u.\n"
+	<<"# gwp_A = "<<gwp_A_/AU_cm2<<" cm^-2, "<<gwp_A_<<" a.u.\n"
+	<<"# cD_*lC_ = "<<cD_*lC_/AU_cm2<<" cm^-2\n"<<endl;
+	// double s2 = 2*gwp_dx_*gwp_dx_;
+	double sx = 2*gwp_dx_*gwp_dx_, sp = 2*gwp_dp_*gwp_dp_;
 	for (size_t i=0; i<nx_; ++i) {
 		for (size_t j=0; j<nk_; ++j)
 			f_(i,j) += exp(
-				- (k_(j)-gwp_p0_)*(k_(j)-gwp_p0_)*s2
-				- (x_(i)-gwp_x0_)*(x_(i)-gwp_x0_)/s2  )/M_PI; // * gwp_A_;
+				- (k_(j)-gwp_p0_)*(k_(j)-gwp_p0_)/sp
+				- (x_(i)-gwp_x0_)*(x_(i)-gwp_x0_)/sx  ) * gwp_A_; // * gwp_A_, / M_PI
 	}
 }
 

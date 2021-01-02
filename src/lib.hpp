@@ -8,9 +8,10 @@
 #include <string>
 #include <ctime>
 #include <map>
+// #include <iomanip.h>
 
+// #include <omp.h>
 /*
-#include <omp.h>
 export OMP_NUM_THREADS = 6
 export OMP_DYNAMIC = false
 export OMP_NESTED = false
@@ -75,6 +76,18 @@ class array {
 			for (size_t i=0; i<n_row; ++i) af.at(i) = a.at(i)+ai.at(i);
 			return af;
 		}
+		// Vector multiplication
+		array<T> operator*(array<T> ai) {
+			array<T> af(n_row);
+			for (size_t i=0; i<n_row; ++i) af.at(i) = a.at(i)*ai.at(i);
+			return af;
+		}
+		// Vector division
+		array<T> operator/(array<T> ai) {
+			array<T> af(n_row);
+			for (size_t i=0; i<n_row; ++i) af.at(i) = a.at(i)/ai.at(i);
+			return af;
+		}
 		// Multiplying vector by scalar
 		// array<T> operator*(Q s) {
 		//   array<T> af(n_row);
@@ -86,6 +99,13 @@ class array {
 		void add(T x) { a.push_back(x); }
 		void copy(array<T> ac) { for (size_t i=0; i<n_row; ++i) a.at(i) = ac(i); }
 		void zero() { for (size_t i=0; i<n_row; ++i) a.at(i) = 0.; }
+		double max() { return *max_element(a.begin(), a.end()); }
+		double min() { return *min_element(a.begin(), a.end()); }
+		double sum() {
+			double sum = 0;
+			for (size_t i=0; i<n_row; ++i) sum += a.at(i);
+			return sum;
+		}
 };
 
 // #################### klasa matrix ####################

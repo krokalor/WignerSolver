@@ -25,41 +25,54 @@ void WignerFunction::solveWignerEq(){
 	// setBoundCond();
 	// setEquilibriumFunction();
 
-	// TODO: OpenMP parallel calculations
-	// #pragma omp parallel for collapse(2) default(none)
-	for (size_t i=0; i<nx_; ++i) {
-		for (size_t j=0; j<nk_; ++j) {
-			diffusionTerm(i, j, -1);
-			driftTerm(i, j, -1);
-			scatteringTerm(i, j, -1);
-		}  // end j loop
-	}  // end i loop
-
+	// Setting up solver options
 	superlu_opts opts;
 	opts.symmetric = false;
+	opts.equilibrate = true;
+	// opts.refine = superlu_opts::REF_NONE;
 	opts.refine = superlu_opts::REF_EXTRA;  // 	iterative refinement in extra precision
 	// opts.allow_ugly  = true;
-	spsolve(x, a_, b_, "superlu", opts);  // use SuperLU solver
-	//     spsolve(x, a, b, "superlu");
 
-	f_.zero();
-	for (size_t i=0; i<nx_; ++i)
-		for (size_t j=0; j<nk_; ++j)
-			f_(i,j) = x(i*nk_+j);
+	// TODO: OpenMP parallel calculations
+	// Time dependent solution
+	if (time_dependent_ && dt_ > 0) {
+		#pragma omp parallel for collapse(2) shared(a_, b_)
+		for (size_t i=0; i<nx_; ++i) {
+			for (size_t j=0; j<nk_; ++j) {
+				a_(i*nk_+j, i*nk_+j) += 1.;
+				b_(i*nk_+j) = 2.*f_(i, j);
+				diffusionTerm(i, j, dt_);
+				driftTerm(i, j, dt_);
+				scatteringTerm(i, j, dt_);
+			}  // end j loop
+		}  // end i loop
 
-	/*
-	std::ofstream file("wyniki/dane/a_mat.out");
-	for (i=0; i<nxk_; ++i){
-			for (j=0; j<nxk_; ++j){
-					if (a(i,j) != 0)
-							file<<0<<' ';
-					else
-							file<<'-'<<' ';
-			}
-			file<<endl;
+		spsolve(x, a_, b_, "superlu", opts);  // use SuperLU solver
+		// spsolve(x, a, b, "superlu");
+
+		for (size_t i=0; i<nx_; ++i)
+			for (size_t j=0; j<nk_; ++j)
+				f_(i,j) = x(i*nk_+j) - f_(i,j);
 	}
-	file.close();
-	*/
+	// Stationary solution
+	else {
+		#pragma omp parallel for collapse(2) shared(a_, b_)
+		for (size_t i=0; i<nx_; ++i) {
+			for (size_t j=0; j<nk_; ++j) {
+				diffusionTerm(i, j, -1);
+				driftTerm(i, j, -1);
+				scatteringTerm(i, j, -1);
+			}  // end j loop
+		}  // end i loop
+
+		spsolve(x, a_, b_, "superlu", opts);  // use SuperLU solver
+		// spsolve(x, a, b, "superlu");
+
+		f_.zero();
+		for (size_t i=0; i<nx_; ++i)
+			for (size_t j=0; j<nk_; ++j)
+				f_(i,j) = x(i*nk_+j);
+	}
 
 	/*
 	// Checking A matrix
@@ -175,6 +188,7 @@ void WignerFunction::driftTerm(size_t i, size_t j, double dt){
 	size_t r = i*nk_ + j;
 	if (useNLP_) {
 		// Non-local potential
+		// TODO: Armadillo FFT
 		size_t v;
 		double sum, u1, u2;
 		double C;
