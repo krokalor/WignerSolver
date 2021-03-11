@@ -23,6 +23,7 @@ export OMP_NESTED = false
 // using namespace std;
 using std::cout;
 using std::endl;
+using namespace arma;
 
 // ############################## TYPEDEFs ##############################
 // TODO: put into a namespace
@@ -98,7 +99,7 @@ class array {
 		size_t size() { return a.size(); }
 		void add(T x) { a.push_back(x); }
 		void copy(array<T> ac) { for (size_t i=0; i<n_row; ++i) a.at(i) = ac(i); }
-		void zero() { for (size_t i=0; i<n_row; ++i) a.at(i) = 0.; }
+		void zeros() { for (size_t i=0; i<n_row; ++i) a.at(i) = 0.; }
 		double max() { return *max_element(a.begin(), a.end()); }
 		double min() { return *min_element(a.begin(), a.end()); }
 		double sum() {
@@ -140,13 +141,13 @@ class matrix {
 		size_t size() { return n_col*n_row; }
 		void copy(matrix<T> mc) { for (size_t i=0; i<n_row; ++i) m(i).copy(mc(i)); }
 		// void add(T x){ m.push_back(x); }
-		void zero() { for (size_t i=0; i<n_row; ++i) m(i).zero(); }
+		void zeros() { for (size_t i=0; i<n_row; ++i) m(i).zeros(); }
 };
 
 
 // #################### funkcja do liczenia całki ####################
-template <class T, class Q>
-T calcInt(array<T> f, Q h){
+template <class T>
+double calcInt(vec f, T h){
 	size_t n = f.size();
 	T ig = 0;
 	for (size_t i=1; i<n; ++i)
@@ -155,10 +156,10 @@ T calcInt(array<T> f, Q h){
 }
 
 // #################### funkcja do liczenia pochodnej ####################
-template <class T, class Q>
-array<T> calcDer(array<T> f, Q h){
+template <class T>
+vec calcDer(vec f, T h){
 	size_t n = f.size();
-	array<T> df(n);
+	vec df(n);
 	for (size_t i=1; i<n-1; ++i)
 		df(i) =(-f(i-1)+f(i+1))/h/2.;
 	df(0) = (-3.*f(0)+4.*f(1)-f(2))/h/2.;

@@ -9,7 +9,7 @@ CXXFLAGS = -std=c++11 -g -O2\
 	-Wstrict-null-sentinel -Wswitch-default -Wundef -Werror -Wno-unused -fopenmp # -Wstrict-overflow=4 -fopenmp
 CXX = gcc # icpc
 OBJS = src/WignerFunction.o \
-	src/wfIO.o src/wfBoundCond.o src/wignerTools.o \
+	src/wfIO.o src/wignerTools.o \
 	src/solveWignerPoisson.o \
 	src/poisson1D.o \
 	main.o
@@ -20,4 +20,4 @@ run: $(OBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
 
 clean:
-	rm -f $(OBJS) exec.out
+	rm -f $(OBJS) run

@@ -61,7 +61,7 @@ double WignerFunction::calcCurr() {
 			cur1 += k_(j)*(3*f_(i-1,j)-f_(i-2,j));
 			cur2 += k_(j)*(3*f_(i,j)-f_(i-1,j));
 		}
-		cur1 *= dk_/(4*M_PI*m_), cur2 *= dk_/(4*M_PI*m_);
+		cur1 *= dk_/(2*m_), cur2 *= dk_/(2*m_);  // /(4*M_PI*m_)
 		cur += (cur1+cur2)*dx_/2./l_;
 		file<<x_(i)*AU_nm<<' '<<cur1<<' '<<cur2<<' '<<cur<<'\n';
 	}
@@ -71,10 +71,10 @@ double WignerFunction::calcCurr() {
 }
 
 
-array<double> WignerFunction::calcCurrArr() {
+vec WignerFunction::calcCurrArr() {
 	size_t_vec_d i, j;        // iterators
 	double cur1 = 0, cur2 = 0;
-	array<double> cur(nx_);  // Current density
+	vec cur(nx_);  // Current density  // array<double>
 	//  cur1 - current density in node i-1/2
 	//  cur2 - current density in node i+1/2
 	for (i=2; i<nx_-2; ++i) {
@@ -92,7 +92,7 @@ array<double> WignerFunction::calcCurrArr() {
 			cur1 += k_(j)*(3*f_(i-1,j)-f_(i-2,j));
 			cur2 += k_(j)*(3*f_(i,j)-f_(i-1,j));
 		}
-		cur(i) = (cur1+cur2)*dk_/(4*M_PI*m_);
+		cur(i) = (cur1+cur2)*dk_/(2*m_);  // /(4*M_PI*m_)
 	}
 	cur(0) = cur(2), cur(1) = cur(2);
 	cur(nx_-1) = cur(nx_-3), cur(nx_-2) = cur(nx_-3);
@@ -100,19 +100,19 @@ array<double> WignerFunction::calcCurrArr() {
 }
 
 
-array<double> WignerFunction::calcCD_X(){
+vec WignerFunction::calcCD_X(){
 	// Calculates carrier density in x space
-	array<double> cd(nx_);
+	vec cd(nx_);  // array<double>
 	for (size_t i=0; i<nx_; ++i)
 		for (size_t j=1; j<nk_; ++j)
-			cd(i) += (f_(i,j-1) + f_(i,j))*dk_/2. / 2./M_PI;
+			cd(i) += (f_(i,j-1) + f_(i,j))*dk_/2.;  //  / 2./M_PI
 	return cd;
 }
 
 
-array<double> WignerFunction::calcCD_K(){
+vec WignerFunction::calcCD_K(){
 	// Calculates carrier density in k space
-	array<double> cd(nk_);
+	vec cd(nk_);  // array<double>
 	for (size_t j=0; j<nk_; ++j)
 		for (size_t i=1; i<nx_; ++i)
 			cd(j) += (f_(i-1,j) + f_(i,j))*dx_/2.;
@@ -132,7 +132,7 @@ double WignerFunction::calcNorm(){
 		else
 			sum_x += sum_k * dx_;
 	}
-	return sum_x/2./M_PI;
+	return sum_x;  // /2./M_PI
 }
 
 
@@ -244,7 +244,7 @@ double WignerFunction::calcSDX(){
 //
 void WignerFunction::setLinPot(double uB) {
 	uB_ = uB;
-	u_.zero();
+	u_.zeros();
 	double x;
 	for (size_t i = 0; i < nx_; ++i) {
 		x = x_(i)-lC_;
@@ -335,7 +335,7 @@ void WignerFunction::setWavePacket() {
 	// double deviceHW = 1e3*1e3 / AU_nm/AU_nm;  // Pole przekroju (szer. x wysokość)
 	// gwp_A_ = part_num_ /
 	// 	(2.*M_PI*gwp_dx_*gwp_dp_*deviceHW*gwp_p0_*gwp_p0_);
-	gwp_A_ = cD_*lC_ / (gwp_dx_*gwp_dp_);
+	gwp_A_ = cD_*lC_ / (gwp_dx_*gwp_dp_*2*M_PI);
 	cout<<"# Setting up GWP with parameters:\n"
 	<<"# gwp_x0 = "<<gwp_x0_*AU_nm<<" nm, "<<gwp_x0_<<" a.u.\n"
 	<<"# gwp_dx = "<<gwp_dx_*AU_nm<<" nm, "<<gwp_dx_<<" a.u.\n"
@@ -364,13 +364,16 @@ double WignerFunction::WavePacket_TE(double x, double k)
 
 void WignerFunction::calc_IVchar(){
 	double dv = (v_max_-v_min_)/(nv_-1), v = 0;
+	iv_v_ = vec(nv_, fill::zeros), iv_i_ = vec(nv_, fill::zeros);
 	// double E;
 	std::ofstream ivChar, vpMap;
-	vpMap.open("wyniki/dane/vpMap.out", std::ios::out);
+	// vpMap.open("wyniki/dane/vpMap.out", std::ios::out);
 	ivChar.open("wyniki/dane/ivChar.out", std::ios::out);
-	vpMap<<"# v_B [V]  p [a.u]  1/4  1/2  3/4\n";
-	ivChar<<"# v_B [V]  J [Acm^{-2}]\n";
-	cout<<"# v_B [V]  J [Acm^{-2}]\n";
+	// vpMap<<"# v_B [V]  p [a.u]  1/4  1/2  3/4\n";
+	// ivChar<<"# v_B [V]  J [Acm^{-2}]\n";
+	// cout<<"# v_B [V]  J [Acm^{-2}]\n";
+	ivChar<<"# v_B [V]  I [A]\n";
+	cout<<"# v_B [V]  I [A]\n";
 	for (size_t i = 0; i < nv_; ++i) {
 		// setGaussPot(i*dv);
 		v = v_min_+i*dv;
@@ -378,28 +381,29 @@ void WignerFunction::calc_IVchar(){
 		solveWignerEq();
 		// solveWignerPoisson();
 		// E = i*dv/lD_ * AU_eV/1e3 / AU_cm;
-		ivChar<<v*AU_eV<<' '<<calcCurr()*AU_Acm2<<endl;  // <<' '<<calcNorm()/AU_cm2<<endl;
-		cout<<v*AU_eV<<' '<<calcCurr()*AU_Acm2<<endl;  // <<' '<<calcNorm()/AU_cm2<<endl;
-		for (size_t j=0; j<nk_; ++j) {
-				vpMap<<v*AU_eV<<' '<<k_(j)
-					<<' '<<f_(size_t(nx_/4.),j)
-					<<' '<<f_(size_t(nx_/2.),j)
-					<<' '<<f_(size_t(nx_*3/4.),j)<<'\n';
-		}
-		vpMap<<'\n';
+		ivChar<<v<<' '<<calcCurr()<<endl;  // <<' '<<calcNorm()/AU_cm2<<endl;
+		cout<<v<<' '<<calcCurr()<<endl;  // <<' '<<calcNorm()/AU_cm2<<endl;
+		iv_v_(i) = v, iv_i_(i) = calcCurr();
+		// for (size_t j=0; j<nk_; ++j) {
+		// 		vpMap<<v*AU_eV<<' '<<k_(j)
+		// 			<<' '<<f_(size_t(nx_/4.),j)
+		// 			<<' '<<f_(size_t(nx_/2.),j)
+		// 			<<' '<<f_(size_t(nx_*3/4.),j)<<'\n';
+		// }
+		// vpMap<<'\n';
 	}
 	ivChar.close();
-	vpMap.close();
+	// vpMap.close();
 }
 
 
 void WignerFunction::calcMobility() {
 
-	array<double> ne = calcCD_X();
-	array<double> dnedx = calcDer(ne, dx_);
-	array<double> jn = calcCurrArr();
-	array<double> el_f(nx_);
-	array<double> mob(nx_);
+	vec ne = calcCD_X();
+	vec dnedx = calcDer(ne, dx_);
+	vec jn = calcCurrArr();
+	vec el_f(nx_);
+	vec mob(nx_);
 
 	for (size_t i = 0; i < nx_; ++i)
 		el_f(i) = -du_(i);
@@ -501,4 +505,265 @@ double WignerFunction::calcFermiEn(double n0, double m, double T) {
 	eta = eta*KB*T - M_PI*M_PI*KB*T/12./eta;
 	// cout<<"eta = "<<eta/(KB*T)<<", x = "<<x<<endl;
 	return eta/AU_eV;
+}
+
+
+double WignerFunction::calcFermiEn_MB(double n0, double m, double T) {
+	double kBT = KB/AU_eV*T;
+	double A = pow(m,3/2.)/sqrt(2)/pow(M_PI,3/2.)*pow(kBT,3/2.);
+	return log(n0/A)*kBT;
+}
+
+
+//
+// Warunek brzegowy
+//
+
+
+// TODO: wskaźniki na funkcję
+
+void WignerFunction::setBoundCond(){
+	Gamma_ = rG_*.5;
+	// double cD = cD_ * 2*lC_/l_;
+	uL_ = uF_;  // Fermi levels
+	uR_ = uF_;
+	// cout<<"# cD = "<<cD/AU_cm3<<", uL = uR = "<<uL_*AU_eV<<endl;
+	double k;
+	if (bcType_ == 0)
+		for (size_t j=0; j<nk_; ++j) {
+			k = k_(j);
+			bc_(j) = supplyFunction(k);
+		}
+	else if (bcType_ == -1)
+		bc_.zeros();
+	else if (bcType_ == -2)
+		for (size_t j=0; j<nk_; ++j) {
+			k = k_(j);
+			bc_(j) = maxwell_boltzmann(k);
+		}
+	else if (bcType_ == -3)
+		for (size_t j=0; j<nk_; ++j) {
+			k = k_(j);
+			bc_(j) = gaussian_bc(k);
+		}
+	else {
+		if (rG_ > 0) {
+			if (bcType_ == 1)
+				for (size_t j=0; j<nk_; ++j) {
+					k = k_(j);
+					bc_(j) = lorentz(k);
+				}
+			else if (bcType_ == 2)
+				for (size_t j=0; j<nk_; ++j) {
+					k = k_(j);
+					bc_(j) = gauss(k);
+				}
+			else if (bcType_ == 3)
+				for (size_t j=0; j<nk_; ++j) {
+					k = k_(j);
+					bc_(j) = voigt(k);
+				}
+			// TODO: Armadillo convolution
+			// else if (bcType_ == 4)
+			// 	vec a = vec(nk_, fill::zeros), b = vec(nk_, fill::zeros), c;
+			// 	for (size_t j=0; j<nk_; ++j) {
+			// 		a(j) = supplyFunction(k_(j));
+			// 		b(j) = lorentz(k_(j));
+			// 	}
+			// 	c = conv(a, b);
+			else {
+				cout << "# bcType_ = " << bcType_
+					<< " IS WRONG BOUNDARY CONDITION TYPE INT, SETTING BC TO SUPPLY FUNCTION" << endl;
+				for (size_t j=0; j<nk_; ++j) {
+					k = k_(j);
+					bc_(j) = supplyFunction(k);
+				}
+			}
+		}
+		else {
+			cout << "# rG_ = " << rG_<< " SCATTERING RATE SHOULD BE GREATER THAN 0, SETTING BC TO SUPPLY FUNCTION" << endl;
+			for (size_t j=0; j<nk_; ++j) {
+				k = k_(j);
+				bc_(j) = supplyFunction(k);
+			}
+		}
+	}
+	std::ofstream file;
+	file.open("data/data_files/BC.out", std::ios::out);
+	for (size_t j=0; j<nk_; ++j) {
+		file<<k_(j)<<' '<<bc_(j)<<'\n';
+	}
+	file<<"# "<<calcInt(bc_, dk_)/2./M_PI/AU_cm3;
+	file.close();
+}
+
+
+// Supply function (E(k))
+double WignerFunction::supplyFunction(double k){
+	// double mu = k > 0 ? uL_ : uR_;
+	double mu = uF_;
+	double m = m_;
+	double c = m/M_PI*KB/AU_eV*temp_, ex = -(k*k/m/2.-mu)/(KB/AU_eV*temp_);	 // [au]
+	// double c = 4*M_PI*m*KB/AU_eV*temp_, ex = -(k*k/m/2.-mu)/(KB/AU_eV*temp_);	 // [au]
+	if (ex < 700)
+		return c * log(exp(ex)+1);
+	else{
+		if (ex > 0)
+			return c * ex;
+		else return 0;
+	}
+}
+
+
+// Maxwell-Boltzmann distribution
+double WignerFunction::maxwell_boltzmann(double k){;
+	double mu = uF_+uB_;
+	// double mu = k > 0 ? uL_ : uR_
+	double m = m_;
+	double v = k/m;
+	double c = pow(2.*M_PI*m*(KB/AU_eV*temp_), 0.5);  // * cD_
+	double ex = exp(-(m*v*v/2.-mu)/(KB/AU_eV*temp_));	 // [au]
+	// double c = 4*M_PI*m*KB/AU_eV*temp_, ex = -(k*k/m/2.-mu)/(KB/AU_eV*temp_);	 // [au]
+	return c * ex;
+}
+
+// Gaussian with sigma parameter
+double WignerFunction::gaussian_bc(double k){
+	double mu = uF_;
+	// double mu = k > 0 ? uL_ : uR_;
+	double m = m_;
+	double pF = sqrt(uF_*2.*m);
+	double kBT = KB/AU_eV*temp_;
+	double sigma = 1;
+	// double c = 1./sqrt(2.*M_PI*m*(KB/AU_eV*temp_)*sigma*sigma);
+	// double ex = exp(-(k*k/m/2.-mu)/(KB/AU_eV*temp_)/sigma/sigma);	 // [au]
+	// double c = 4*M_PI*m*KB/AU_eV*temp_, ex = -(k*k/m/2.-mu)/(KB/AU_eV*temp_);	 // [au]
+	// double c = 1./sqrt(2.*M_PI*m*kBT)/sigma*cD_;
+	double c = pow((2.*M_PI*m*kBT)*sigma*sigma,-1/2.)*cD_;
+	double ex = exp(-k*k/2./m/kBT/sigma/sigma);  // (k-pF)*(k-pF)
+	return c * ex;
+}
+
+
+
+// Supply function (x)
+inline double WignerFunction::sf_x(double mu, double x){
+	double m = m_;
+	double c = m/M_PI*KB/AU_eV*temp_, ex = -(x-mu)/(KB/AU_eV*temp_);	 // [au]
+	if (ex < 700)
+		return c * log(exp(ex)+1);
+	else{
+		if (ex > 0)
+			return c * ex;
+		else return 0;
+	}
+}
+
+
+// Gaussian with sigma parameter
+double WignerFunction::gaussian_x(double mu, double x){
+	// double mu = uF_+uB_;
+	// double mu = k > 0 ? uL_ : uR_;
+	double sigma = 1;
+	double kBT = KB/AU_eV*temp_;
+	double m = m_;
+	double c = pow((2.*M_PI*m*kBT)*sigma*sigma,-1/2.)*cD_;
+	double ex = exp(-x/kBT/sigma/sigma);	 // [au]
+	// double c = 4*M_PI*m*KB/AU_eV*temp_, ex = -(k*k/m/2.-mu)/(KB/AU_eV*temp_);	 // [au]
+	return c * ex;
+}
+
+
+// Lorentz * SF convolution
+double WignerFunction::lorentz(double k){
+	// double mu = k > 0 ? uL_ : uR_;
+	double mu = uF_;
+	double m = m_;
+	double u = k*k/m/2., g = Gamma_;
+	// Lorentz profile
+	auto f = [g](double x) { return g/(x*x+g*g)/M_PI; };
+	// convolution
+	size_t N = 1e4, i;
+	double h = (40/beta_+mu)/float(N);  // 40 from exp(x) -> 0 in SF
+	double fb = 0;
+	double x0, x1, xm1, xm2, xm3;
+	for (i=1; i<N-1; i++){
+		x0 = i*h, x1 = (i+1)*h;
+		xm2 = (x0+x1)/2., xm1 = (x0+xm2)/2., xm3 = (xm2+x1)/2.;
+		fb += 7*f(x0-u) * gaussian_x(mu, x0) +
+					32*f(xm1-u) * gaussian_x(mu, xm1) +
+					12*f(xm2-u) * gaussian_x(mu, xm2) +
+					32*f(xm3-u) * gaussian_x(mu, xm3) +
+					7*f(x1-u) * gaussian_x(mu, x1);
+	}
+	fb *= 2*h/4./45.;
+	// vec a(N, fill::zeros), b(N, fill::zeros), c(N, fill::zeros);
+	// for (i=0; i<N; ++i) {
+	// 	b(i) = f(i*h-u), a(i) = sf_x(mu, i*h);
+	// }
+	// c = conv(a, b, "same");
+	// fb = sum(c);
+	return fb;
+}
+
+
+// Gauss * SF convolution
+double WignerFunction::gauss(double k){
+	// double mu = k > 0 ? uL_ : uR_;
+	double mu = uF_;
+	double m = m_;
+	double u = k*k/m/2., g = Gamma_;
+	// Gauss profile
+	auto f = [g](double x) { return 1/g/sqrt(2*M_PI)*exp(-x*x/2./g/g); };
+	// convolution
+	int N = 1e4, i;
+	double fb = 0;
+	double h = (40/beta_+mu)/float(N);  // 40 from exp(x) -> 0 in SF
+	double x0, x1, xm1, xm2, xm3;
+	for (i=1; i<N-1; i++){
+		x0 = i*h, x1 = (i+1)*h;
+		xm2 = (x0+x1)/2., xm1 = (x0+xm2)/2., xm3 = (xm2+x1)/2.;
+		fb += 7*f(x0-u) * gaussian_x(mu, x0) +
+					32*f(xm1-u) * gaussian_x(mu, xm1) +
+					12*f(xm2-u) * gaussian_x(mu, xm2) +
+					32*f(xm3-u) * gaussian_x(mu, xm3) +
+					7*f(x1-u) * gaussian_x(mu, x1);
+	}
+	return fb*2*h/4./45.;
+}
+
+
+// Voigt * SF convolution
+double WignerFunction::voigt(double k) {
+	// double mu = k > 0 ? uL_ : uR_;
+	double mu = uF_;
+	double m = m_;
+	double u = k*k/m/2., g = Gamma_;
+	// Calculating eta - mixing parameter in pseudo-Voigt profile
+	double gammaL = 2*Gamma_, gammaG = 2*sqrt(2*log(2))*Gamma_;
+	double gamma = pow(pow(gammaG,5) +
+		2.69269*pow(gammaG,4)*gammaL +
+		2.42843*pow(gammaG,3)*pow(gammaL,2) +
+		4.47163*pow(gammaG,2)*pow(gammaL,3) +
+		0.07842*gammaG*pow(gammaL,4) + pow(gammaL,5), 0.2);
+	double eta = 1.36603*(gammaL/gamma) - 0.47719*pow(gammaL/gamma,2) + 0.11116*pow(gammaL/gamma, 3);
+	// (pseudo-)Voigt profile
+	auto f = [eta, g](double x)
+		{ return eta*( g/(x*x+g*g)/M_PI ) +  // lorentz
+			(1-eta)*( 1/g/sqrt(2*M_PI)*exp(-x*x/2./g/g) ); };  // gauss
+	// convolution
+	int N = 1e4, i;
+	double fb = 0;
+	double h = (40/beta_+mu)/float(N);  // 40 from exp(x) -> 0 in SF
+	double x0, x1, xm1, xm2, xm3;
+	for (i=1; i<N-1; i++){
+		x0 = i*h, x1 = (i+1)*h;
+		xm2 = (x0+x1)/2., xm1 = (x0+xm2)/2., xm3 = (xm2+x1)/2.;
+		fb += 7*f(x0-u) * gaussian_x(mu, x0) +
+			32*f(xm1-u) * gaussian_x(mu, xm1) +
+			12*f(xm2-u) * gaussian_x(mu, xm2) +
+			32*f(xm3-u) * gaussian_x(mu, xm3) +
+			7*f(x1-u) * gaussian_x(mu, x1);
+	}
+	return fb*2*h/4./45.;
 }

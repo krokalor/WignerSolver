@@ -36,7 +36,7 @@ void WignerFunction::solveWignerEq(){
 	// TODO: OpenMP parallel calculations
 	// Time dependent solution
 	if (time_dependent_ && dt_ > 0) {
-		#pragma omp parallel for collapse(2) shared(a_, b_)
+		// #pragma omp parallel for collapse(2) shared(a_, b_)
 		for (size_t i=0; i<nx_; ++i) {
 			for (size_t j=0; j<nk_; ++j) {
 				a_(i*nk_+j, i*nk_+j) += 1.;
@@ -56,7 +56,7 @@ void WignerFunction::solveWignerEq(){
 	}
 	// Stationary solution
 	else {
-		#pragma omp parallel for collapse(2) shared(a_, b_)
+		// #pragma omp parallel for collapse(2) shared(a_, b_)
 		for (size_t i=0; i<nx_; ++i) {
 			for (size_t j=0; j<nk_; ++j) {
 				diffusionTerm(i, j, -1);
@@ -68,7 +68,7 @@ void WignerFunction::solveWignerEq(){
 		spsolve(x, a_, b_, "superlu", opts);  // use SuperLU solver
 		// spsolve(x, a, b, "superlu");
 
-		f_.zero();
+		f_.zeros();
 		for (size_t i=0; i<nx_; ++i)
 			for (size_t j=0; j<nk_; ++j)
 				f_(i,j) = x(i*nk_+j);

@@ -2,7 +2,6 @@
 #define WIGNERFUNCTION_HPP
 
 #include "lib.hpp"
-using namespace arma;
 
 std::map<std::string, double> readParam(std::string);
 
@@ -32,6 +31,7 @@ public:
 		lD_ (60./AU_nm),
 		lC_ (20./AU_nm),
 		l_ (lD_ + 2*lC_),
+		lYZ_ (1),
 		nx_ (100),
 		nk_ (100),
 		nk2_ (size_t(nk_/2.)),
@@ -42,6 +42,7 @@ public:
 		dt_ (1e-15/AU_s),
 		courant_num_ (dt_*kmax_/m_/dx_),  // Courant-Friedricks-Lewy
 		uF_ (0.087/AU_eV), uR_ (0.087/AU_eV), uL_ (0.087/AU_eV),
+		set_uF_ (false),
 		cD_(2e18*AU_cm3),
 		temp_ (300), beta_ (1./KB/temp_*AU_eV),
 		epsilonR_(13.1),
@@ -63,14 +64,14 @@ public:
 		bcType_(0),
 		useNLP_(false),
 		time_dependent_(false),
-		f_(matrix<double>(nx_, nk_)),
+		f_(mat(nx_, nk_)),
 		fe_(f_),
 		f0_(f_),  fL_(f_),  fR_(f_),
-		u_(array<double>(nx_)), du_(u_), uStart_(u_),
-		bc_(array<double>(nk_)),
-		x_(array<double>(nx_)),
-		k_(array<double>(nk_)),
-		sin_(matrix<double>(nk_,nk_*nk2_))
+		u_(vec(nx_, fill::zeros)), du_(u_), uStart_(u_),
+		bc_(vec(nk_, fill::zeros)),
+		x_(vec(nx_, fill::zeros)),
+		k_(vec(nk_, fill::zeros)),
+		sin_(mat(nk_,nk_*nk2_))
 		// cR_(iv["dconc_right"]),
 		{
 
@@ -112,9 +113,12 @@ public:
 	void set_nk(size_t nk) { nk_ = nk; }
 	void set_lD(double lD) { lD_ = lD; }
 	void set_lC(double lC) { lC_ = lC; }
+	void set_lYZ(double lYZ) { lYZ_ = lYZ; }
+	void set_part_num(double part_num) { part_num_ = part_num; }
 	void set_kmax(double kmax) { kmax_ = kmax; }
 	void set_dt(double dt) { dt_ = dt; }
 	void set_cD(double cD) { cD_ = cD; }
+	void set_uF(double uF) { uF_ = uF, set_uF_ = true; }
 	void set_temp(double temp) { temp_ = temp; }
 	void set_epsilonR(double epsilonR) { epsilonR_ = epsilonR; }
 	void set_uBias(double uB) { uB_ = uB; }
@@ -129,13 +133,14 @@ public:
 		dk_ = 2.*kmax_/float(nk_-1);
 		courant_num_ = dt_*kmax_/m_/dx_;
 		beta_ = 1./KB/temp_*AU_eV;
-		f_ = matrix<double>(nx_, nk_);
+		uF_ = set_uF_ ? uF_ : calcFermiEn(cD_, m_, temp_);  // Fermi energy
+		f_ = mat(nx_, nk_, fill::zeros);
 		fe_ = f_, f0_ = f_,  fL_ = f_,  fR_ = f_;
-		u_ = array<double>(nx_), du_ = u_, uStart_ = u_;
-		bc_ = array<double>(nk_);
-		x_ = array<double>(nx_);
-		k_ = array<double>(nk_);
-		sin_ = matrix<double>(nk_,nk_*nk2_);
+		u_ = vec(nx_, fill::zeros), du_ = u_, uStart_ = u_;
+		bc_ = vec(nk_, fill::zeros);
+		x_ = vec(nx_, fill::zeros);
+		k_ = vec(nk_, fill::zeros);
+		sin_ = mat(nk_,nk_*nk2_);
 		for (size_t i=0; i<nx_; ++i) x_(i) = i*dx_;
 		for (size_t j=0; j<nk_; ++j) k_(j) = dk_*(j-(nk_-1)*.5);
 		// #pragma omp parallel for collapse(3)
@@ -150,8 +155,8 @@ public:
 	double calcEK();
 	double calcSDK();
 	double calcSDX();
-	array<double> calcCD_X();
-	array<double> calcCD_K();
+	vec calcCD_X();
+	vec calcCD_K();
 
 	void readPotential(std::string);                       // Read potential from file pot.in
 	void printParam();
@@ -160,7 +165,7 @@ public:
 	void solveWignerEq_A();
 	void solveTimeEv();
 	double calcCurr();					// Current density
-	array<double> calcCurrArr();				// Current density array
+	vec calcCurrArr();				// Current density array
 	void saveWignerFun();
 	void clearWignerFun();
 
@@ -183,6 +188,10 @@ public:
 	double supplyFunction(double);		// Supply function
 	double sf_x(double, double);					// Supply function as function of x
 
+	double maxwell_boltzmann(double);
+	double gaussian_bc(double);
+	double gaussian_x(double, double);
+
 	double lorentz(double);	 // Lorentz profile
 	double gauss(double);	 // Gauss
 	double voigt(double);	 // Voigt profile
@@ -198,18 +207,21 @@ public:
 	double nC(double, double);
 	double fermiInt(double, double);
 	double calcFermiEn(double, double, double);
+	double calcFermiEn_MB(double, double, double);
 
 	// PUBLIC VARIABLES
 
 	double m_;									// effective mass [1]
 	double lD_, lC_, l_;					// total lenght, devie len., contacts len.
+	double lYZ_;
 	size_t nx_, nk_, nk2_, nxk_;   				// x/k-space nr of steps
 	double dx_;									// x-space step size (lattice constant)
 	double kmax_;  // k-space range
 	double dk_;									// k-space step size (Brillouin zone / Nk)
 	double dt_;                                 // time step size
 	double courant_num_;                        // Courant number
-	double uF_, uR_, uL_;						// potential in left/right contact
+	double uF_, uR_, uL_;						// Fermi energy in left/right contact
+	double set_uF_;
 	double cD_;  // cL_, cR_;
 	double temp_;								// Contacts temperature
 	double beta_;								// beta = 1/kb/T
@@ -248,20 +260,23 @@ public:
 	std::vector<double> du_;					// Potential derivative
 	*/
 
-	matrix<double> f_;		                    // Wigner function
-	matrix<double> fe_;					        // Equilibrium Wigner function
-	matrix<double> f0_;		                    // Wigner function before time evolution
-	matrix<double> fL_;		                    // Wigner function for el. from LEFT contact
-	matrix<double> fR_;		                    // Wigner function for el. from RIGHT contact
-	array<double> u_;						    // Potential
-	array<double> du_;					        // Potential derivative
-	array<double> uStart_;						    // Potential
-	array<double> bc_;					        // Boundary condition
-	array<double> x_;		                    // Position values
-	array<double> k_;	                        // Wave vector values
-	matrix<double> sin_;	                    // Sine function values
+	mat f_;		                    // Wigner function
+	mat fe_;					        // Equilibrium Wigner function
+	mat f0_;		                    // Wigner function before time evolution
+	mat fL_;		                    // Wigner function for el. from LEFT contact
+	mat fR_;		                    // Wigner function for el. from RIGHT contact
+	vec u_;						    // Potential
+	vec du_;					        // Potential derivative
+	vec uStart_;						    // Potential
+	vec bc_;					        // Boundary condition
+	vec x_;		                    // Position values
+	vec k_;	                        // Wave vector values
+	mat sin_;	                    // Sine function values
+
 	sp_mat a_;
 	vec b_;
+
+	vec iv_i_, iv_v_;
 };
 
 
