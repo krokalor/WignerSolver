@@ -74,7 +74,7 @@ double WignerFunction::calcCurr() {
 vec WignerFunction::calcCurrArr() {
 	size_t_vec_d i, j;        // iterators
 	double cur1 = 0, cur2 = 0;
-	vec cur(nx_);  // Current density  // array<double>
+	vec cur(nx_, fill::zeros);  // Current density  // array<double>
 	//  cur1 - current density in node i-1/2
 	//  cur2 - current density in node i+1/2
 	for (i=2; i<nx_-2; ++i) {
@@ -102,7 +102,7 @@ vec WignerFunction::calcCurrArr() {
 
 vec WignerFunction::calcCD_X(){
 	// Calculates carrier density in x space
-	vec cd(nx_);  // array<double>
+	vec cd(nx_, fill::zeros);  // array<double>
 	for (size_t i=0; i<nx_; ++i)
 		for (size_t j=1; j<nk_/2; ++j)
 			// cd(i) += (f_(i,j-1) + f_(i,j))*dk_/2.;  //  / 2./M_PI  // trapezoid
@@ -113,7 +113,7 @@ vec WignerFunction::calcCD_X(){
 
 vec WignerFunction::calcCD_K(){
 	// Calculates carrier density in k space
-	vec cd(nk_);  // array<double>
+	vec cd(nk_, fill::zeros);  // array<double>
 	for (size_t j=0; j<nk_; ++j)
 		for (size_t i=1; i<nx_/2; ++i)
 			// cd(j) += (f_(i-1,j) + f_(i,j))*dx_/2.;  // trapezoid
@@ -404,8 +404,8 @@ void WignerFunction::calcMobility() {
 	vec ne = calcCD_X();
 	vec dnedx = calcDer(ne, dx_);
 	vec jn = calcCurrArr();
-	vec el_f(nx_);
-	vec mob(nx_);
+	vec el_f(nx_, fill::zeros);
+	vec mob(nx_, fill::zeros);
 
 	for (size_t i = 0; i < nx_; ++i)
 		el_f(i) = -du_(i);

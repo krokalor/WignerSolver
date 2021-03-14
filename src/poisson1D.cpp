@@ -16,12 +16,12 @@ void Poisson1D::solve_gummel() {
 	double phi_L = -uOld_(0)+dirichletL_+h_*neumannL_;
 	double phi_R = -uOld_(nx_-1)+dirichletR_-h_*neumannR_;
 
-	vec uD(nx_);
+	vec uD(nx_, fill::zeros);
 	for (size_t i=1; i<nx_-1; ++i)
 		uD(i) = uOld_(i+1)-2.*uOld_(i)+uOld_(i-1);
 	uD(0) = phi_L, uD(nx_-1) = phi_R;
 
-	pFun_ = vec(nx_);
+	pFun_ = vec(nx_, fill::zeros);
 	for (size_t i=0; i<nx_; ++i)
 		pFun_(i) = -(uD(i) - c*rho_(i));  // '-' because in equation A*x =-pFun
 
@@ -42,7 +42,7 @@ void Poisson1D::solve_gummel() {
 	// }
 	// cout<<phi_L<<' '<<phi_R<<' '<<dirichletR_<<endl;
 
-	vec x(nx_);
+	vec x(nx_, fill::zeros);
 	superlu_opts settings;
 	// settings.symmetric = true;
 	//    settings.refine = superlu_opts::REF_DOUBLE;

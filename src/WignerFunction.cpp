@@ -21,7 +21,7 @@ void WignerFunction::solveWignerEq(){
 	initEq();
 	// readPotential();
 
-	vec x(nxk_);
+	vec x(nxk_, fill::zeros);
 	// setBoundCond();
 	// setEquilibriumFunction();
 
@@ -95,7 +95,7 @@ void WignerFunction::solveTimeEv(){
 
 	initEq();
 
-	vec x(nxk_);
+	vec x(nxk_, fill::zeros);
 
 	// setBoundCond();
 	// setEquilibriumFunction();

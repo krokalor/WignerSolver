@@ -17,8 +17,8 @@ void WignerFunction::solveWignerPoisson(){
 	p.uNew_ = uStart_, p.uOld_ = uStart_;
 
 	// Mixing parameters
-	p.beta_ = 1e-0;  // Potential mixing parameter
-	double alpha = 1e-0;  // Density mixing parameter
+	p.beta_ = 1e-2;  // Potential mixing parameter
+	double alpha = 1e-2;  // Density mixing parameter
 
 	// Structure potential
 	// setLinPot(uB_);
@@ -28,7 +28,7 @@ void WignerFunction::solveWignerPoisson(){
 	vec nD(nx_, fill::zeros);
 	// for (size_t i=0; i<nx_; ++i)
 		// nD(i) = ( x_(i) <= lC_ || x_(i) >= l_-lC_ ) ? cD_ : 0;
-	double s = 0.004;
+	double s = 0.01;
 	for (size_t i=0; i<nx_; ++i)
 		nD(i) = cD_*(1+1/(1+exp((x_(i)-lC_)/s/l_))-1/(1+exp((x_(i)-l_+lC_)/s/l_)));
 	// for (size_t i=0; i<nx_; ++i)
@@ -38,7 +38,7 @@ void WignerFunction::solveWignerPoisson(){
 	vec dj(nx_, fill::zeros), j0(nx_, fill::zeros), j1(nx_, fill::zeros), du(nx_, fill::zeros);
 	// array<double> jt, nt, Q;  // Transient characteristics
 	bool conv_J = false, conv_pot = false, pFun_zero = false;
-	size_t n_max = 2, n_min = 0, n_it = 0, n_dj = 0, n_du = 0, n_conv = 2;
+	size_t n_max = 20, n_min = 0, n_it = 0, n_dj = 0, n_du = 0, n_conv = 2;
 	double max_dj = 1e-4, max_du = 1e-6/AU_eV, max_pFun = 1e-8/AU_eV;
 
 	double curr = 0, nc = 0, nd = 0, q = 0, rmse_j = 0;
