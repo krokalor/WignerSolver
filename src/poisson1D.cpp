@@ -23,7 +23,7 @@ void Poisson1D::solve_gummel() {
 
 	pFun_ = vec(nx_);
 	for (size_t i=0; i<nx_; ++i)
-		pFun_(i) = -(uD(i) + c*rho_(i));  // '-' because in equation -pFun
+		pFun_(i) = -(uD(i) - c*rho_(i));  // '-' because in equation A*x =-pFun
 
 	// dP_i/du_j
 
@@ -33,7 +33,7 @@ void Poisson1D::solve_gummel() {
 			if (i-1 == j || i+1 == j)
 				dPu_(i, j) = 1;
 			else if (j == i)
-				dPu_(i, j) = -2 - c*nE_(i)/temp_;  // - c*nE_(i)/temp_;
+				dPu_(i, j) = -2 + c*nE_(i)/temp_;  // - c*nE_(i)/temp_;
 		}
 	}
 
@@ -44,7 +44,7 @@ void Poisson1D::solve_gummel() {
 
 	vec x(nx_);
 	superlu_opts settings;
-	settings.symmetric = true;
+	// settings.symmetric = true;
 	//    settings.refine = superlu_opts::REF_DOUBLE;
 	spsolve(x, dPu_, pFun_, "superlu", settings);
 

@@ -104,8 +104,9 @@ vec WignerFunction::calcCD_X(){
 	// Calculates carrier density in x space
 	vec cd(nx_);  // array<double>
 	for (size_t i=0; i<nx_; ++i)
-		for (size_t j=1; j<nk_; ++j)
-			cd(i) += (f_(i,j-1) + f_(i,j))*dk_/2.;  //  / 2./M_PI
+		for (size_t j=1; j<nk_/2; ++j)
+			// cd(i) += (f_(i,j-1) + f_(i,j))*dk_/2.;  //  / 2./M_PI  // trapezoid
+			cd(i) += (f_(i,2*j-2)+4*f_(i,2*j-1)+f_(i,2*j))*dk_/3.;  // simpson
 	return cd;
 }
 
@@ -114,8 +115,9 @@ vec WignerFunction::calcCD_K(){
 	// Calculates carrier density in k space
 	vec cd(nk_);  // array<double>
 	for (size_t j=0; j<nk_; ++j)
-		for (size_t i=1; i<nx_; ++i)
-			cd(j) += (f_(i-1,j) + f_(i,j))*dx_/2.;
+		for (size_t i=1; i<nx_/2; ++i)
+			// cd(j) += (f_(i-1,j) + f_(i,j))*dx_/2.;  // trapezoid
+			cd(j) += (f_(2*i-2,j)+4*f_(2*i-1,j)+f_(2*i,j))*dx_/3.;  // simpson
 	return cd;
 }
 

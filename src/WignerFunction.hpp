@@ -65,9 +65,13 @@ public:
 		useNLP_(false),
 		time_dependent_(false),
 		f_(mat(nx_, nk_)),
-		fe_(f_),
-		f0_(f_),  fL_(f_),  fR_(f_),
-		u_(vec(nx_, fill::zeros)), du_(u_), uStart_(u_),
+		fe_(mat(nx_, nk_)),
+		f0_(mat(nx_, nk_)),
+		fL_(mat(nx_, nk_)),
+		fR_(mat(nx_, nk_)),
+		u_(vec(nx_, fill::zeros)),
+		du_(vec(nx_, fill::zeros)),
+		uStart_(vec(nx_, fill::zeros)),
 		bc_(vec(nk_, fill::zeros)),
 		x_(vec(nx_, fill::zeros)),
 		k_(vec(nk_, fill::zeros)),
@@ -135,8 +139,13 @@ public:
 		beta_ = 1./KB/temp_*AU_eV;
 		uF_ = set_uF_ ? uF_ : calcFermiEn(cD_, m_, temp_);  // Fermi energy
 		f_ = mat(nx_, nk_, fill::zeros);
-		fe_ = f_, f0_ = f_,  fL_ = f_,  fR_ = f_;
-		u_ = vec(nx_, fill::zeros), du_ = u_, uStart_ = u_;
+		fe_ = mat(nx_, nk_, fill::zeros);
+		f0_ = mat(nx_, nk_, fill::zeros);  
+		fL_ = mat(nx_, nk_, fill::zeros);
+		fR_ = mat(nx_, nk_, fill::zeros);
+		u_ = vec(nx_, fill::zeros);
+		du_ = vec(nx_, fill::zeros);
+		uStart_ = vec(nx_, fill::zeros);
 		bc_ = vec(nk_, fill::zeros);
 		x_ = vec(nx_, fill::zeros);
 		k_ = vec(nk_, fill::zeros);

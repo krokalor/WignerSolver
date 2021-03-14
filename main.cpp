@@ -37,7 +37,7 @@ int main(){
 
 	f.set_m(0.067);
 	f.set_nx(200), f.set_nk(100);
-	f.set_lD(60/AU_nm), f.set_lC(20/AU_nm);
+	f.set_lD(600/AU_nm), f.set_lC(200/AU_nm);
 	f.set_lYZ(1e-8/AU_cm2);
 	f.set_part_num(1);
 	f.set_cD(2e18*AU_cm3); // 2e18*AU_cm3
@@ -117,13 +117,13 @@ int main(){
 	//
 	cout<<"# Solving BTE+PE"<<endl;
 	f.solveWignerPoisson();
-	
+
 	cout<<"# Calulating electron density"<<endl;
 	vec nE_x = f.calcCD_X();
 	vec nE_k = f.calcCD_K();
 
-	for (size_t i=0; i<f.nx_; ++i)
-		cout<<f.x_(i)*AU_nm<<'\t'<<nE_x(i)/AU_cm3<<endl;
+	// for (size_t i=0; i<f.nx_; ++i)
+	// 	cout<<f.x_(i)*AU_nm<<'\t'<<nE_x(i)/AU_cm3<<endl;
 
 	//
 	// Zalezność gęstości prądu od dyssypacji
@@ -219,16 +219,15 @@ int main(){
 	//     pot_out<<f.x_(i)<<' '<<f.uStart_(i)<<'\n';
 	// pot_out.close();
 
-	cout<<"# Saving wigner function"<<endl;
-	f.saveWignerFun();
+	// cout<<"# Saving wigner function"<<endl;
+	// f.saveWignerFun();
 
 	cout<<"# l_YZ: "<<f.lYZ_<<" [a.u.]"<<endl;
 	cout<<"# Final current = "<<f.calcCurr()*AU_Acm2<<" [Acm^-2]"<<endl;
 	cout<<"# Norma: = "<<f.calcNorm()<<" [1]"<<endl;
 	cout<<"# Int. BC: "<<calcInt(f.bc_, f.dk_)/AU_cm3<<" [a.u.]"<<endl;
-	cout<<"Fermi energy:\t"<<f.calcFermiEn(f.cD_, f.m_, f.temp_)*AU_eV<<'\t'
+	cout<<"# Fermi energy:\t"<<f.calcFermiEn(f.cD_, f.m_, f.temp_)*AU_eV<<'\t'
 		<<f.calcFermiEn_MB(f.cD_, f.m_, f.temp_)*AU_eV<<endl;
-	cout<<f.m_<<'\t'<<KB/AU_eV*f.temp_<<endl;
 
 	t_end = high_resolution_clock::now();
 	t_elapsed =  duration_cast<duration<double>>(t_end - t_start);

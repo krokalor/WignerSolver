@@ -11,7 +11,7 @@ using namespace poisson;
 void WignerFunction::solveWignerPoisson(){
 
 	Poisson1D p(nx_, dx_);
-	p.dirichletL_ = 0, p.dirichletR_ = -uB_;
+	p.dirichletL_ = 0, p.dirichletR_ = -uB_;  // - bo obniżamy U w prawym kontakcie
 	p.neumannL_ = 0, p.neumannR_ = 0;
 	p.epsilonR_ = epsilonR_, p.temp_ = temp_;
 	p.uNew_ = uStart_, p.uOld_ = uStart_;
@@ -38,7 +38,7 @@ void WignerFunction::solveWignerPoisson(){
 	vec dj(nx_, fill::zeros), j0(nx_, fill::zeros), j1(nx_, fill::zeros), du(nx_, fill::zeros);
 	// array<double> jt, nt, Q;  // Transient characteristics
 	bool conv_J = false, conv_pot = false, pFun_zero = false;
-	size_t n_max = 1, n_min = 0, n_it = 0, n_dj = 0, n_du = 0, n_conv = 2;
+	size_t n_max = 2, n_min = 0, n_it = 0, n_dj = 0, n_du = 0, n_conv = 2;
 	double max_dj = 1e-4, max_du = 1e-6/AU_eV, max_pFun = 1e-8/AU_eV;
 
 	double curr = 0, nc = 0, nd = 0, q = 0, rmse_j = 0;
@@ -61,11 +61,11 @@ void WignerFunction::solveWignerPoisson(){
 		u_ = band_off + p.uNew_;
 		solveWignerEq();
 		nE = calcCD_X();
+
 		for (size_t i=0; i<nx_; ++i) // mixing old and new el. density
 			rho(i) = (1.-alpha)*rho(i) + alpha*(nD(i)-nE(i));
-
-		nE = calcCD_X();
-		nE.print("RIGHT AFTER solveWignerEq:");
+			// nE(i) = (1.-alpha)*nE(i) + alpha*nE(i);
+		// rho = nD-nE;
 
 		//
 		// Solve Poisson eq.
@@ -73,8 +73,9 @@ void WignerFunction::solveWignerPoisson(){
 		p.rho_ = rho, p.nE_ = nE;
 		p.solve();
 
-		nE = calcCD_X();
-		nE.print("RIGHT AFTER p.solve():");
+		p.uNew_.save("uNew.txt", arma_ascii);
+		rho.save("rho.txt", arma_ascii);
+		nE.save("nE.txt", arma_ascii);
 
 		cout<<n_it
 			<<'\t'<<calcCurr()*AU_Acm2
@@ -141,8 +142,7 @@ void WignerFunction::solveWignerPoisson(){
 		// 	saveWignerFun();
 		// }
 
-		p.uOld_ = p.uNew_;
-		nE_prev = nE;
+		p.uOld_ = u_;
 
 		// av_el = 0;
 		// for (size_t i=0; i<nx_; ++i)
@@ -188,8 +188,8 @@ void WignerFunction::solveWignerPoisson(){
 	out.close();
 	poisson_step.close();
 
-	nE = calcCD_X();
-	nE.print("RIGHT AFTER while loop:");
+	// nE = calcCD_X();
+	// nE.print("RIGHT AFTER while loop:");
 
 	uStart_ = p.uNew_;
 	std::ofstream pot_out;
