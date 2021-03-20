@@ -17,6 +17,7 @@ class Poisson1D {
 			nE_ = vec(nx_, fill::zeros);
 			uOld_ = vec(nx_, fill::zeros);
 			uNew_ = vec(nx_, fill::zeros);
+			du_ = vec(nx_, fill::zeros);
 			dPu_ = sp_mat(nx_, nx_);
 			pFun_ = vec(nx_, fill::zeros);
 			epsilonR_ = 1, temp_ = 300, beta_ = 1;
@@ -42,6 +43,7 @@ class Poisson1D {
 		vec nE_;
 		vec uOld_;
 		vec uNew_;
+		vec du_;
 
 		vec pFun_;
 		sp_mat dPu_;

@@ -27,10 +27,10 @@ void WignerFunction::solveWignerEq(){
 
 	// Setting up solver options
 	superlu_opts opts;
-	opts.symmetric = false;
-	opts.equilibrate = true;
+	// opts.symmetric = false;
+	// opts.equilibrate = true;
 	// opts.refine = superlu_opts::REF_NONE;
-	opts.refine = superlu_opts::REF_EXTRA;  // 	iterative refinement in extra precision
+	// opts.refine = superlu_opts::REF_EXTRA;  // 	iterative refinement in extra precision
 	// opts.allow_ugly  = true;
 
 	// TODO: OpenMP parallel calculations
@@ -221,11 +221,11 @@ void WignerFunction::driftTerm(size_t i, size_t j, double dt){
 	else {
 		// Classical force
 		double F = -du_(i);  // klasyczna siła równa -du/dx
-		double C = F/dk_/1.;
+		double C = F/dk_;
 		if (dt > 0) C *= dt/2.;
-		// HDS1
+		// HDS22
 		double alpha = 2., beta = 1.;
-		double D = C/(alpha+beta);
+		double D = C/(alpha+beta)/2.;
 		if (F < 0.) {
 		  if (j==0) {
 		    a_(r, r) += -3.*C;
@@ -270,25 +270,23 @@ void WignerFunction::driftTerm(size_t i, size_t j, double dt){
 		    a_(r, r-2) += beta*D;
 		  }
 		}
-		/*
-		// UDS1
-		if (F > 0){
-				if (j == 0)
-						a_(r, r) += C;
-				else{
-						a_(r, r) += C;
-						a_(r, r-1) += -C;
-				}
-		}
-		else if (F <= 0){
-				if (j == nk_-1)
-						a_(r, r) += -C;
-				else{
-						a_(r, r) += -C;
-						a_(r, r+1) += C;
-				}
-		}
-		*/
+		// // UDS1
+		// if (F > 0){
+		// 		if (j == 0)
+		// 				a_(r, r) += C;
+		// 		else{
+		// 				a_(r, r) += C;
+		// 				a_(r, r-1) += -C;
+		// 		}
+		// }
+		// else if (F <= 0){
+		// 		if (j == nk_-1)
+		// 				a_(r, r) += -C;
+		// 		else{
+		// 				a_(r, r) += -C;
+		// 				a_(r, r+1) += C;
+		// 		}
+		// }
 	}
 }
 
@@ -317,47 +315,44 @@ inline void WignerFunction::scatteringTerm(size_t i, size_t j, double dt){
 		double C = -rF_;
 		if (dt > 0) C *= dt/2.;
 		a_(r,r) += C;
-		C *= k_(j)/dk_/1.;
-		if (dt > 0) C *= dt/2.;
-		// CDS1
-		if (j==0) {
-		  // a_(r, r) += -3.*C;
-		  // a_(r, r+1) += 4.*C;
-		  // a_(r, r+2) += -C;
-		  a_(r, r+1) += C/2.;
-		}
-		else if (j==nk_-1) {
-		  // a_(r, r) += 3.*C;
-		  // a_(r, r-1) += -4.*C;
-		  // a_(r, r-2) += C;
-		  a_(r, r-1) += -C/2.;
-		}
-		else {
-		  a_(r, r-1) += -C/2.;
-		  a_(r, r+1) += C/2.;
-		}
-		/*
-		double F = -du_(i);  // klasyczna siła równa -du/dx
-		// UDS1
-		if (F > 0){
-				if (j == 0)
-						a_(r, r) += C;
-				else{
-						a_(r, r) += C;
-						a_(r, r-1) += -C;
-				}
-		}
-		else if (F <= 0){
-				if (j == nk_-1)
-						a_(r, r) += -C;
-				else{
-						a_(r, r) += -C;
-						a_(r, r+1) += C;
-				}
-		}
-		*/
-		/*
+		C *= k_(j)/dk_;
+		// // CDS1
+		// if (j==0) {
+		//   // a_(r, r) += -3.*C;
+		//   // a_(r, r+1) += 4.*C;
+		//   // a_(r, r+2) += -C;
+		//   a_(r, r+1) += C/2.;
+		// }
+		// else if (j==nk_-1) {
+		//   // a_(r, r) += 3.*C;
+		//   // a_(r, r-1) += -4.*C;
+		//   // a_(r, r-2) += C;
+		//   a_(r, r-1) += -C/2.;
+		// }
+		// else {
+		//   a_(r, r-1) += -C/2.;
+		//   a_(r, r+1) += C/2.;
+		// }
+		// double F = -du_(i);  // klasyczna siła równa -du/dx
+		// // UDS1
+		// if (F > 0){
+		// 		if (j == 0)
+		// 				a_(r, r) += C;
+		// 		else{
+		// 				a_(r, r) += C;
+		// 				a_(r, r-1) += -C;
+		// 		}
+		// }
+		// else if (F <= 0){
+		// 		if (j == nk_-1)
+		// 				a_(r, r) += -C;
+		// 		else{
+		// 				a_(r, r) += -C;
+		// 				a_(r, r+1) += C;
+		// 		}
+		// }
 		// HDS1
+		double F = -du_(i);  // klasyczna siła równa -du/dx
 		double alpha = 2., beta = 1.;
 		double D = C/(alpha+beta);
 		if (F < 0.) {
@@ -404,5 +399,4 @@ inline void WignerFunction::scatteringTerm(size_t i, size_t j, double dt){
 		    a_(r, r-2) += beta*D;
 		  }
 		}
-		*/
 }

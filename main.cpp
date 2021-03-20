@@ -36,14 +36,14 @@ int main(){
 	WignerFunction f;
 
 	f.set_m(0.067);
-	f.set_nx(200), f.set_nk(100);
+	f.set_nx(150), f.set_nk(150);
 	f.set_lD(600/AU_nm), f.set_lC(200/AU_nm);
 	f.set_lYZ(1e-8/AU_cm2);
 	f.set_part_num(1);
 	f.set_cD(2e18*AU_cm3); // 2e18*AU_cm3
 	f.set_kmax(0.04);
 	f.set_temp(77);
-	f.set_dt(5*1e-15/AU_s);
+	f.set_dt(.5*1e-15/AU_s);
 	f.set_uF(0.087/AU_eV);  // 0.087/AU_eV
 	f.set_time_dependent(false);
 
@@ -75,12 +75,12 @@ int main(){
 	//
 	// Pakiet gaussowski
 	//
-	// f.gwp_x0_ = 100/AU_nm;
-	// f.gwp_dx_ = 25/AU_nm;
+	// f.gwp_x0_ = 10/AU_nm;
+	// f.gwp_dx_ = 2.5/AU_nm;
 	// f.gwp_dp_ = 0.005; // 1./(2*f.gwp_dx_);  // a.u.
 	// f.gwp_p0_ = sqrt(2*f.m_*f.uF_);
 	// f.setWavePacket();
-	// f.gwp_x0_ = f.l_-100/AU_nm;
+	// f.gwp_x0_ = f.l_-10/AU_nm;
 	// f.gwp_p0_ = -sqrt(2*f.m_*f.uF_);
 	// f.setWavePacket();
 
@@ -91,7 +91,7 @@ int main(){
 	// f.setGaussPot(0.1/AU_eV, 800, 50);
 	f.setLinPot(0.0/AU_eV);
 	// f.uStart_.zeros();
-	// f.readPotential("potentials/pot_001V_1um_cl.in");
+	f.readPotential("potentials/pot_0V_1um_cl.in");
 	// f.u_ = f.u_ + f.uStart_;
 	// f.set_useNLP(false);
 
@@ -105,6 +105,7 @@ int main(){
 	// calc_fd(f);
 	// f.set_time_dependent(true);
 	// for (size_t i=0; i < 100; ++i) f.solveWignerEq();
+	// f.saveWignerFun();
 
 	//
 	// Poisson test
@@ -136,7 +137,7 @@ int main(){
 	// Time evolution
 	//
 	// f.set_time_dependent(true);
-	// double t_total = 10e-12/AU_s, t = 0, max_dj = 1e-4;
+	// double t_total = 2e-12/AU_s, t = 0, max_dj = 1e-4;
 	// vec dj(f.nx_, fill::zeros), j0(f.nx_, fill::zeros), j1(f.nx_, fill::zeros);
 	// int n_min = 2, n_conv = 2, n_dj = 0, n_it = 0;
 	// double nrmse_j = 0;
@@ -146,7 +147,7 @@ int main(){
 	// out.open("wyniki/dane/tev.out", std::ios::out);
 	// cout<<"# t [ps] \tCurr. [Acm^-2] \tNorm. [cm^-2] \tdN \tdJ [Acm^-2] \tmax(J) [Acm^-2] \t|max(J) - min(J)| [Acm^-2] \tdJ/max(J) \tCONV? \tn_dj"<<endl;
 	// out<<"# t [ps] \t Curr. [Acm^-2] \tNorm. [cm^-2] \tdN \tdJ [Acm^-2] \tmax(J) [Acm^-2] \t|max(J) - min(J)| [Acm^-2] \tdJ/max(J) \tCONV? \tn_dj"<<endl;
-	// while (t<t_total) {  // && n_dj < n_conv
+	// while (t<t_total && n_dj < n_conv) {  //
 	// 	f.solveWignerEq();
 	// 	if (n_it > n_min) {
 	// 		j = f.calcCurr();
@@ -162,7 +163,7 @@ int main(){
 	// 			<<'\t'<<(nc-nc_prev)/nc
 	// 			<<'\t'<<dj_x*AU_Acm2
 	// 			<<'\t'<<j1_x*AU_Acm2
-	// 			<<'\t'<<fabs(j1_x-j1_n)*AU_Acm2
+	// 			<<'\t'<<range(j1)*AU_Acm2
 	// 			<<'\t'<<dj_x/j1_x
 	// 			<<'\t'<<conv_J
 	// 			<<'\t'<<n_dj<<endl;
@@ -172,7 +173,7 @@ int main(){
 	// 			<<'\t'<<(nc-nc_prev)/nc
 	// 			<<'\t'<<dj_x*AU_Acm2
 	// 			<<'\t'<<j1_x*AU_Acm2
-	// 			<<'\t'<<fabs(j1_x-j1_n)*AU_Acm2
+	// 			<<'\t'<<range(j1)*AU_Acm2
 	// 			<<'\t'<<dj_x/j1_x
 	// 			<<'\t'<<conv_J
 	// 			<<'\t'<<n_dj<<endl;
@@ -184,12 +185,13 @@ int main(){
 	//
 	// Charakterystyka J-V
 	//
+
 	// f.v_max_ = 0.001/AU_eV;
 	// f.v_min_ = 0.0/AU_eV;
 	// f.nv_ = 20;
 	// f.calc_IVchar();
 	// vec fit = polyfit(f.iv_v_, f.iv_i_, 1);
-	// fit.print("FIT:");
+	// fit.print();
 
 	std::ofstream file;
 	file.open("wyniki/dane/nE_x.out", std::ios::out);
@@ -218,9 +220,6 @@ int main(){
 	// for (size_t i=0; i<f.nx_; ++i)
 	//     pot_out<<f.x_(i)<<' '<<f.uStart_(i)<<'\n';
 	// pot_out.close();
-
-	// cout<<"# Saving wigner function"<<endl;
-	// f.saveWignerFun();
 
 	cout<<"# l_YZ: "<<f.lYZ_<<" [a.u.]"<<endl;
 	cout<<"# Final current = "<<f.calcCurr()*AU_Acm2<<" [Acm^-2]"<<endl;
@@ -309,6 +308,7 @@ void dissDecoh(WignerFunction& f, double t_start, double t_end, size_t n_step) {
 	// f.solveWignerPoisson();
 	double j0 = f.calcCurr(), n0 = f.calcNorm();
 	double j=0, n=0, t=0;
+	vec fit;
 
 	cout.fill(' ');
 	std::ofstream out, tpMap;
@@ -316,18 +316,25 @@ void dissDecoh(WignerFunction& f, double t_start, double t_end, size_t n_step) {
 	tpMap.open("wyniki/dane/tpMap.out", std::ios::out);
 	out<<"## j0 = "<<j0*AU_Acm2<<"  n0 = "<<n0/AU_cm2<<endl;
 	cout<<"## j0 = "<<j0*AU_Acm2<<"  n0 = "<<n0/AU_cm2<<endl;
-	out<<"# i  tS [s]  J/J0  N/N0  J [Acm^-2]  N [cm^-2]\n";
-	cout<<"# i  tS [s]  J/J0  N/N0  J [Acm^-2]  N [cm^-2]\n";
+	out<<"# i  tS [s]  J/J0  N/N0  R\n";
+	cout<<"# i  tS [s]  J/J0  N/N0  R\n";
 	tpMap<<"# tau [s]  p [a.u]  1/4  1/2  3/4\n";
 	for (size_t i = 0; i < n_step; ++i) {
 		t = t_start*pow(10,(n_step-1-i)*t_step);
-		f.rM_ = 1/(t/AU_s);
+		f.rR_ = 1/(t/AU_s);
 		// f.rM_ = 1/(t/AU_s);
 		f.solveWignerEq();
 		// f.solveWignerPoisson();
 		j = f.calcCurr(), n = f.calcNorm();
-		out<<i<<'\t'<<t<<'\t'<<j/j0<<'\t'<<n/n0<<'\t'<<j*AU_Acm2<<'\t'<<n/AU_cm2<<endl;
-		cout<<i<<'\t'<<t<<'\t'<<j/j0<<'\t'<<n/n0<<'\t'<<j*AU_Acm2<<'\t'<<n/AU_cm2<<endl;
+		// I-V char
+		f.v_max_ = 0.001/AU_eV;
+		f.v_min_ = 0.0/AU_eV;
+		f.nv_ = 5;
+		f.calc_IVchar();
+		fit = polyfit(f.iv_v_, f.iv_i_, 1);
+		//
+		out<<i<<'\t'<<t<<'\t'<<j/j0<<'\t'<<1./fit(0)<<endl;
+		cout<<i<<'\t'<<t<<'\t'<<j/j0<<'\t'<<1./fit(0)<<endl;
 		for (size_t l=0; l<f.nk_; ++l) {
 			tpMap<<t<<' '<<f.k_(l)
 				<<'\t'<<f.f_(size_t(f.nx_/4.),l)

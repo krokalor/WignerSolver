@@ -127,37 +127,43 @@ void WignerFunction::readPotential(std::string input_file){
 		}
 		file.close();
 	}
-	if (x.size() != x_.size()){
-		double device_lenght = l_-2*lC_;
-		for (size_t p=0; p<x_.size(); ++p){
-			if (x_(p)<=x(0))
-				uStart_(p) = u(0);
-
-			else if (x_(p)>x(x.size()-1))
-				uStart_(p) = u(x.size()-1);
-
-			else {
-				for (size_t i=0; i<x.size()-1; ++i)
-					if (x_(p)>x(i) && x_(p)<=x(i+1))
-						uStart_(p) = u(i+1);
-			}
-
-		}
-		std::ofstream test ("wyniki/dane/potential.out");
-		for (size_t i=0; i<x_.size(); ++i)
-			test<<x_(i)<<' '<<u_(i)<<'\n';
-		test.close();
-		if (x(x.size()-1)>device_lenght)
-			cout<<"WARNING: Potential exceeds device lenght\n";
-	}
-	else{
-		for (size_t i=0; i<x.size(); ++i)
-			uStart_(i) = u(i);
-		std::ofstream test ("wyniki/dane/potential.out");
-		for (size_t_vec_d i=0; i<x_.size(); ++i)
-			test<<x_(i)<<' '<<uStart_(i)<<'\n';
-		test.close();
-	}
+	for (size_t i=0; i<x.size(); ++i)
+		uStart_(i) = u(i);
+	std::ofstream test ("potentials/test.out");
+	for (size_t_vec_d i=0; i<x_.size(); ++i)
+		test<<x_(i)<<' '<<uStart_(i)<<'\n';
+	test.close();
+	// if (x.size() != x_.size()){
+	// 	double device_lenght = l_-2*lC_;
+	// 	for (size_t p=0; p<x_.size(); ++p){
+	// 		if (x_(p)<=x(0))
+	// 			uStart_(p) = u(0);
+	//
+	// 		else if (x_(p)>x(x.size()-1))
+	// 			uStart_(p) = u(x.size()-1);
+	//
+	// 		else {
+	// 			for (size_t i=0; i<x.size()-1; ++i)
+	// 				if (x_(p)>x(i) && x_(p)<=x(i+1))
+	// 					uStart_(p) = u(i+1);
+	// 		}
+	//
+	// 	}
+	// 	std::ofstream test ("wyniki/dane/potential.out");
+	// 	for (size_t i=0; i<x_.size(); ++i)
+	// 		test<<x_(i)<<' '<<u_(i)<<'\n';
+	// 	test.close();
+	// 	if (x(x.size()-1)>device_lenght)
+	// 		cout<<"WARNING: Potential exceeds device lenght\n";
+	// }
+	// else{
+	// 	for (size_t i=0; i<x.size(); ++i)
+	// 		uStart_(i) = u(i);
+	// 	std::ofstream test ("wyniki/dane/potential.out");
+	// 	for (size_t_vec_d i=0; i<x_.size(); ++i)
+	// 		test<<x_(i)<<' '<<uStart_(i)<<'\n';
+	// 	test.close();
+	// }
 }
 
 

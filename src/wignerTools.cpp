@@ -370,12 +370,10 @@ void WignerFunction::calc_IVchar(){
 	// double E;
 	std::ofstream ivChar, vpMap;
 	// vpMap.open("wyniki/dane/vpMap.out", std::ios::out);
-	ivChar.open("wyniki/dane/ivChar.out", std::ios::out);
 	// vpMap<<"# v_B [V]  p [a.u]  1/4  1/2  3/4\n";
 	// ivChar<<"# v_B [V]  J [Acm^{-2}]\n";
 	// cout<<"# v_B [V]  J [Acm^{-2}]\n";
-	ivChar<<"# v_B [V]  I [A]\n";
-	cout<<"# v_B [V]  I [A]\n";
+	// cout<<"# v_B [V]  I [A]\n";
 	for (size_t i = 0; i < nv_; ++i) {
 		// setGaussPot(i*dv);
 		v = v_min_+i*dv;
@@ -383,8 +381,7 @@ void WignerFunction::calc_IVchar(){
 		solveWignerEq();
 		// solveWignerPoisson();
 		// E = i*dv/lD_ * AU_eV/1e3 / AU_cm;
-		ivChar<<v<<' '<<calcCurr()<<endl;  // <<' '<<calcNorm()/AU_cm2<<endl;
-		cout<<v<<' '<<calcCurr()<<endl;  // <<' '<<calcNorm()/AU_cm2<<endl;
+		// cout<<v<<' '<<calcCurr()<<endl;  // <<' '<<calcNorm()/AU_cm2<<endl;
 		iv_v_(i) = v, iv_i_(i) = calcCurr();
 		// for (size_t j=0; j<nk_; ++j) {
 		// 		vpMap<<v*AU_eV<<' '<<k_(j)
@@ -394,7 +391,6 @@ void WignerFunction::calc_IVchar(){
 		// }
 		// vpMap<<'\n';
 	}
-	ivChar.close();
 	// vpMap.close();
 }
 

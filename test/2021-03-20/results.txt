@@ -1,0 +1,22 @@
+# 0V, 1 um, no fit, no start
+
+752	0.0769426	0.00223935	0.00220063	8.89344e-09	2.86032e-10	-4.36354e-07	1	2
+# Calulating electron density
+# l_YZ: 3.57143e+08 [a.u.]
+# Final current = 0.0769426 [Acm^-2]
+# Norma: = 0.00223935 [1]
+# Int. BC: 2e+18 [a.u.]
+# Fermi energy:	0.0859012	0.0236465
+# RUN TIME: 12.7207 min
+
+# 0V, 1 um, no fit, start
+
+737	0.0159201	0.00223817	0.00220063	2.88121e-09	2.64008e-10	8.3223e-07	1	2
+# Calulating electron density
+# l_YZ: 3.57143e+08 [a.u.]
+# Final current = 0.0159201 [Acm^-2]
+# Norma: = 0.00223817 [1]
+# Int. BC: 2e+18 [a.u.]
+# Fermi energy:	0.0859012	0.0236465
+# RUN TIME: 13.1587 min
+
