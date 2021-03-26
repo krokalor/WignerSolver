@@ -244,39 +244,25 @@ double WignerFunction::calcSDX(){
 //
 // #################### Set system potential - constant ####################
 //
-void WignerFunction::setLinPot(double uB) {
-	uB_ = uB;
-	u_.zeros();
+void WignerFunction::setPotBias(double uBias) {
+	uBias_ = uBias;
+	uC_.zeros();
 	double x;
 	for (size_t i = 0; i < nx_; ++i) {
 		x = x_(i)-lC_;
-		if (x>=0 && x<=lD_)
-			u_(i) = uL_ - uB_*x/lD_;
-		else if (x<0)
-			u_(i) = uL_;
+		if (x<0)
+			uC_(i) = 0;
+		else if (x>=0 && x<=lD_)
+			uC_(i) = -uBias_*x/lD_;
 		else if (x>lD_)
-			u_(i) = uR_ - uB_;
+			uC_(i) = -uBias_;
 	}
-	du_ = calcDer(u_, dx_);
-}  // End of setLinPot
+}  // End of setPotBias
 
 
-void WignerFunction::setGaussPot(double v0 = 0.3/AU_eV, double x0 = 1000, double sX = 100) {
-	// uB_ = vB;
-	// u_.zero();
+void WignerFunction::addGaussPot(double v0 = 0.3/AU_eV, double x0 = 1000, double sX = 100) {
 	for (size_t i=0; i<nx_; ++i)
-		u_(i) += exp(-(x_(i)-x0)*(x_(i)-x0)/sX/sX)*v0; // * gwp_A_;
-	// double x;
-	// for (size_t i = 0; i < nx_; ++i) {
-	//   x = x_(i)-lC_;
-	//   if (x>=0 && x<=lD_)
-	//     u_(i) += uL_ + uB_*x/lD_;
-	//   else if (x<0)
-	//     u_(i) += uL_;
-	//   else if (x>lD_)
-	//     u_(i) += uR_ + uB_;
-	// }
-	du_ = calcDer(u_, dx_);
+		uB_(i) += exp(-(x_(i)-x0)*(x_(i)-x0)/sX/sX)*v0;
 }
 
 
@@ -322,7 +308,7 @@ void WignerFunction::setRTD(double w1i, double w2i, double w3i, double w4i,  dou
 //
 // ############################## WP initial conditions ##############################
 //
-void WignerFunction::setWavePacket() {
+void WignerFunction::addWavePacket() {
 	/*
 	double deviceHW = 1e+6/a0_;
 	gwp_tl_ = sqrt(2*M_PI*beta_/m_);
@@ -364,34 +350,39 @@ double WignerFunction::WavePacket_TE(double x, double k)
 								-(x-gwp_x0_)*(x-gwp_x0_)/2./gwp_dx_/gwp_dx_ )/M_PI; }
 
 
-void WignerFunction::calc_IVchar(){
-	double dv = (v_max_-v_min_)/(nv_-1), v = 0;
-	iv_v_ = vec(nv_, fill::zeros), iv_i_ = vec(nv_, fill::zeros);
+void WignerFunction::calc_IVchar(double v_min, double v_max, size_t nv){
+	double dv = (v_max-v_min)/(nv-1), v = 0, curr;
+	double uBias = uBias_;
+	iv_v_ = vec(nv, fill::zeros), iv_i_ = vec(nv, fill::zeros);
 	// double E;
 	std::ofstream ivChar, vpMap;
-	// vpMap.open("wyniki/dane/vpMap.out", std::ios::out);
-	// vpMap<<"# v_B [V]  p [a.u]  1/4  1/2  3/4\n";
-	// ivChar<<"# v_B [V]  J [Acm^{-2}]\n";
-	// cout<<"# v_B [V]  J [Acm^{-2}]\n";
-	// cout<<"# v_B [V]  I [A]\n";
-	for (size_t i = 0; i < nv_; ++i) {
-		// setGaussPot(i*dv);
-		v = v_min_+i*dv;
-		setLinPot(v);
+	ivChar.open("wyniki/dane/ivChar.out", std::ios::out);
+	vpMap.open("wyniki/dane/vpMap.out", std::ios::out);
+	vpMap<<"# u_B [eV]  p [a.u]  1/4  1/2  3/4\n";
+	ivChar<<"# u_B [eV]  J [Acm^{-2}]\n";
+	// cout<<"# u_B [eV]  J [Acm^{-2}]\n";
+	for (size_t i = 0; i < nv; ++i) {
+		// addGaussPot(i*dv);
+		v = v_min+i*dv;
+		setPotBias(v);
 		solveWignerEq();
 		// solveWignerPoisson();
+		curr = calcCurr();
 		// E = i*dv/lD_ * AU_eV/1e3 / AU_cm;
-		// cout<<v<<' '<<calcCurr()<<endl;  // <<' '<<calcNorm()/AU_cm2<<endl;
-		iv_v_(i) = v, iv_i_(i) = calcCurr();
-		// for (size_t j=0; j<nk_; ++j) {
-		// 		vpMap<<v*AU_eV<<' '<<k_(j)
-		// 			<<' '<<f_(size_t(nx_/4.),j)
-		// 			<<' '<<f_(size_t(nx_/2.),j)
-		// 			<<' '<<f_(size_t(nx_*3/4.),j)<<'\n';
-		// }
-		// vpMap<<'\n';
+		ivChar<<v*AU_eV<<' '<<curr*AU_Acm2<<endl;
+		// cout<<v*AU_eV<<' '<<curr*AU_Acm2<<endl;  // <<' '<<calcNorm()/AU_cm2<<endl;
+		iv_v_(i) = v, iv_i_(i) = curr;
+		for (size_t j=0; j<nk_; ++j) {
+				vpMap<<v*AU_eV<<' '<<k_(j)
+					<<' '<<f_(size_t(nx_/4.),j)  // col. 3
+					<<' '<<f_(size_t(nx_/2.),j)  // col. 4
+					<<' '<<f_(size_t(nx_*3/4.),j)<<'\n';  // col. 5
+		}
+		vpMap<<'\n';
 	}
-	// vpMap.close();
+	ivChar.close();
+	vpMap.close();
+	uBias_ = uBias;
 }
 
 
@@ -615,7 +606,7 @@ double WignerFunction::supplyFunction(double k){
 
 // Maxwell-Boltzmann distribution
 double WignerFunction::maxwell_boltzmann(double k){;
-	double mu = uF_+uB_;
+	double mu = uF_+uBias_;
 	// double mu = k > 0 ? uL_ : uR_
 	double m = m_;
 	double v = k/m;
@@ -660,7 +651,7 @@ inline double WignerFunction::sf_x(double mu, double x){
 
 // Gaussian with sigma parameter
 double WignerFunction::gaussian_x(double mu, double x){
-	// double mu = uF_+uB_;
+	// double mu = uF_+uBias_;
 	// double mu = k > 0 ? uL_ : uR_;
 	double sigma = 1;
 	double kBT = KB/AU_eV*temp_;

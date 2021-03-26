@@ -11,13 +11,9 @@ using namespace poisson;
 void WignerFunction::solveWignerPoisson(){
 
 	Poisson1D p(nx_, dx_);
-	p.dirichletL_ = 0, p.dirichletR_ = -uB_;  // - bo obniżamy U w prawym kontakcie
-	p.neumannL_ = 0, p.neumannR_ = 0;
+	p.dirichletL_ = 0, p.dirichletR_ = -uBias_;  // - bo obniżamy U w prawym kontakcie
 	p.epsilonR_ = epsilonR_, p.temp_ = temp_;
 	p.uNew_ = uStart_, p.uOld_ = uStart_;
-
-	// Heterostructure energy profile
-	vec band_off = u_;
 
 	// Doping profile
 	vec nD(nx_, fill::zeros);
@@ -25,82 +21,81 @@ void WignerFunction::solveWignerPoisson(){
 	for (size_t i=0; i<nx_; ++i)
 		nD(i) = cD_*(1+1/(1+exp((x_(i)-lC_)/s/l_))-1/(1+exp((x_(i)-l_+lC_)/s/l_)));
 
-	vec j0(nx_, fill::zeros), j1(nx_, fill::zeros), rho_old(nx_, fill::zeros), rho_diff(nx_, fill::zeros);
-	vec u_fit(nx_, fill::zeros), u_fit_params;
+	vec j0(nx_, fill::zeros), j1(nx_, fill::zeros), nC_old(nx_, fill::zeros), nC_diff(nx_, fill::zeros);
+	vec dj(nx_, fill::zeros);
+	vec u_der(nx_, fill::zeros), nE(nx_, fill::zeros);
 
 	// Convergence criteria
-	size_t n_max = 10, n_min = 0, n_it = 0, n_dj = 0, n_du = 0, n_conv = 1;
-	double max_dj = 1e-4, max_du = 1e-6/AU_eV, max_pFun = 1e-8/AU_eV;
+	size_t n_max = 200, n_it = 0, n_dj = 0, n_du = 0, n_conv = 1;
+	double max_dj = 100/AU_Acm2, max_du = 1e-6/AU_eV, max_pFun = 1e-8/AU_eV;
 	bool conv_J = false, conv_pot = false, pFun_zero = false;
 
 	// Mixing parameters
-	p.beta_ = 1e-2;  // Potential mixing parameter
-	double alpha = 1e-2;  // Density mixing parameter
+	p.beta_ = 5e-2;  // Potential mixing parameter
+	double alpha = .5;  // Density mixing parameter
 
 	double curr = 0, nc = 0, nd = 0, q = 0;  // Current, carrier nr, dopant nr, total charge
-	double dj_x = 0, du_x = 0;  // Maximum and minimum values
+	double dj_x = 0, du_x = 0, pFun_x = 0;  // Maximum and minimum values
 
 	// Start electron concentration
-	u_ = band_off + p.uNew_;
-	solveWignerEq();
-	p.nE_ = calcCD_X();
-	for (size_t i=0; i<nx_; ++i)  // Mixing old and new el. density
-		p.rho_(i) = (1.-alpha)*p.rho_(i) + alpha*(nD(i)-p.nE_(i));
+	// uC_ = p.uNew_;
+	// solveWignerEq();
+	// p.nC_ = nD - calcCD_X();
+	// for (size_t i=0; i<nx_; ++i)  // Mixing old and new el. density
+	// 	p.nC_(i) = (1.-alpha)*p.nC_(i) + alpha*(nD(i)-p.nE_(i));
 
 	std::ofstream poisson_step("test/poisson_step.out");
 	// std::ofstream trChar;
 	// trChar.open("wyniki/dane/poisson_trChar.out", std::ios::out);
-	cout<<"# it.\tCurr. [Acm^-2]\tnE [cm^-2]\tnD [cm^-2]\t(nD-nE)/nD [-]\tjMax-jMin\tmax(du) [eV]"<<endl;
-	while ( !( (n_du > n_conv) ) && (n_it < n_max) ) {  //  && (n_dj > n_conv) && pFun_zero
+	cout<<"# it.\tCurr. [Acm^-2]\tnE [cm^-2]\tnD [cm^-2]\tq [cm^-2]\tdj [Acm^-2]\tmax(du) [eV]\tmax(pFun) [ev]"<<endl;
+	while ( !( (n_du > n_conv) && (n_dj > n_conv) ) && (n_it < n_max) ) {  // && pFun_zero
 
 		// Solve Poisson eq.
 		p.solve();
+		u_der = calcDer(p.uNew_, dx_);
 
-		// Solve Wigner/Boltzmann eq.
-		u_ = band_off + p.uNew_;
-		// u_ = band_off + u_fit;
+		// Solve Wigner/Boltzmann eq
+		uC_ = p.uNew_;
 		solveWignerEq();
-		p.nE_ = calcCD_X(), j0 = j1, j1 = calcCurrArr();
-		rho_old = p.rho_;
-		for (size_t i=0; i<nx_; ++i)  // Mixing old and new el. density
-			p.rho_(i) = (1.-alpha)*p.rho_(i) + alpha*(nD(i)-p.nE_(i));
+		nE = calcCD_X();
+		j0 = j1, j1 = calcCurrArr();
+		nC_old = p.nC_;
+		// Mixing old and new el. density
+		p.nE_ = nE;
+		p.nC_ = (1.-alpha)*p.nC_ + alpha*(nD - p.nE_);
+		// p.nE_ = (1.-alpha)*p.nE_ + alpha*nE;
+		// p.nC_ = nD - p.nE_;
 
-		// TODO: uNew -> polynomial fit
-		// u_fit = polyval(polyfit(x_,p.uNew_,20), x_);
-		// p.uNew_ = u_fit;
-
-		curr = calcCurr(), nc = calcNorm(), nd = calcInt(nD, dx_), q = calcInt(p.rho_, dx_);
+		curr = calcCurr(), nc = calcNorm(), nd = calcInt(nD, dx_), q = calcInt(p.nC_, dx_);
 
 		// Saving data
 		p.uOld_.save("test/uOld.txt", arma_ascii);
 		p.uNew_.save("test/uNew.txt", arma_ascii);
+		u_der.save("test/u_der.txt", arma_ascii);
 		p.du_.save("test/du.txt", arma_ascii);
+		p.pFun_.save("test/pFun.txt", arma_ascii);
 		// u_fit.save("test/u_fit.txt", arma_ascii);
-		p.rho_.save("test/rho.txt", arma_ascii);
-		rho_old.save("test/rho_old.txt", arma_ascii);
-		p.nE_.save("test/nE.txt", arma_ascii);
+		p.nC_.save("test/nC.txt", arma_ascii);
+		nC_old.save("test/nC_old.txt", arma_ascii);
 		j1.save("test/curr.txt", arma_ascii);
 
 		saveWignerFun();
 
-		// TODO: approx_equal() <- use for checking convergance criterium
-
 		//
 		// Check current convergance
 		//
-		// j0 = j1, j1 = calcCurrArr();
-		// dj = j0 - j1;
-		// j1_x = max(j1), j1_n = min(j1), dj_x = max(dj);
-		// conv_J = fabs(dj_x/j1_x) > max_dj ? false : true;
-		// n_dj = conv_J ? n_dj+1 : 0;
+		dj = j0 - j1;
+		dj_x = max(abs(dj));
+		conv_J = dj_x < max_dj ? true : false;
+		n_dj = conv_J ? n_dj+1 : 0;
 
 		//
 		// Check potential convergance
 		//
-		du_x = max(p.du_);
-		conv_pot = fabs(du_x) < max_du ? true : false;
-		// pFun_zero = fabs(max(p.pFun_)) > max_pFun ? false : true;
+		du_x = max(abs(p.du_)), pFun_x = max(abs(p.pFun_));
+		conv_pot = du_x < max_du ? true : false;
 		n_du = conv_pot ? n_du + 1 : 0;
+		pFun_zero = pFun_x < max_pFun ? true : false;
 		p.uOld_ = p.uNew_;
 
 		// TODO: rho change / charge change -> convergance
@@ -110,9 +105,9 @@ void WignerFunction::solveWignerPoisson(){
 			<<'\t'<<nc
 			<<'\t'<<nd
 			<<'\t'<<q
-			<<'\t'<<range(j1)
+			<<'\t'<<dj_x*AU_Acm2
 			<<'\t'<<du_x*AU_eV
-			<<'\t'<<approx_equal(p.uNew_, p.uOld_, "absdiff", 0)
+			<<'\t'<<pFun_x*AU_eV
 			<<'\t'<<n_du<<endl;
 
 		//
@@ -129,9 +124,10 @@ void WignerFunction::solveWignerPoisson(){
 		poisson_step<<"## it  x  rho  uNew  j\n";
 		for (size_t i=0; i<nx_; ++i)
 			poisson_step<<n_it<<'\t'<<x_(i)*AU_nm
-				<<'\t'<<p.rho_(i)  // col. 3
+				<<'\t'<<p.nC_(i)  // col. 3
 				<<'\t'<<p.uNew_(i)  // col. 4
-				<<'\t'<<j1(i)<<'\n';  // col. 5
+				<<'\t'<<u_der(i)  // col. 5
+				<<'\t'<<j1(i)<<'\n';  // col. 6
 		poisson_step<<"\n";
 
 		n_it += 1;
@@ -146,13 +142,5 @@ void WignerFunction::solveWignerPoisson(){
 	for (size_t i=0; i<nx_; ++i)
 			pot_out<<x_(i)<<' '<<uStart_(i)<<'\n';
 	pot_out.close();
-
-	readPotential("potentials/pot.out");
-	p.du_ = uStart_ - p.uNew_;
-	uStart_.save("test/uStart.txt", arma_ascii), p.uNew_.save("test/uNew.txt", arma_ascii);
-	p.du_.save("test/du.txt", arma_ascii);
-	p.du_.print("du:");
-	cout<<approx_equal(p.uNew_, uStart_, "absdiff", 0)<<endl;
-
 
 }

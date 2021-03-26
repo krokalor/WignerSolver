@@ -9,12 +9,12 @@ void Poisson1D::solve_gummel() {
 	// Solving Poisson equation using Gummel algorithm
 
 	double epsilon = epsilonR_/4./M_PI;
-	double c = h_*h_/epsilon;
+	double c = h_*h_*q_*q_/epsilon;
 
 	// P_i
 
-	double phi_L = -uOld_(0)+dirichletL_+h_*neumannL_;
-	double phi_R = -uOld_(nx_-1)+dirichletR_-h_*neumannR_;
+	double phi_L = uOld_(1)-2*uOld_(0)+dirichletL_;
+	double phi_R = uOld_(nx_-2)-2*uOld_(nx_-1)+dirichletR_;
 
 	vec uD(nx_, fill::zeros);
 	for (size_t i=1; i<nx_-1; ++i)
@@ -23,7 +23,7 @@ void Poisson1D::solve_gummel() {
 
 	pFun_.zeros();
 	for (size_t i=0; i<nx_; ++i)
-		pFun_(i) = -(uD(i) - c*rho_(i));  // '-' because in equation A*x =-pFun
+		pFun_(i) = -(uD(i) - c*nC_(i));  // '-' because in equation A*x =-pFun
 
 	// dP_i/du_j
 
@@ -62,14 +62,10 @@ void Poisson1D::solve_tridiag() {
 	vec d(nx_, fill::zeros), x(nx_, fill::zeros);  // A*x = d
 
 	for (size_t i=0; i<nx_; ++i)
-		d(i) = -h_*h_/epsilon*rho_(i);
+		d(i) = h_*h_/epsilon*nC_(i);
 
 	// Dirichlet BC
 	d(0) -= dirichletL_, d(nx_-1) -= dirichletR_;
-	// von Neumann BC
-	d(0) -= h_*neumannL_, d(nx_-1) += h_*neumannR_;
-	b(0) = -1, b(nx_-1) = -1;
-	a(nx_-1) = 0, c(0) = 0;
 
 	c(0) /= b(0);
 	d(0) /= b(0);
@@ -96,18 +92,18 @@ void Poisson1D::testPoisson() {
 
 	double sigma = -1e-3; // 10^-3 C/m^2
 
-	rho_(nx_/2) = sigma/(h_*AU_nm*1e-9);
-	rho_(nx_/2) *= 1e-6*AU_cm3/E0;
+	nC_(nx_/2) = sigma/(h_*AU_nm*1e-9);
+	nC_(nx_/2) *= 1e-6*AU_cm3/E0;
 
-	dirichletL_ = 5.64717/AU_eV;  // Energia potencjalna
-	dirichletR_ = 5.64717/AU_eV;
+	dirichletL_ = -5.64717/AU_eV;  // Energia potencjalna
+	dirichletR_ = -5.64717/AU_eV;
 	epsilonR_ = 1.;  // 8.854e-12;
 
 	solve();
 
 	cout<<"# sigma = "<<sigma<<" dirichletL "<<dirichletL_<<" dirichletR "<<dirichletR_<<" n "<<nx_<<" h "<<h_<<endl;
 	for (size_t i = 0; i < nx_; ++i)
-		cout<<i*h_*AU_nm<<' '<<uNew_(i)*AU_eV<<' '<<rho_(i)*E0/AU_cm3<<endl;
+		cout<<i*h_*AU_nm<<' '<<uNew_(i)*AU_eV<<' '<<nC_(i)*E0/AU_cm3<<endl;
 
 	// Run example:
 	// Poisson1D p(200, 1./AU_nm);

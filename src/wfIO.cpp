@@ -113,19 +113,24 @@ void WignerFunction::saveWignerFun() {
 
 
 void WignerFunction::readPotential(std::string input_file){
-	std::ifstream file (input_file);
+	std::ifstream input_pot (input_file);
 	array<double> x, u;
 	std::string::size_type sz;
-	if (file.is_open()){
+	if(!input_pot) {
+		cout<<"# COULDN'T OPEN AN POTENTIAL INPUT FILE: "<<input_file<<endl;
+		exit(0);
+	}
+	else {
+		cout<<"# READING POTENTIAL FROM FILE: "<<input_file<<endl;
 		std::string line;
-		while ( getline (file,line) ){
+		while ( getline (input_pot,line) ){
 			try {
 				x.add( std::stod(line, &sz) ), u.add( std::stod(line.substr(sz)) );
 			} catch (const std::invalid_argument& ia) {
 				cout << "## WARNING: EXCEPTION FOUND WHILE READING POTENTIAL FILE; TYPE: " << ia.what() << endl;
 			}
 		}
-		file.close();
+		input_pot.close();
 	}
 	for (size_t i=0; i<x.size(); ++i)
 		uStart_(i) = u(i);
@@ -239,12 +244,6 @@ void WignerFunction::printParam()
 	cout.width(cw_n); cout<<"# set_uF";
 	cout.width(cw_v); cout<<(set_uF_ ? "true" : "false");
 	cout.width(cw_v); cout<<(set_uF_ ? "true" : "false")<<'#'<<endl;
-	cout.width(cw_n); cout<<"# max_voltage";
-	cout.width(cw_v); cout<<v_max_;
-	cout.width(cw_v); cout<<v_max_*AU_eV<<'#'<<endl;
-	cout.width(cw_n); cout<<"# voltage_step_nr";
-	cout.width(cw_v); cout<<nv_;
-	cout.width(cw_v); cout<<'-'<<'#'<<endl;
 	// ////////// Wave packet ////////// WRITE SI OUTPUT#
 	cout.width(cw_n); cout<<"# gwp_x0";
 	cout.width(cw_v); cout<<gwp_x0_;
@@ -288,7 +287,7 @@ void WignerFunction::printParam()
 	// cout.width(cw_v); cout<<cR_;
 	// cout.width(cw_v); cout<<'-'<<'#'<<endl;
 	cout.width(cw_n); cout<<"# v_bias";
-	cout.width(cw_v); cout<<uB_;
+	cout.width(cw_v); cout<<uBias_;
 	cout.width(cw_v); cout<<'-'<<'#'<<endl;
 
 	cout.fill('=');

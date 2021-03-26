@@ -9,6 +9,7 @@ using namespace wigner;
 void WignerFunction::initEq() {
 	setBoundCond();
 	// setEquilibriumFunction();
+	u_ = uB_ + uC_;
 	du_ = calcDer(u_, dx_);
 	a_ = sp_mat(nxk_, nxk_);
 	b_ = vec(nxk_, fill::zeros);
@@ -29,50 +30,26 @@ void WignerFunction::solveWignerEq(){
 	superlu_opts opts;
 	// opts.symmetric = false;
 	// opts.equilibrate = true;
-	// opts.refine = superlu_opts::REF_NONE;
 	// opts.refine = superlu_opts::REF_EXTRA;  // 	iterative refinement in extra precision
 	// opts.allow_ugly  = true;
 
 	// TODO: OpenMP parallel calculations
-	// Time dependent solution
-	if (time_dependent_ && dt_ > 0) {
-		// #pragma omp parallel for collapse(2) shared(a_, b_)
-		for (size_t i=0; i<nx_; ++i) {
-			for (size_t j=0; j<nk_; ++j) {
-				a_(i*nk_+j, i*nk_+j) += 1.;
-				b_(i*nk_+j) = 2.*f_(i, j);
-				diffusionTerm(i, j, dt_);
-				driftTerm(i, j, dt_);
-				scatteringTerm(i, j, dt_);
-			}  // end j loop
-		}  // end i loop
+	// #pragma omp parallel for collapse(2) shared(a_, b_)
+	for (size_t i=0; i<nx_; ++i) {
+		for (size_t j=0; j<nk_; ++j) {
+			diffusionTerm(i, j, -1);
+			driftTerm(i, j, -1);
+			scatteringTerm(i, j, -1);
+		}  // end j loop
+	}  // end i loop
 
-		spsolve(x, a_, b_, "superlu", opts);  // use SuperLU solver
-		// spsolve(x, a, b, "superlu");
+	spsolve(x, a_, b_, "superlu", opts);  // use SuperLU solver
+	// spsolve(x, a, b, "superlu");
 
-		for (size_t i=0; i<nx_; ++i)
-			for (size_t j=0; j<nk_; ++j)
-				f_(i,j) = x(i*nk_+j) - f_(i,j);
-	}
-	// Stationary solution
-	else {
-		// #pragma omp parallel for collapse(2) shared(a_, b_)
-		for (size_t i=0; i<nx_; ++i) {
-			for (size_t j=0; j<nk_; ++j) {
-				diffusionTerm(i, j, -1);
-				driftTerm(i, j, -1);
-				scatteringTerm(i, j, -1);
-			}  // end j loop
-		}  // end i loop
-
-		spsolve(x, a_, b_, "superlu", opts);  // use SuperLU solver
-		// spsolve(x, a, b, "superlu");
-
-		f_.zeros();
-		for (size_t i=0; i<nx_; ++i)
-			for (size_t j=0; j<nk_; ++j)
-				f_(i,j) = x(i*nk_+j);
-	}
+	f_.zeros();
+	for (size_t i=0; i<nx_; ++i)
+		for (size_t j=0; j<nk_; ++j)
+			f_(i,j) = x(i*nk_+j);
 
 	/*
 	// Checking A matrix
@@ -97,9 +74,6 @@ void WignerFunction::solveTimeEv(){
 
 	vec x(nxk_, fill::zeros);
 
-	// setBoundCond();
-	// setEquilibriumFunction();
-
 	// #pragma omp parallel for collapse(2)
 	for (size_t i=0; i<nx_; ++i) {
 		for (size_t j=0; j<nk_; ++j) {
@@ -112,8 +86,8 @@ void WignerFunction::solveTimeEv(){
 	}  // end i loop
 
 	superlu_opts opts;
-	opts.symmetric = false;
-	opts.equilibrate = true;
+	// opts.symmetric = false;
+	// opts.equilibrate = true;
 	// opts.refine = superlu_opts::REF_NONE;
 	// opts.refine = superlu_opts::REF_EXTRA;  // 	iterative refinement in extra precision
     // opts.allow_ugly  = true;
@@ -223,70 +197,70 @@ void WignerFunction::driftTerm(size_t i, size_t j, double dt){
 		double F = -du_(i);  // klasyczna siła równa -du/dx
 		double C = F/dk_;
 		if (dt > 0) C *= dt/2.;
-		// HDS22
-		double alpha = 2., beta = 1.;
-		double D = C/(alpha+beta)/2.;
-		if (F < 0.) {
-		  if (j==0) {
-		    a_(r, r) += -3.*C;
-		    a_(r, r+1) += 4.*C;
-		    a_(r, r+2) += -C;
-		  }
-		  else if (j==nk_-1) {
-		    a_(r, r) += -3.*C;
-		    // b_(r) += -3.*b_ij;
-		  }
-		  else if (j==nk_-2) {
-		    a_(r, r) += -3.*C;
-		    a_(r, r+1) += 4.*C;
-		    // b_(r) += b_ij;
-		  }
-		  else {
-		    a_(r, r-1) += -alpha*D;
-		    a_(r, r) += -3.*beta*D;
-		    a_(r, r+1) += (alpha+4.*beta)*D;
-		    a_(r, r+2) += -beta*D;
-		  }
-		}
-		if (F > 0.) {
-		  if (j==nk_-1) {
-		    a_(r, r) += 3.*C;
-		    a_(r, r-1) += -4.*C;
-		    a_(r, r-2) += C;
-		  }
-		  else if (j==0) {
-		    a_(r, r) += 3.*C;
-		    // b_(r) += 3.*b_ij;
-		  }
-		  else if (j==1) {
-		    a_(r, r) += 3.*C;
-		    a_(r, r-1) += -4.*C;
-		    // b_(r) += -b_ij;
-		  }
-		  else {
-		    a_(r, r+1) += alpha*D;
-		    a_(r, r) += 3.*beta*D;
-		    a_(r, r-1) += -(alpha+4.*beta)*D;
-		    a_(r, r-2) += beta*D;
-		  }
-		}
-		// // UDS1
-		// if (F > 0){
-		// 		if (j == 0)
-		// 				a_(r, r) += C;
-		// 		else{
-		// 				a_(r, r) += C;
-		// 				a_(r, r-1) += -C;
-		// 		}
+		// // HDS22
+		// double alpha = 2., beta = 1.;
+		// double D = C/(alpha+beta)/2.;
+		// if (F < 0.) {
+		//   if (j==0) {
+		//     a_(r, r) += -3.*C;
+		//     a_(r, r+1) += 4.*C;
+		//     a_(r, r+2) += -C;
+		//   }
+		//   else if (j==nk_-1) {
+		//     a_(r, r) += -3.*C;
+		//     // b_(r) += -3.*b_ij;
+		//   }
+		//   else if (j==nk_-2) {
+		//     a_(r, r) += -3.*C;
+		//     a_(r, r+1) += 4.*C;
+		//     // b_(r) += b_ij;
+		//   }
+		//   else {
+		//     a_(r, r-1) += -alpha*D;
+		//     a_(r, r) += -3.*beta*D;
+		//     a_(r, r+1) += (alpha+4.*beta)*D;
+		//     a_(r, r+2) += -beta*D;
+		//   }
 		// }
-		// else if (F <= 0){
-		// 		if (j == nk_-1)
-		// 				a_(r, r) += -C;
-		// 		else{
-		// 				a_(r, r) += -C;
-		// 				a_(r, r+1) += C;
-		// 		}
+		// if (F > 0.) {
+		//   if (j==nk_-1) {
+		//     a_(r, r) += 3.*C;
+		//     a_(r, r-1) += -4.*C;
+		//     a_(r, r-2) += C;
+		//   }
+		//   else if (j==0) {
+		//     a_(r, r) += 3.*C;
+		//     // b_(r) += 3.*b_ij;
+		//   }
+		//   else if (j==1) {
+		//     a_(r, r) += 3.*C;
+		//     a_(r, r-1) += -4.*C;
+		//     // b_(r) += -b_ij;
+		//   }
+		//   else {
+		//     a_(r, r+1) += alpha*D;
+		//     a_(r, r) += 3.*beta*D;
+		//     a_(r, r-1) += -(alpha+4.*beta)*D;
+		//     a_(r, r-2) += beta*D;
+		//   }
 		// }
+		// UDS1
+		if (F > 0){
+				if (j == 0)
+						a_(r, r) += C;
+				else{
+						a_(r, r) += C;
+						a_(r, r-1) += -C;
+				}
+		}
+		else if (F <= 0){
+				if (j == nk_-1)
+						a_(r, r) += -C;
+				else{
+						a_(r, r) += -C;
+						a_(r, r+1) += C;
+				}
+		}
 	}
 }
 
