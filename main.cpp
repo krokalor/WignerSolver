@@ -14,9 +14,6 @@ void dissDecoh(WignerFunction&, double, double, size_t, double, double, size_t);
 
 void simGWP(WignerFunction&);
 void simGWP(WignerFunction&, WignerFunction&, WignerFunction&);
-void convolution(WignerFunction&);
-double sfx(double, double, WignerFunction&);
-void calc_fd(WignerFunction&);
 
 
 int main(){
@@ -33,15 +30,15 @@ int main(){
 	WignerFunction f;
 
 	f.set_m(0.067);
-	f.set_nx(150), f.set_nk(150);
-	f.set_lD(60/AU_nm), f.set_lC(20/AU_nm);
-	f.set_lYZ(1e-8/AU_cm2);
-	f.set_part_num(1);
-	f.set_cD(2e18*AU_cm3); // 2e18*AU_cm3
-	f.set_kmax(0.04);
 	f.set_temp(77);
-	f.set_dt(5*1e-15/AU_s);
 	f.set_uF(0.087/AU_eV);  // 0.087/AU_eV
+	f.set_nx(150), f.set_nk(150);
+	f.set_lD(600/AU_nm), f.set_lC(200/AU_nm);
+	f.set_kmax(0.4);
+	f.set_dt(5*1e-15/AU_s);
+	f.set_cD(2e18*AU_cm3); // 2e18*AU_cm3
+	// f.set_lYZ(1e-8/AU_cm2);
+	// f.set_part_num(1);
 
 	f.update();
 
@@ -50,17 +47,11 @@ int main(){
 	// -1 -> 0, 0 -> SF, 1-3 -> splot, -2 -> MB, -3 -> Gauss
 	//
 	f.bcType_ = -3, f.rG_ = 0;  // 1./(1e-15/AU_s);
-	// convolution(f);
 
 	//
 	// FUNKCJA RÓWNOWAGOWA
 	//
-	f.setPotBias(0.);
-	// f.readPotential("potentials/pot_0V_1um_cl.in");
-	// // f.u_ = f.u_ + f.uStart_;
-	f.solveWignerEq();
-	f.fe_ = f.f_;
-	f.f_.zeros();
+	// f.setEquilibriumFunction("potentials/pot_0meV_100nm_cl.in", false);
 
 	//
 	// Pakiet gaussowski
@@ -77,17 +68,16 @@ int main(){
 	//
 	// Dyssypacja
 	//
-	// f.rR_ = 1./(1e-12/AU_s);  // 1./(1e-12/AU_s);
-	// f.rM_ = 1./(1e-13/AU_s);  // 1./(1e-12/AU_s);
+	// f.rR_ = 1./(1e-13/AU_s);  // 1./(1e-12/AU_s);
+	// f.rM_ = 1./(1e-12/AU_s);  // 1./(1e-12/AU_s);
 	// f.lambda_ = 0*AU_nm*AU_nm*AU_s;  // [nm^-2*s^-1]
 
 	//
 	// Potencjał
 	//
 	// cout<<"# Setting up potential"<<endl;
-	f.setPotBias(0.02/AU_eV);
+	f.setPotBias(0.0/AU_eV);
 	// f.addGaussPot(0.01/AU_eV, 50/AU_nm, 10/AU_nm);
-	// f.uStart_.zeros();
 	// f.readPotential("potentials/pot_0meV_100nm_cl.in");
 	// f.u_ = f.u_ + f.uStart_;
 	// f.set_useNLP(false);
@@ -99,9 +89,9 @@ int main(){
 	//
 	// cout<<"# Solving BTE"<<endl;
 	// f.solveWignerEq();
-	// // calc_fd(f);
-	// // f.set_time_dependent(true);
-	// // for (size_t i=0; i < 100; ++i) f.solveTimeEv();
+	// // // calc_fd(f);
+	// // // f.set_time_dependent(true);
+	// // // for (size_t i=0; i < 100; ++i) f.solveTimeEv();
 	// f.saveWignerFun();
 
 	//
@@ -116,14 +106,14 @@ int main(){
 	//
 	// Boltzmann-Poisson
 	//
-	// cout<<"# Solving BTE+PE"<<endl;
-	// f.solveWignerPoisson();
+	cout<<"# Solving BTE+PE"<<endl;
+	f.solveWignerPoisson();
 
 	//
-	// Zalezność gęstości prądu od dyssypacji
+	// Zalezność funkcji rozkładu od dyssypacji
 	// diss_type = 'R', 'M', 'F'
 	//
-	dissDecoh(f, 1e-13, 1e-10, 10, 0.0/AU_eV, 0.001/AU_eV, 20);
+	// dissDecoh(f, 1e-13, 1e-10, 20, 0.0/AU_eV, 0.001/AU_eV, 20);
 
 	//
 	// Time evolution
@@ -226,28 +216,23 @@ void dissDecoh(WignerFunction& f, double t_start, double t_end, size_t n_step, d
 	double j0 = f.calcCurr(), n0 = f.calcNorm();
 	double j=0, n=0, t=0;
 	vec fit, nE_k;
+	mat tpMap(n_step, f.nk_, fill::zeros);
 
-	std::ofstream out, tpMap;
+	std::ofstream out, tpMap_out;
 	out.open("wyniki/dane/diss_tau.out", std::ios::out);
-	tpMap.open("wyniki/dane/tpMap.out", std::ios::out);
 	out<<"## j0 = "<<j0*AU_Acm2<<"  n0 = "<<n0/AU_cm2<<endl;
 	cout<<"## j0 = "<<j0*AU_Acm2<<"  n0 = "<<n0/AU_cm2<<endl;
 	out<<"# i  tS [s]  j/j0  R\n";
 	cout<<"# i  tS [s]  j/j0  R\n";
-	tpMap<<"# tau [s]  p [au]  f(p) [au]\n";
 	for (size_t i = 0; i < n_step; ++i) {
 		t = t_start*pow(10,(n_step-1-i)*t_step);
 		// f.rR_ = 1/(t/AU_s);
 		f.rM_ = 1/(t/AU_s);
 		f.solveWignerEq();
 		// f.solveWignerPoisson();
-		// nE_k = f.calcCD_K();
-		for (size_t k=0; k<f.nk_; ++k) {
-			tpMap<<t<<' '<<f.k_(k)
-				<<'\t'<<f.f_(size_t(f.nx_/2.),k)
-				<<'\n';
-		}
-		tpMap<<'\n';
+		nE_k = f.calcCD_K();
+		for (size_t k=0; k<f.nk_; ++k)
+			tpMap(i, k) = nE_k(k);
 		j = f.calcCurr(), n = f.calcNorm();
 		// I-V char
 		// f.calc_IVchar(v_min, v_max, nv);
@@ -259,68 +244,21 @@ void dissDecoh(WignerFunction& f, double t_start, double t_end, size_t n_step, d
 		f.saveWignerFun();
 	}
 	out.close();
-	tpMap.close();
 
-}
-
-
-void calc_fd(WignerFunction& f) {
-
-	double k = 0;
-	for (size_t i=0; i<f.nk_; ++i) {
-		k = f.k_(i);
-		cout<<k<<'\t'
-			<<1/(exp((k*k/2/f.m_-f.uF_)/(KB/AU_eV*f.temp_))+1)<<'\t'
-			<<f.supplyFunction(k)<<'\t'
-			<<f.maxwell_boltzmann(k)<<'\t'
-			<<f.gaussian_bc(k)<<'\t'<<endl;
+	tpMap_out.open("wyniki/dane/tpMap.out", std::ios::out);
+	tpMap_out<<"# tau [s]  p [au]  f(p) [au]\n";
+	for (size_t i = 0; i < n_step; ++i) {
+		t = t_start*pow(10,(n_step-1-i)*t_step);
+		for (size_t k=0; k<f.nk_; ++k) {
+			tpMap_out<<t<<' '<<f.k_(k)
+				// <<'\t'<<f.f_(size_t(f.nx_/2.),k)
+				<<'\t'<<tpMap(i,k)
+				<<'\n';
+		}
+		tpMap_out<<'\n';
 	}
-	cout<<"# pF = "<<sqrt(f.uF_*f.m_*2.)<<endl;
+	tpMap_out.close();
 
-}
-
-
-void convolution(WignerFunction& f) {
-	// size_t N1 = 100, N2 = 100;
-	// cout<<"# Funkcja licząca splot"<<endl;
-	// vec a(N1, fill::zeros), b(N2, fill::zeros), c(N1, fill::zeros);
-	// for (size_t i=N1; i>0; --i) {
-	// 	a(N1-i) = i/float(N1)*4;
-	// }
-	// for (size_t i=0; i<N2; ++i) b(i) = 1;
-	// c = conv(a, b, "same");
-	// for (size_t i=0; i<N1; ++i)
-	// 	cout<<i/float(N1)*4<<'\t'<<a(i)<<'\t'<<c(i)<<endl;
-
-	// double g = .5/(1e-12/AU_s);
-	// double k = f.dk_;
-	// double u = k*k/f.m_/2.;
-	// auto fun = [g](double x) { return g/(x*x+g*g)/M_PI; };
-	// size_t N = 1e2;
-	// double h = (40/f.beta_+f.uF_)/float(N);
-	// vec sf = vec(N, fill::zeros), p = vec(N, fill::zeros), r = vec(N, fill::zeros);
-	// for (size_t i=0; i<N; ++i) {
-	// 	p(i) = fun(i*h-u), sf(i) = sfx(f.uF_, i*h, f);
-	// }
-	// r = conv(sf, p);
-	//
-	// for (size_t i=0; i<N; ++i)
-	// 	cout<<i*h<<'\t'<<sf(i)<<'\t'<<p(i)<<'\t'<<r(i)<<endl;
-
-}
-
-
-// Supply function (x)
-double sfx(double mu, double x, WignerFunction& f){
-	double m = f.m_;
-	double c = m/M_PI*KB/AU_eV*f.temp_, ex = -(x-mu)/(KB/AU_eV*f.temp_);	 // [au]
-	if (ex < 700)
-		return c * log(exp(ex)+1);
-	else{
-		if (ex > 0)
-			return c * ex;
-		else return 0;
-	}
 }
 
 

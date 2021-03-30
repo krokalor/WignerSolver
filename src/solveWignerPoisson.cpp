@@ -24,25 +24,25 @@ void WignerFunction::solveWignerPoisson(){
 	vec j0(nx_, fill::zeros), j1(nx_, fill::zeros), nC_old(nx_, fill::zeros), nC_diff(nx_, fill::zeros);
 	vec dj(nx_, fill::zeros);
 	vec u_der(nx_, fill::zeros), nE(nx_, fill::zeros);
+	vec nE_k(nx_, fill::zeros);
 
 	// Convergence criteria
-	size_t n_max = 200, n_it = 0, n_dj = 0, n_du = 0, n_conv = 1;
+	size_t n_max = 10, n_it = 0, n_dj = 0, n_du = 0, n_conv = 1;
 	double max_dj = 100/AU_Acm2, max_du = 1e-6/AU_eV, max_pFun = 1e-8/AU_eV;
 	bool conv_J = false, conv_pot = false, pFun_zero = false;
 
 	// Mixing parameters
-	p.beta_ = 5e-2;  // Potential mixing parameter
-	double alpha = .5;  // Density mixing parameter
+	p.beta_ = 3e-2;  // Potential mixing parameter
+	double alpha = 1;  // Density mixing parameter
 
 	double curr = 0, nc = 0, nd = 0, q = 0;  // Current, carrier nr, dopant nr, total charge
 	double dj_x = 0, du_x = 0, pFun_x = 0;  // Maximum and minimum values
 
 	// Start electron concentration
-	// uC_ = p.uNew_;
-	// solveWignerEq();
-	// p.nC_ = nD - calcCD_X();
-	// for (size_t i=0; i<nx_; ++i)  // Mixing old and new el. density
-	// 	p.nC_(i) = (1.-alpha)*p.nC_(i) + alpha*(nD(i)-p.nE_(i));
+	uC_ = p.uNew_;
+	solveWignerEq();
+	p.nC_ = nD - calcCD_X();
+	// p.nC_ = (1.-alpha)*p.nC_ + alpha*(nD - p.nE_);
 
 	std::ofstream poisson_step("test/poisson_step.out");
 	// std::ofstream trChar;
@@ -58,6 +58,7 @@ void WignerFunction::solveWignerPoisson(){
 		uC_ = p.uNew_;
 		solveWignerEq();
 		nE = calcCD_X();
+		nE_k = calcCD_K();
 		j0 = j1, j1 = calcCurrArr();
 		nC_old = p.nC_;
 		// Mixing old and new el. density
@@ -78,6 +79,7 @@ void WignerFunction::solveWignerPoisson(){
 		p.nC_.save("test/nC.txt", arma_ascii);
 		nC_old.save("test/nC_old.txt", arma_ascii);
 		j1.save("test/curr.txt", arma_ascii);
+		nE_k.save("test/nE_k.txt", arma_ascii);
 
 		saveWignerFun();
 
@@ -113,21 +115,22 @@ void WignerFunction::solveWignerPoisson(){
 		//
 		// Saving to file
 		//
-		poisson_step<<"## it  j(it)  n_el(it)  n_D(it)  q(it)  av_el(it)  dj(it)  dv_av(it)  conv_J?  conv_pot?"<<endl;
+		poisson_step<<"## it  j [au]  n_el [au]  n_D [au]  q [au]  max(du)"<<endl;
 		poisson_step<<"# "<<n_it
 			// <<' '<<n_it*dt_*AU_s*1e12
-			<<'\t'<<calcCurr()*AU_Acm2
+			<<'\t'<<calcCurr()
 			<<'\t'<<nc
 			<<'\t'<<nd
 			<<'\t'<<q
-			<<'\t'<<du_x*AU_eV<<'\n';
-		poisson_step<<"## it  x  rho  uNew  j\n";
+			<<'\t'<<du_x<<'\n';
+		poisson_step<<"## it  x [au]  rho [au]  uNew [au]  du [au]  u_der [au]  j [au]\n";
 		for (size_t i=0; i<nx_; ++i)
-			poisson_step<<n_it<<'\t'<<x_(i)*AU_nm
+			poisson_step<<n_it<<'\t'<<x_(i)
 				<<'\t'<<p.nC_(i)  // col. 3
 				<<'\t'<<p.uNew_(i)  // col. 4
 				<<'\t'<<u_der(i)  // col. 5
-				<<'\t'<<j1(i)<<'\n';  // col. 6
+				<<'\t'<<p.du_(i)  // col. 6
+				<<'\t'<<j1(i)<<'\n';  // col. 7
 		poisson_step<<"\n";
 
 		n_it += 1;

@@ -4,34 +4,15 @@
 using namespace wigner;
 
 
-void WignerFunction::setEquilibriumFunction(){
-	for (size_t i=0; i<nx_; ++i){
-		if (uL_ >= uR_) {
-			for (size_t j=0; j<nk2_; ++j){
-				fe_(i, j) = bc_(j);
-				fe_(i, nk_-j-1) = bc_(j);
-			}
-		}
-		else if (uL_ < uR_) {
-			for (size_t j=nk2_; j<nk_; ++j){
-				fe_(i, j) = bc_(j);
-				fe_(i, nk_-j-1) = bc_(j);
-			}
-		}
+void WignerFunction::setEquilibriumFunction(std::string input_pot, bool read_pot){
+	setPotBias(0.);
+	if (read_pot) {
+		readPotential(input_pot);
+		uC_ = uStart_;
 	}
-	/*
-	for (size_t i=0; i<nx_; ++i) {
-			for (size_t j=0; j<nk2_; ++j)
-					if (x_(i)>l_-lC_) f_(i,j) = bc_(j);
-			for (size_t j=nk2_; j<nk_; ++j)
-					if (x_(i)<lC_) f_(i,j) = bc_(j);
-	}
-	*/
-	std::ofstream file;
-	file.open("data/data_files/FE.out", std::ios::out);
-	for (size_t j=0; j<nk_; ++j)
-		file<<k_(j)<<' '<<fe_(size_t(nx_/2), j)<<'\n';
-	file.close();
+	solveWignerEq();
+	fe_ = f_;
+	f_.zeros();
 }
 
 

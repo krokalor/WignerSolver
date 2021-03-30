@@ -114,7 +114,8 @@ void WignerFunction::saveWignerFun() {
 
 void WignerFunction::readPotential(std::string input_file){
 	std::ifstream input_pot (input_file);
-	array<double> x, u;
+	vec x(nx_, fill::zeros), u(nx_, fill::zeros);
+	size_t j = 0;
 	std::string::size_type sz;
 	if(!input_pot) {
 		cout<<"# COULDN'T OPEN AN POTENTIAL INPUT FILE: "<<input_file<<endl;
@@ -124,18 +125,25 @@ void WignerFunction::readPotential(std::string input_file){
 		cout<<"# READING POTENTIAL FROM FILE: "<<input_file<<endl;
 		std::string line;
 		while ( getline (input_pot,line) ){
-			try {
-				x.add( std::stod(line, &sz) ), u.add( std::stod(line.substr(sz)) );
-			} catch (const std::invalid_argument& ia) {
-				cout << "## WARNING: EXCEPTION FOUND WHILE READING POTENTIAL FILE; TYPE: " << ia.what() << endl;
+			if (line[0] != '#'){
+				try {
+					x(j) = std::stod(line, &sz), u(j) = std::stod(line.substr(sz));
+					++j;
+				} catch (const std::invalid_argument& ia) {
+					cout << "## ERROR: EXCEPTION FOUND WHILE READING POTENTIAL FILE; TYPE: " << ia.what() << endl;
+					exit(0);
+				} catch (const std::logic_error& ie) {
+					cout << "## ERROR: EXCEPTION FOUND WHILE READING POTENTIAL FILE; TYPE: " << ie.what() << endl;
+					exit(0);
+				}
 			}
 		}
 		input_pot.close();
 	}
-	for (size_t i=0; i<x.size(); ++i)
-		uStart_(i) = u(i);
+	uStart_.zeros();
+	uStart_ = u;
 	std::ofstream test ("potentials/test.out");
-	for (size_t_vec_d i=0; i<x_.size(); ++i)
+	for (size_t i=0; i<x_.size(); ++i)
 		test<<x_(i)<<' '<<uStart_(i)<<'\n';
 	test.close();
 	// if (x.size() != x_.size()){

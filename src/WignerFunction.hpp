@@ -178,7 +178,7 @@ public:
 	void initEq();
 
 	void setBoundCond();						// Boundary conditions
-	void setEquilibriumFunction();				// Calculating equilibrium function
+	void setEquilibriumFunction(std::string, bool);				// Calculating equilibrium function
 
 	void diffusionTerm(size_t, size_t, double);       // Filling matrice with drift term
 	void driftTerm(size_t, size_t, double);       // Filling matrice with drift term

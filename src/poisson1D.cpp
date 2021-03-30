@@ -3,7 +3,7 @@
 
 using namespace poisson;
 
-void Poisson1D::solve() { solve_gummel (); }  // solve_gummel solve_tridiag
+void Poisson1D::solve() { solve_tridiag (); }  // solve_gummel solve_tridiag
 
 void Poisson1D::solve_gummel() {
 	// Solving Poisson equation using Gummel algorithm
@@ -84,6 +84,7 @@ void Poisson1D::solve_tridiag() {
 
 	for (size_t i=0; i<nx_; ++i)  // mixing old and new potential
 		uNew_(i) = (1-beta_)*uOld_(i) + beta_*x(i);
+	du_ = (uNew_ - uOld_)/beta_;
 
 }
 
