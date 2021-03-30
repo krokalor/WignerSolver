@@ -34,7 +34,7 @@ int main(){
 	f.set_uF(0.087/AU_eV);  // 0.087/AU_eV
 	f.set_nx(150), f.set_nk(150);
 	f.set_lD(600/AU_nm), f.set_lC(200/AU_nm);
-	f.set_kmax(0.4);
+	f.set_kmax(0.04);
 	f.set_dt(5*1e-15/AU_s);
 	f.set_cD(2e18*AU_cm3); // 2e18*AU_cm3
 	// f.set_lYZ(1e-8/AU_cm2);
@@ -51,7 +51,7 @@ int main(){
 	//
 	// FUNKCJA RÓWNOWAGOWA
 	//
-	// f.setEquilibriumFunction("potentials/pot_0meV_100nm_cl.in", false);
+	f.setEquilibriumFunction("potentials/pot_0meV_100nm_cl.in", false);
 
 	//
 	// Pakiet gaussowski
@@ -76,10 +76,11 @@ int main(){
 	// Potencjał
 	//
 	// cout<<"# Setting up potential"<<endl;
-	f.setPotBias(0.0/AU_eV);
+	f.setPotBias(0.02/AU_eV);
 	// f.addGaussPot(0.01/AU_eV, 50/AU_nm, 10/AU_nm);
-	// f.readPotential("potentials/pot_0meV_100nm_cl.in");
+	// f.readPotential("potentials/pot_20meV_1um_cl.in");
 	// f.u_ = f.u_ + f.uStart_;
+	f.uStart_ = f.uC_;
 	// f.set_useNLP(false);
 
 	f.printParam();

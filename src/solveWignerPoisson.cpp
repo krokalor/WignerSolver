@@ -27,12 +27,12 @@ void WignerFunction::solveWignerPoisson(){
 	vec nE_k(nx_, fill::zeros);
 
 	// Convergence criteria
-	size_t n_max = 10, n_it = 0, n_dj = 0, n_du = 0, n_conv = 1;
+	size_t n_max = 2000, n_it = 0, n_dj = 0, n_du = 0, n_conv = 1;
 	double max_dj = 100/AU_Acm2, max_du = 1e-6/AU_eV, max_pFun = 1e-8/AU_eV;
 	bool conv_J = false, conv_pot = false, pFun_zero = false;
 
 	// Mixing parameters
-	p.beta_ = 3e-2;  // Potential mixing parameter
+	p.beta_ = 2e-4;  // Potential mixing parameter
 	double alpha = 1;  // Density mixing parameter
 
 	double curr = 0, nc = 0, nd = 0, q = 0;  // Current, carrier nr, dopant nr, total charge
@@ -49,6 +49,8 @@ void WignerFunction::solveWignerPoisson(){
 	// trChar.open("wyniki/dane/poisson_trChar.out", std::ios::out);
 	cout<<"# it.\tCurr. [Acm^-2]\tnE [cm^-2]\tnD [cm^-2]\tq [cm^-2]\tdj [Acm^-2]\tmax(du) [eV]\tmax(pFun) [ev]"<<endl;
 	while ( !( (n_du > n_conv) && (n_dj > n_conv) ) && (n_it < n_max) ) {  // && pFun_zero
+
+		// p.beta_ = 3e-4*exp(n_it*2.3e-3);
 
 		// Solve Poisson eq.
 		p.solve();
@@ -110,7 +112,8 @@ void WignerFunction::solveWignerPoisson(){
 			<<'\t'<<dj_x*AU_Acm2
 			<<'\t'<<du_x*AU_eV
 			<<'\t'<<pFun_x*AU_eV
-			<<'\t'<<n_du<<endl;
+			<<'\t'<<n_du
+			<<'\t'<<p.beta_<<endl;
 
 		//
 		// Saving to file
@@ -131,6 +134,9 @@ void WignerFunction::solveWignerPoisson(){
 				<<'\t'<<u_der(i)  // col. 5
 				<<'\t'<<p.du_(i)  // col. 6
 				<<'\t'<<j1(i)<<'\n';  // col. 7
+		// for (size_t j=0; j<nk_; ++j)
+		// 	poisson_step<<n_it<<'\t'<<k_(j)
+		// 		<<'\t'<<nE_k(j)<<'\n';
 		poisson_step<<"\n";
 
 		n_it += 1;

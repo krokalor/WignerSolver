@@ -3,7 +3,7 @@
 
 using namespace poisson;
 
-void Poisson1D::solve() { solve_tridiag (); }  // solve_gummel solve_tridiag
+void Poisson1D::solve() { solve_gummel (); }  // solve_gummel solve_tridiag
 
 void Poisson1D::solve_gummel() {
 	// Solving Poisson equation using Gummel algorithm
@@ -43,8 +43,8 @@ void Poisson1D::solve_gummel() {
 	// settings.refine = superlu_opts::REF_EXTRA;
 	spsolve(du_, dPu_, pFun_, "superlu", settings);
 
-	for (size_t i=0; i<nx_; ++i)
-		uNew_(i) = uOld_(i) + beta_*du_(i);
+	du_ = du_*beta_;
+	uNew_ = uOld_ + du_;
 
 }
 
@@ -82,9 +82,8 @@ void Poisson1D::solve_tridiag() {
 		x(i) = d(i) - c(i)*x(i+1);
 	x(0) = d(0) - c(0)*x(1);
 
-	for (size_t i=0; i<nx_; ++i)  // mixing old and new potential
-		uNew_(i) = (1-beta_)*uOld_(i) + beta_*x(i);
-	du_ = (uNew_ - uOld_)/beta_;
+	uNew_ = (1-beta_)*uOld_ + beta_*x;  // mixing old and new potential
+	du_ = uNew_ - uOld_;
 
 }
 
