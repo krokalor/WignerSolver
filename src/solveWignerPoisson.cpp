@@ -23,16 +23,16 @@ void WignerFunction::solveWignerPoisson(){
 
 	vec j0(nx_, fill::zeros), j1(nx_, fill::zeros), nC_old(nx_, fill::zeros), nC_diff(nx_, fill::zeros);
 	vec dj(nx_, fill::zeros);
-	vec u_der(nx_, fill::zeros), nE(nx_, fill::zeros);
-	vec nE_k(nx_, fill::zeros);
+	vec u_der(nx_, fill::zeros);
+	mat out_data;
 
 	// Convergence criteria
-	size_t n_max = 2000, n_it = 0, n_dj = 0, n_du = 0, n_conv = 1;
+	size_t n_max = 5000, n_it = 0, n_dj = 0, n_du = 0, n_conv = 1;
 	double max_dj = 100/AU_Acm2, max_du = 1e-6/AU_eV, max_pFun = 1e-8/AU_eV;
 	bool conv_J = false, conv_pot = false, pFun_zero = false;
 
 	// Mixing parameters
-	p.beta_ = 2e-4;  // Potential mixing parameter
+	p.beta_ = 4e-4;  // Potential mixing parameter
 	double alpha = 1;  // Density mixing parameter
 
 	double curr = 0, nc = 0, nd = 0, q = 0;  // Current, carrier nr, dopant nr, total charge
@@ -44,9 +44,9 @@ void WignerFunction::solveWignerPoisson(){
 	p.nC_ = nD - calcCD_X();
 	// p.nC_ = (1.-alpha)*p.nC_ + alpha*(nD - p.nE_);
 
-	std::ofstream poisson_step("test/poisson_step.out");
+	std::ofstream poisson_step("out_data/poisson_step.out");
 	// std::ofstream trChar;
-	// trChar.open("wyniki/dane/poisson_trChar.out", std::ios::out);
+	// trChar.open("out_data/poisson_trChar.out", std::ios::out);
 	cout<<"# it.\tCurr. [Acm^-2]\tnE [cm^-2]\tnD [cm^-2]\tq [cm^-2]\tdj [Acm^-2]\tmax(du) [eV]\tmax(pFun) [ev]"<<endl;
 	while ( !( (n_du > n_conv) && (n_dj > n_conv) ) && (n_it < n_max) ) {  // && pFun_zero
 
@@ -59,39 +59,36 @@ void WignerFunction::solveWignerPoisson(){
 		// Solve Wigner/Boltzmann eq
 		uC_ = p.uNew_;
 		solveWignerEq();
-		nE = calcCD_X();
-		nE_k = calcCD_K();
-		j0 = j1, j1 = calcCurrArr();
+		calcCD_X();
+		calcCD_K();
+		curr = calcCurr();
+		j0 = j1, j1 = currD_;
 		nC_old = p.nC_;
 		// Mixing old and new el. density
-		p.nE_ = nE;
+		p.nE_ = cdX_;
 		p.nC_ = (1.-alpha)*p.nC_ + alpha*(nD - p.nE_);
-		// p.nE_ = (1.-alpha)*p.nE_ + alpha*nE;
-		// p.nC_ = nD - p.nE_;
 
-		curr = calcCurr(), nc = calcNorm(), nd = calcInt(nD, dx_), q = calcInt(p.nC_, dx_);
+		nc = calcNorm(), nd = calcInt(nD, dx_), q = calcInt(p.nC_, dx_);
 
 		// Saving data
-		p.uOld_.save("test/uOld.txt", arma_ascii);
-		p.uNew_.save("test/uNew.txt", arma_ascii);
-		u_der.save("test/u_der.txt", arma_ascii);
-		p.du_.save("test/du.txt", arma_ascii);
-		p.pFun_.save("test/pFun.txt", arma_ascii);
-		// u_fit.save("test/u_fit.txt", arma_ascii);
-		p.nC_.save("test/nC.txt", arma_ascii);
-		nC_old.save("test/nC_old.txt", arma_ascii);
-		j1.save("test/curr.txt", arma_ascii);
-		nE_k.save("test/nE_k.txt", arma_ascii);
+		out_data.resize(0, 0);
+		out_data.insert_cols(0, x_*AU_nm);
+		out_data.insert_cols(1, p.uNew_*AU_eV);
+		out_data.insert_cols(2, p.du_*AU_eV);
+		out_data.insert_cols(3, p.nC_*AU_eV);
+		out_data.insert_cols(4, j1*AU_Acm2);
+
+		out_data.save("out_data/poisson_test.txt", arma_ascii);
 
 		saveWignerFun();
 
 		//
 		// Check current convergance
 		//
-		dj = j0 - j1;
+		dj = j0 - j1;  // Vectors
 		dj_x = max(abs(dj));
 		conv_J = dj_x < max_dj ? true : false;
-		n_dj = conv_J ? n_dj+1 : 0;
+		n_dj = conv_J ? n_dj+1 : 0;  // Ile razy został spełniony warunek
 
 		//
 		// Check potential convergance
@@ -146,7 +143,7 @@ void WignerFunction::solveWignerPoisson(){
 
 	uStart_ = p.uNew_;
 	std::ofstream pot_out;
-	pot_out.open("potentials/pot.out", std::ios::out);
+	pot_out.open("out_data/poisson_potential.out", std::ios::out);
 	pot_out<<"# i u(i)\n";
 	for (size_t i=0; i<nx_; ++i)
 			pot_out<<x_(i)<<' '<<uStart_(i)<<'\n';

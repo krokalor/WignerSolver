@@ -5,14 +5,23 @@ using namespace wigner;
 
 
 void WignerFunction::setEquilibriumFunction(std::string input_pot, bool read_pot){
+	solveWignerEq();
+	calcCD_X();
+	vec nx = cdX_;
+	double uBias = uBias_;
 	setPotBias(0.);
 	if (read_pot) {
 		readPotential(input_pot);
 		uC_ = uStart_;
 	}
 	solveWignerEq();
-	fe_ = f_;
+	calcCD_X();
+	vec nx_0 = cdX_;
+	for (size_t i=0; i<nx_; ++i)
+		for (size_t j=0; j<nk_; ++j)
+			fe_(i,j) = f_(i,j)*nx(i)/nx_0(i);
 	f_.zeros();
+	setPotBias(uBias);
 }
 
 
@@ -20,86 +29,69 @@ void WignerFunction::setEquilibriumFunction(std::string input_pot, bool read_pot
 // ############################## Current and current density calculation ##############################
 //
 double WignerFunction::calcCurr() {
-	size_t_vec_d i, j;        // iterators
-	double cur1 = 0, cur2 = 0, cur = 0;  // Current density
+	currD_.zeros();  // Current density  // array<double>
 	//  cur1 - current density in node i-1/2
 	//  cur2 - current density in node i+1/2
-	std::ofstream file;
-	file.open("data/data_files/CD.out", std::ios::out);
-	for (i=2; i<nx_-2; ++i) {
-		cur1 = 0, cur2 = 0;
-		// if (i*dx_>lC_ && i*dx_<l_-lC_) {
-		// #################### k<0 ####################
-		for (j=0; j<nk2_; ++j){
-			// cur1 += k_(j)*f_(i+1, j);  // j(i-1/2)
-			// cur2 += k_(j)*f_(i, j);  // j(i+1/2)
-			cur1 += k_(j)*(3*f_(i,j)-f_(i+1,j));  // j(i-1/2)
-			cur2 += k_(j)*(3*f_(i+1,j)-f_(i+2,j));  // j(i+1/2)
+	for (size_t i=1; i<nx_-2; ++i) {
+		for (size_t j=0; j<nk2_; ++j){  // k < 0
+			// currD_(i) += k_(j)*f_(i+1, j);  // j(i-1/2)
+			// currD_(i) += k_(j)*f_(i, j);  // j(i+1/2)
+			// currD_(i) += k_(j)*(3.0*f_(i,j)-f_(i+1,j));  // j(i-1/2)
+			currD_(i) += k_(j)*(3*f_(i+1,j)-f_(i+2,j));  // j(i+1/2)
 		}
-		for (j=nk2_; j<nk_; ++j){
-			// cur1 += k_(j)*f_(i, j);  // j(i-1/2)
-			// cur2 += k_(j)*f_(i-1, j);  // j(i+1/2)
-			cur1 += k_(j)*(3*f_(i-1,j)-f_(i-2,j));
-			cur2 += k_(j)*(3*f_(i,j)-f_(i-1,j));
+		for (size_t j=nk2_; j<nk_; ++j){  // k > 0
+			// currD_(i) += k_(j)*f_(i, j);  // j(i-1/2)
+			// currD_(i) += k_(j)*f_(i-1, j);  // j(i+1/2)
+			// currD_(i) += k_(j)*(3.0*f_(i-1,j)-f_(i-2,j));  // j(i-1/2)
+			currD_(i) += k_(j)*(3*f_(i,j)-f_(i-1,j));  // j(i+1/2)
 		}
-		cur1 *= dk_/(2*m_), cur2 *= dk_/(2*m_);  // /(4*M_PI*m_)
-		cur += (cur1+cur2)*dx_/2./l_;
-		file<<x_(i)*AU_nm<<' '<<cur1<<' '<<cur2<<' '<<cur<<'\n';
+		// cur(i) = (cur1+cur2)*dk_/(2*m_);  // /(4*M_PI*m_)
+		currD_(i) = currD_(i)*dk_/(2*m_);
 	}
-	file<<"# Current: "<<cur<<endl;
-	file.close();
-	return cur;
-}
-
-
-vec WignerFunction::calcCurrArr() {
-	size_t_vec_d i, j;        // iterators
-	double cur1 = 0, cur2 = 0;
-	vec cur(nx_, fill::zeros);  // Current density  // array<double>
-	//  cur1 - current density in node i-1/2
-	//  cur2 - current density in node i+1/2
-	for (i=2; i<nx_-2; ++i) {
-		cur1 = 0, cur2 = 0;
-		// #################### k<0 ####################
-		for (j=0; j<nk2_; ++j){
-			// cur1 += k_(j)*f_(i+1, j);  // j(i-1/2)
-			// cur2 += k_(j)*f_(i, j);  // j(i+1/2)
-			cur1 += k_(j)*(3*f_(i,j)-f_(i+1,j));  // j(i-1/2)
-			cur2 += k_(j)*(3*f_(i+1,j)-f_(i+2,j));  // j(i+1/2)
-		}
-		for (j=nk2_; j<nk_; ++j){
-			// cur1 += k_(j)*f_(i, j);  // j(i-1/2)
-			// cur2 += k_(j)*f_(i-1, j);  // j(i+1/2)
-			cur1 += k_(j)*(3*f_(i-1,j)-f_(i-2,j));
-			cur2 += k_(j)*(3*f_(i,j)-f_(i-1,j));
-		}
-		cur(i) = (cur1+cur2)*dk_/(2*m_);  // /(4*M_PI*m_)
-	}
-	cur(0) = cur(2), cur(1) = cur(2);
-	cur(nx_-1) = cur(nx_-3), cur(nx_-2) = cur(nx_-3);
-	return cur;
+	currD_(0) = currD_(2);
+	// currD_(1) = currD_(2);
+	currD_(nx_-1) = currD_(nx_-3);
+	currD_(nx_-2) = currD_(nx_-3);
+	// for (size_t i=0; i<nx_; ++i)
+	// 	for (size_t j=0; j<nk_; ++j)
+	// 		currD_(i) += k_(j)/m_*f_(i,j)*dk_;
+	return sum(currD_)*dx_/l_;
 }
 
 
 vec WignerFunction::calcCD_X(){
 	// Calculates carrier density in x space
-	vec cd(nx_, fill::zeros);  // array<double>
-	for (size_t i=0; i<nx_; ++i)
+	// vec cd(nx_, fill::zeros);  // array<double>
+	cdX_.zeros();
+	// 	for (size_t j=0; j<nk2_; ++j){  // k < 0
+	// 		cdX_(i) += (3.0*f_(i,j)-f_(i+1,j));  // j(i-1/2)
+	// 	}
+	// 	for (size_t j=nk2_; j<nk_; ++j){  // k > 0
+	// 		cdX_(i) += (3.0*f_(i-1,j)-f_(i-2,j));  // j(i-1/2)
+	// 	}
+	// 	cdX_(i) = cdX_(i)*dk_/2.;
+	// }
+	// cdX_(0) = cdX_(2);
+	// cdX_(1) = cdX_(2);
+	// cdX_(nx_-1) = cdX_(nx_-2);
+	for (size_t i=0; i<nx_; ++i) {
 		for (size_t j=1; j<nk_/2; ++j)
-			// cd(i) += (f_(i,j-1) + f_(i,j))*dk_/2.;  //  / 2./M_PI  // trapezoid
-			cd(i) += (f_(i,2*j-2)+4*f_(i,2*j-1)+f_(i,2*j))*dk_/3.;  // simpson
-	return cd;
+			// cdX_(i) += (f_(i,j-1) + f_(i,j))*dk_/2.;  //  / 2./M_PI  // trapezoid
+			cdX_(i) += (f_(i,2*j-2)+4*f_(i,2*j-1)+f_(i,2*j))*dk_/3.;  // simpson
+	}
+	return cdX_;
 }
 
 
 vec WignerFunction::calcCD_K(){
 	// Calculates carrier density in k space
-	vec cd(nk_, fill::zeros);  // array<double>
+	// vec cd(nk_, fill::zeros);  // array<double>
+	cdK_.zeros();
 	for (size_t j=0; j<nk_; ++j)
 		for (size_t i=1; i<nx_/2; ++i)
 			// cd(j) += (f_(i-1,j) + f_(i,j))*dx_/2.;  // trapezoid
-			cd(j) += (f_(2*i-2,j)+4*f_(2*i-1,j)+f_(2*i,j))*dx_/3.;  // simpson
-	return cd;
+			cdK_(j) += (f_(2*i-2,j)+4*f_(2*i-1,j)+f_(2*i,j))*dx_/3.;  // simpson
+	return cdK_;
 }
 
 
@@ -229,14 +221,18 @@ void WignerFunction::setPotBias(double uBias) {
 	uBias_ = uBias;
 	uC_.zeros();
 	double x;
+	// for (size_t i = 0; i < nx_; ++i) {
+	// 	x = x_(i)-lC_;
+	// 	if (x<0)
+	// 		uC_(i) = 0;
+	// 	else if (x>=0 && x<=lD_)
+	// 		uC_(i) = -uBias_*x/lD_;
+	// 	else if (x>lD_)
+	// 		uC_(i) = -uBias_;
+	// }
 	for (size_t i = 0; i < nx_; ++i) {
-		x = x_(i)-lC_;
-		if (x<0)
-			uC_(i) = 0;
-		else if (x>=0 && x<=lD_)
-			uC_(i) = -uBias_*x/lD_;
-		else if (x>lD_)
-			uC_(i) = -uBias_;
+		x = x_(i);
+		uC_(i) = -uBias_*x/l_;
 	}
 }  // End of setPotBias
 
@@ -279,11 +275,6 @@ void WignerFunction::setRTD(double w1i, double w2i, double w3i, double w4i,  dou
 		if (x < a || x > b) du_(i) += 0;
 		else if (x >=  a && x <= b) du_(i) += (uL_-uR_)/(a-b);
 	}
-	std::ofstream file;
-	file.open("data/data_files/pot.out", std::ios::out);
-	for (size_t i = 0; i < nx_; ++i)
-		file << x_(i)*AU_nm << ' ' << u_(i) * AU_eV << ' ' << du_(i) * AU_eV/AU_nm<< '\n';
-	file.close();
 }
 
 //
@@ -337,11 +328,11 @@ void WignerFunction::calc_IVchar(double v_min, double v_max, size_t nv){
 	iv_v_ = vec(nv, fill::zeros), iv_i_ = vec(nv, fill::zeros);
 	// double E;
 	std::ofstream ivChar, vpMap;
-	ivChar.open("wyniki/dane/ivChar.out", std::ios::out);
-	vpMap.open("wyniki/dane/vpMap.out", std::ios::out);
+	ivChar.open("out_data/ivChar.out", std::ios::out);
+	vpMap.open("out_data/vpMap.out", std::ios::out);
 	vpMap<<"# u_B [eV]  p [a.u]  1/4  1/2  3/4\n";
 	ivChar<<"# u_B [eV]  J [Acm^{-2}]\n";
-	// cout<<"# u_B [eV]  J [Acm^{-2}]\n";
+	cout<<"# u_B [eV]  J [Acm^{-2}]\n";
 	for (size_t i = 0; i < nv; ++i) {
 		// addGaussPot(i*dv);
 		v = v_min+i*dv;
@@ -349,15 +340,18 @@ void WignerFunction::calc_IVchar(double v_min, double v_max, size_t nv){
 		solveWignerEq();
 		// solveWignerPoisson();
 		curr = calcCurr();
+		calcCD_K();
 		// E = i*dv/lD_ * AU_eV/1e3 / AU_cm;
 		ivChar<<v*AU_eV<<' '<<curr*AU_Acm2<<endl;
-		// cout<<v*AU_eV<<' '<<curr*AU_Acm2<<endl;  // <<' '<<calcNorm()/AU_cm2<<endl;
+		cout<<v*AU_eV<<' '<<curr*AU_Acm2<<endl;  // <<' '<<calcNorm()/AU_cm2<<endl;
 		iv_v_(i) = v, iv_i_(i) = curr;
 		for (size_t j=0; j<nk_; ++j) {
 				vpMap<<v*AU_eV<<' '<<k_(j)
-					<<' '<<f_(size_t(nx_/4.),j)  // col. 3
-					<<' '<<f_(size_t(nx_/2.),j)  // col. 4
-					<<' '<<f_(size_t(nx_*3/4.),j)<<'\n';  // col. 5
+					<<' '<<cdK_(j)
+					// <<' '<<f_(size_t(nx_/4.),j)  // col. 3
+					// <<' '<<f_(size_t(nx_/2.),j)  // col. 4
+					// <<' '<<f_(size_t(nx_*3/4.),j)  // col. 5
+					<<'\n';
 		}
 		vpMap<<'\n';
 	}
@@ -369,18 +363,19 @@ void WignerFunction::calc_IVchar(double v_min, double v_max, size_t nv){
 
 void WignerFunction::calcMobility() {
 
-	vec ne = calcCD_X();
-	vec dnedx = calcDer(ne, dx_);
-	vec jn = calcCurrArr();
 	vec el_f(nx_, fill::zeros);
 	vec mob(nx_, fill::zeros);
+
+	calcCD_X();
+	calcCurr();
+	vec dnedx = calcDer(cdX_, dx_);
 
 	for (size_t i = 0; i < nx_; ++i)
 		el_f(i) = -du_(i);
 
 	for (size_t i = 0; i < nx_; ++i) {
-		double m = ne(i)*el_f(i)+KB/AU_eV*temp_*dnedx(i);
-		mob(i) = jn(i)/m * AU_cm2/AU_eV/AU_s;
+		double m = cdX_(i)*el_f(i)+KB/AU_eV*temp_*dnedx(i);
+		mob(i) = currD_(i)/m * AU_cm2/AU_eV/AU_s;
 	}
 
 	/*
@@ -559,7 +554,7 @@ void WignerFunction::setBoundCond(){
 		}
 	}
 	std::ofstream file;
-	file.open("data/data_files/BC.out", std::ios::out);
+	file.open("out_data/BC.out", std::ios::out);
 	for (size_t j=0; j<nk_; ++j) {
 		file<<k_(j)<<' '<<bc_(j)<<'\n';
 	}

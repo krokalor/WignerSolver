@@ -89,7 +89,7 @@ std::map<std::string, double> readParam(std::string filename){
 void WignerFunction::saveWignerFun() {
 	size_t i, j;
 	std::ofstream wf;
-	wf.open("wyniki/dane/wf.out", std::ios::out);
+	wf.open("out_data/wf.out", std::ios::out);
 	wf<<"# Norma [cm^-2]: "<<calcNorm()/AU_cm2<<'\n';
 	wf<<"# x [nm] k [a.u.] f [a.u.]\n";
 	for (i=0; i<nx_; ++i){
@@ -100,15 +100,15 @@ void WignerFunction::saveWignerFun() {
 		wf<<"\n";
 	}
 	wf.close();
-	wf.open("wyniki/dane/wf.z", ios::out);
-	wf<<"# nx "<<nx_<<" ny "<<nk_<<" xmin "<<0<<" xmax "<<l_*AU_nm<<" ymin "<<-kmax_<<" ymax "<<kmax_<<'\n';
-	for (j=0; j<nk_; ++j){
-		for (i=0; i<nx_; ++i)
-			wf<<f_(i,j)<<' ';
-			// file<<i*dx_<<' '<<dk_*(j-(nk_-1)*.5)<<' '<<f_(i,j)/s<<"  ! "<<f_(i,j)<<'\n';
-		wf<<'\n';
-	}
-	wf.close();
+	// wf.open("out_data/wf.z", ios::out);
+	// wf<<"# nx "<<nx_<<" ny "<<nk_<<" xmin "<<0<<" xmax "<<l_*AU_nm<<" ymin "<<-kmax_<<" ymax "<<kmax_<<'\n';
+	// for (j=0; j<nk_; ++j){
+	// 	for (i=0; i<nx_; ++i)
+	// 		wf<<f_(i,j)<<' ';
+	// 		// file<<i*dx_<<' '<<dk_*(j-(nk_-1)*.5)<<' '<<f_(i,j)/s<<"  ! "<<f_(i,j)<<'\n';
+	// 	wf<<'\n';
+	// }
+	// wf.close();
 }
 
 
@@ -142,7 +142,7 @@ void WignerFunction::readPotential(std::string input_file){
 	}
 	uStart_.zeros();
 	uStart_ = u;
-	std::ofstream test ("potentials/test.out");
+	std::ofstream test ("out_data/input_potential_test.out");
 	for (size_t i=0; i<x_.size(); ++i)
 		test<<x_(i)<<' '<<uStart_(i)<<'\n';
 	test.close();
@@ -162,7 +162,7 @@ void WignerFunction::readPotential(std::string input_file){
 	// 		}
 	//
 	// 	}
-	// 	std::ofstream test ("wyniki/dane/potential.out");
+	// 	std::ofstream test ("out_data/potential.out");
 	// 	for (size_t i=0; i<x_.size(); ++i)
 	// 		test<<x_(i)<<' '<<u_(i)<<'\n';
 	// 	test.close();
@@ -172,7 +172,7 @@ void WignerFunction::readPotential(std::string input_file){
 	// else{
 	// 	for (size_t i=0; i<x.size(); ++i)
 	// 		uStart_(i) = u(i);
-	// 	std::ofstream test ("wyniki/dane/potential.out");
+	// 	std::ofstream test ("out_data/potential.out");
 	// 	for (size_t_vec_d i=0; i<x_.size(); ++i)
 	// 		test<<x_(i)<<' '<<uStart_(i)<<'\n';
 	// 	test.close();

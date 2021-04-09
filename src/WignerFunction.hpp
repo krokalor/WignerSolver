@@ -73,7 +73,10 @@ public:
 		bc_(vec(nk_, fill::zeros)),
 		x_(vec(nx_, fill::zeros)),
 		k_(vec(nk_, fill::zeros)),
-		sin_(mat(nk_,nk_*nk2_))
+		sin_(mat(nk_,nk_*nk2_)),
+		cdX_(vec(nx_, fill::zeros)),
+		cdK_(vec(nk_, fill::zeros)),
+		currD_(vec(nx_, fill::zeros))
 		// cR_(iv["dconc_right"]),
 		{
 
@@ -147,6 +150,8 @@ public:
 		x_ = vec(nx_, fill::zeros);
 		k_ = vec(nk_, fill::zeros);
 		sin_ = mat(nk_,nk_*nk2_);
+		cdX_ = vec(nx_, fill::zeros), cdK_ = vec(nk_, fill::zeros);
+		currD_ = vec(nx_, fill::zeros);
 		for (size_t i=0; i<nx_; ++i) x_(i) = i*dx_;
 		for (size_t j=0; j<nk_; ++j) k_(j) = dk_*(j-(nk_-1)*.5);
 		// #pragma omp parallel for collapse(3)
@@ -262,6 +267,9 @@ public:
 	vec x_;  // Position values
 	vec k_;  // Wave vector values
 	mat sin_;  // Sine function values
+	vec cdX_;  // Carrier density in x / k
+	vec cdK_;
+	vec currD_;  // Current density
 
 	sp_mat a_;
 	vec b_;
