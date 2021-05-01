@@ -3,13 +3,13 @@
 
 using namespace poisson;
 
-void Poisson1D::solve() { solve_gummel (); }  // solve_gummel solve_tridiag
+void Poisson1D::solve() { solve_tridiag (); }  // solve_gummel solve_tridiag
 
 void Poisson1D::solve_gummel() {
 	// Solving Poisson equation using Gummel algorithm
 
 	double epsilon = epsilonR_/4./M_PI;
-	double c = h_*h_*q_*q_/epsilon;
+	double c = h_*h_/epsilon;
 
 	// P_i
 
@@ -23,7 +23,7 @@ void Poisson1D::solve_gummel() {
 
 	pFun_.zeros();
 	for (size_t i=0; i<nx_; ++i)
-		pFun_(i) = -(uD(i) - c*nC_(i));  // '-' because in equation A*x =-pFun
+		pFun_(i) = -(uD(i) - c*rho_(i));  // '-' because in equation A*x =-pFun
 
 	// dP_i/du_j
 
@@ -54,15 +54,13 @@ void Poisson1D::solve_tridiag() {
 
 	double epsilon = epsilonR_/4./M_PI;
 
-	vec b(nx_, fill::ones);
-	b.fill(-2.);  // Diagonal
+	vec b(nx_, fill::ones); b.fill(-2.);  // Diagonal
 	vec c(nx_, fill::ones);  // Upper diagonal
 	vec a(nx_, fill::ones);  // Lower diagonal
-
 	vec d(nx_, fill::zeros), x(nx_, fill::zeros);  // A*x = d
 
 	for (size_t i=0; i<nx_; ++i)
-		d(i) = h_*h_/epsilon*nC_(i);
+		d(i) = h_*h_/epsilon*rho_(i);
 
 	// Dirichlet BC
 	d(0) -= dirichletL_, d(nx_-1) -= dirichletR_;
@@ -92,18 +90,18 @@ void Poisson1D::testPoisson() {
 
 	double sigma = -1e-3; // 10^-3 C/m^2
 
-	nC_(nx_/2) = sigma/(h_*AU_nm*1e-9);
-	nC_(nx_/2) *= 1e-6*AU_cm3/E0;
+	rho_(nx_/2) = sigma/(h_*AU_nm*1e-9);
+	rho_(nx_/2) *= 1e-6*AU_cm3/E0;
 
-	dirichletL_ = -5.64717/AU_eV;  // Energia potencjalna
-	dirichletR_ = -5.64717/AU_eV;
+	dirichletL_ = 5.64717/AU_eV;  // Energia potencjalna
+	dirichletR_ = 5.64717/AU_eV;
 	epsilonR_ = 1.;  // 8.854e-12;
 
 	solve();
 
 	cout<<"# sigma = "<<sigma<<" dirichletL "<<dirichletL_<<" dirichletR "<<dirichletR_<<" n "<<nx_<<" h "<<h_<<endl;
 	for (size_t i = 0; i < nx_; ++i)
-		cout<<i*h_*AU_nm<<' '<<uNew_(i)*AU_eV<<' '<<nC_(i)*E0/AU_cm3<<endl;
+		cout<<i*h_*AU_nm<<' '<<uNew_(i)*AU_eV<<' '<<rho_(i)*E0/AU_cm3<<endl;
 
 	// Run example:
 	// Poisson1D p(200, 1./AU_nm);

@@ -19,7 +19,7 @@ void WignerFunction::setEquilibriumFunction(std::string input_pot, bool read_pot
 	vec nx_0 = cdX_;
 	for (size_t i=0; i<nx_; ++i)
 		for (size_t j=0; j<nk_; ++j)
-			fe_(i,j) = f_(i,j)*nx(i)/nx_0(i);
+			fe_(i,j) = f_(i,j);  // *nx(i)/nx_0(i)
 	f_.zeros();
 	setPotBias(uBias);
 }
@@ -36,25 +36,46 @@ double WignerFunction::calcCurr() {
 		for (size_t j=0; j<nk2_; ++j){  // k < 0
 			// currD_(i) += k_(j)*f_(i+1, j);  // j(i-1/2)
 			// currD_(i) += k_(j)*f_(i, j);  // j(i+1/2)
-			// currD_(i) += k_(j)*(3.0*f_(i,j)-f_(i+1,j));  // j(i-1/2)
-			currD_(i) += k_(j)*(3*f_(i+1,j)-f_(i+2,j));  // j(i+1/2)
+			// currD_(i) += k_(j)*(3.0*f_(i,j)-f_(i+1,j))*dk_/2./m_;  // j(i-1/2)
+			currD_(i) += k_(j)*(3*f_(i+1,j)-f_(i+2,j))*dk_/2./m_;  // j(i+1/2)
 		}
 		for (size_t j=nk2_; j<nk_; ++j){  // k > 0
 			// currD_(i) += k_(j)*f_(i, j);  // j(i-1/2)
 			// currD_(i) += k_(j)*f_(i-1, j);  // j(i+1/2)
-			// currD_(i) += k_(j)*(3.0*f_(i-1,j)-f_(i-2,j));  // j(i-1/2)
-			currD_(i) += k_(j)*(3*f_(i,j)-f_(i-1,j));  // j(i+1/2)
+			// currD_(i) += k_(j)*(3.0*f_(i-1,j)-f_(i-2,j))*dk_/2./m_;  // j(i-1/2)
+			currD_(i) += k_(j)*(3*f_(i,j)-f_(i-1,j))*dk_/2./m_;  // j(i+1/2)
 		}
-		// cur(i) = (cur1+cur2)*dk_/(2*m_);  // /(4*M_PI*m_)
-		currD_(i) = currD_(i)*dk_/(2*m_);
+		// currD_(i) /= 2.;
+		if (bcType_ > 0) currD_(i) /= 2.*M_PI;
 	}
 	currD_(0) = currD_(2);
 	// currD_(1) = currD_(2);
 	currD_(nx_-1) = currD_(nx_-3);
 	currD_(nx_-2) = currD_(nx_-3);
-	// for (size_t i=0; i<nx_; ++i)
-	// 	for (size_t j=0; j<nk_; ++j)
+	//
+	// Metoda prostokątów
+	// for (size_t i=0; i<nx_; ++i) {
+	// 	for (size_t j=0; j<nk_; ++j) {
 	// 		currD_(i) += k_(j)/m_*f_(i,j)*dk_;
+	// 		if (bcType_ > 0) currD_(i) /= 2.*M_PI;
+	// 	}
+	// }
+	//
+	// Metoda trapezów / simpsona
+	// for (size_t i=0; i<nx_; ++i) {
+	// 	for (size_t j=1; j<nk_/2; ++j)
+	// 		// cdX_(i) += (f_(i,j-1) + f_(i,j))*dk_/2.;  //  / 2./M_PI  // trapezoid
+	// 		currD_(i) +=
+	// 			( k_(2*j-2)*f_(i,2*j-2) +
+	// 			4*k_(2*j-1)*f_(i,2*j-1) +
+	// 			k_(2*j)*f_(i,2*j) )*dk_/3.;  // simpson
+	// 	if (bcType_ > 0) currD_(i) /= 2.*M_PI;
+	// }
+	//
+	// Armadillo function
+	// mat f = f_;
+	// f.each_row() %= k_.t()/m_;
+	// currD_ = trapz(k_, f, 1);
 	return sum(currD_)*dx_/l_;
 }
 
@@ -78,6 +99,7 @@ vec WignerFunction::calcCD_X(){
 		for (size_t j=1; j<nk_/2; ++j)
 			// cdX_(i) += (f_(i,j-1) + f_(i,j))*dk_/2.;  //  / 2./M_PI  // trapezoid
 			cdX_(i) += (f_(i,2*j-2)+4*f_(i,2*j-1)+f_(i,2*j))*dk_/3.;  // simpson
+		if (bcType_ > 0) cdX_(i) /= 2.*M_PI;
 	}
 	return cdX_;
 }
@@ -87,10 +109,11 @@ vec WignerFunction::calcCD_K(){
 	// Calculates carrier density in k space
 	// vec cd(nk_, fill::zeros);  // array<double>
 	cdK_.zeros();
-	for (size_t j=0; j<nk_; ++j)
+	for (size_t j=0; j<nk_; ++j) {
 		for (size_t i=1; i<nx_/2; ++i)
 			// cd(j) += (f_(i-1,j) + f_(i,j))*dx_/2.;  // trapezoid
 			cdK_(j) += (f_(2*i-2,j)+4*f_(2*i-1,j)+f_(2*i,j))*dx_/3.;  // simpson
+	}
 	return cdK_;
 }
 
@@ -107,6 +130,7 @@ double WignerFunction::calcNorm(){
 		else
 			sum_x += sum_k * dx_;
 	}
+	if (bcType_ > 0) sum_x /= 2.*M_PI;
 	return sum_x;  // /2./M_PI
 }
 
@@ -122,7 +146,8 @@ double WignerFunction::calcEX(){
 		else
 			sum_x += sum_k * dx_;
 	}
-	return sum_x/2./M_PI / calcNorm();
+	if (bcType_ > 0) sum_x /= 2.*M_PI;
+	return sum_x / calcNorm();
 }
 
 
@@ -137,7 +162,8 @@ double WignerFunction::calcEK(){
 		else
 			sum_x += sum_k * dx_;
 	}
-	return sum_x/2./M_PI / calcNorm();
+	if (bcType_ > 0) sum_x /= 2.*M_PI;
+	return sum_x / calcNorm();
 }
 
 
@@ -185,8 +211,10 @@ double WignerFunction::calcSDK(){
 			ev2 += s_ev2 * dx_;
 		}
 	}
-	ev = ev/2./M_PI / calcNorm();
-	ev2 = ev2/2./M_PI / calcNorm();
+	if (bcType_ > 0) ev /= 2.*M_PI;
+	if (bcType_ > 0) ev2 /= 2.*M_PI;
+	ev = ev / calcNorm();
+	ev2 = ev2 / calcNorm();
 	return sqrt(ev2-ev*ev);
 }
 
@@ -208,8 +236,10 @@ double WignerFunction::calcSDX(){
 			ev2 += s_ev2 * dx_;
 		}
 	}
-	ev = ev/2./M_PI / calcNorm();
-	ev2 = ev2/2./M_PI / calcNorm();
+	if (bcType_ > 0) ev /= 2.*M_PI;
+	if (bcType_ > 0) ev2 /= 2.*M_PI;
+	ev = ev / calcNorm();
+	ev2 = ev2 / calcNorm();
 	return sqrt(ev2-ev*ev);
 }
 
@@ -232,50 +262,23 @@ void WignerFunction::setPotBias(double uBias) {
 	// }
 	for (size_t i = 0; i < nx_; ++i) {
 		x = x_(i);
-		uC_(i) = -uBias_*x/l_;
+		uC_(i) = uBias_*(0.5-x/l_);
 	}
 }  // End of setPotBias
 
 
-void WignerFunction::addGaussPot(double v0 = 0.3/AU_eV, double x0 = 1000, double sX = 100) {
+void WignerFunction::addGaussBarr(double u0 = 0.3/AU_eV, double x0 = 1000, double sX = 100) {
 	for (size_t i=0; i<nx_; ++i)
-		uB_(i) += exp(-(x_(i)-x0)*(x_(i)-x0)/sX/sX)*v0;
+		uB_(i) += exp(-(x_(i)-x0)*(x_(i)-x0)/sX/sX)*u0;
 }
 
 
-//
-// ############################## Resonant Tunelling Diode ##############################
-//
-void WignerFunction::setRTD(double w1i, double w2i, double w3i, double w4i,  double V0i) {
-	double w1 = w1i/AU_nm, w2 = w2i/AU_nm, w3 = w3i/AU_nm, w4 = w4i/AU_nm, V0 = V0i/AU_eV;
-	// double V = uL_ - uR_;
-	int p = 10;
-	double a = w1, b = w1 + 2*w2 + 2*w3 + w4;
-	double sig = w3/2.;
-	double b1 = a+w2+sig, b2 = b-w2-sig;
-	lD_ = 2*w2 + 2*w3 + w4, lC_ = w1, l_ = lD_+2*lC_ ;
-	dx_ = l_/nx_;
-	kmax_ = M_PI/2./dx_;
-	dk_ = 2*kmax_/float(nk_);
-	double e1, e2, x;
-	for (size_t i = 0; i < nx_; ++i) {
-		x = x_(i);
-		e1 = -pow(x-b1, 2*p)/2./pow(sig, 2*p);
-		e2 = -pow(x-b2, 2*p)/2./pow(sig, 2*p);
-		u_(i) = V0 * ( exp(e1) + exp(e2) );
-		if (x < a) u_(i) += 0;
-		else if (x >=  a && x <= b) u_(i) += (uL_-uR_)*(x-a)/(a-b);
-		else if (x > b) u_(i) += -(uL_-uR_);
-	}
-	for (size_t i = 0; i < nx_; ++i) {
-		x = x_(i);
-		e1 = -pow(x-b1, 2*p)/2./pow(sig, 2*p);
-		e2 = -pow(x-b2, 2*p)/2./pow(sig, 2*p);
-		du_(i) = -V0 * ( 2*p*e1/(x-b1) * exp(e1) + 2*p*e2/(x-b2) * exp(e2) );
-		if (x < a || x > b) du_(i) += 0;
-		else if (x >=  a && x <= b) du_(i) += (uL_-uR_)/(a-b);
-	}
+void WignerFunction::addRectBarr(double u0 = 0.3/AU_eV, double x0 = 1000, double wB = 100, double p = 10) {
+	double sig = wB/2.;
+	for (size_t i=0; i<nx_; ++i)
+		uB_(i) += exp(-pow(x_(i)-x0, 2*p)/2./pow(sig, 2*p))*u0;
 }
+
 
 //
 // ############################## WP initial conditions ##############################
@@ -317,34 +320,38 @@ void WignerFunction::addWavePacket() {
 //
 //  WP evolution (no potential)
 //
-double WignerFunction::WavePacket_TE(double x, double k)
-	{ return exp( -2*gwp_dx_*gwp_dx_*(k-gwp_p0_)*(k-gwp_p0_)
-								-(x-gwp_x0_)*(x-gwp_x0_)/2./gwp_dx_/gwp_dx_ )/M_PI; }
+double WignerFunction::WavePacket_TEV(double x, double k)
+	{ return exp( -2*gwp_dx_*gwp_dx_
+			*(k-gwp_p0_)*(k-gwp_p0_)-(x-gwp_x0_)*(x-gwp_x0_)
+			/2./gwp_dx_/gwp_dx_ )/M_PI; }
 
 
 void WignerFunction::calc_IVchar(double v_min, double v_max, size_t nv){
-	double dv = (v_max-v_min)/(nv-1), v = 0, curr;
+	double dv = (v_max-v_min)/(nv-1), v = 0, curr, currD_range, carrNum;
 	double uBias = uBias_;
 	iv_v_ = vec(nv, fill::zeros), iv_i_ = vec(nv, fill::zeros);
+	iv_iRange_ = vec(nv, fill::zeros), iv_n_ = vec(nv, fill::zeros);
 	// double E;
 	std::ofstream ivChar, vpMap;
 	ivChar.open("out_data/ivChar.out", std::ios::out);
 	vpMap.open("out_data/vpMap.out", std::ios::out);
 	vpMap<<"# u_B [eV]  p [a.u]  1/4  1/2  3/4\n";
-	ivChar<<"# u_B [eV]  J [Acm^{-2}]\n";
-	cout<<"# u_B [eV]  J [Acm^{-2}]\n";
+	ivChar<<"# u_B [eV]  J [Acm^{-2}]  |max(J)-min(J)|  N\n";
+	// cout<<"# u_B [eV]  J [Acm^{-2}]  |max(J)-min(J)|  N\n";
 	for (size_t i = 0; i < nv; ++i) {
-		// addGaussPot(i*dv);
 		v = v_min+i*dv;
-		setPotBias(v);
+		// setPotBias(v);
+		set_uBias(v);
 		solveWignerEq();
 		// solveWignerPoisson();
 		curr = calcCurr();
+		currD_range = range(currD_);
+		carrNum = calcNorm();
 		calcCD_K();
 		// E = i*dv/lD_ * AU_eV/1e3 / AU_cm;
-		ivChar<<v*AU_eV<<' '<<curr*AU_Acm2<<endl;
-		cout<<v*AU_eV<<' '<<curr*AU_Acm2<<endl;  // <<' '<<calcNorm()/AU_cm2<<endl;
-		iv_v_(i) = v, iv_i_(i) = curr;
+		ivChar<<v*AU_eV<<' '<<curr*AU_Acm2<<' '<<currD_range*AU_Acm2<<' '<<carrNum/AU_cm2<<endl;
+		// cout<<v*AU_eV<<' '<<curr*AU_Acm2<<' '<<currD_range*AU_Acm2<<' '<<carrNum/AU_cm2<<endl;  // <<' '<<calcNorm()/AU_cm2<<endl;
+		iv_v_(i) = v, iv_i_(i) = curr, iv_iRange_(i) = currD_range, iv_n_(i) = carrNum;
 		for (size_t j=0; j<nk_; ++j) {
 				vpMap<<v*AU_eV<<' '<<k_(j)
 					<<' '<<cdK_(j)
@@ -490,40 +497,37 @@ double WignerFunction::calcFermiEn_MB(double n0, double m, double T) {
 void WignerFunction::setBoundCond(){
 	Gamma_ = rG_*.5;
 	// double cD = cD_ * 2*lC_/l_;
-	uL_ = uF_;  // Fermi levels
-	uR_ = uF_;
 	// cout<<"# cD = "<<cD/AU_cm3<<", uL = uR = "<<uL_*AU_eV<<endl;
+	if (uBias_BC_)
+		uR_ = uF_, uL_ = uF_ + uBias_;
+	else
+		uR_ = uF_, uL_ = uF_;
 	double k;
-	if (bcType_ == 0)
+	if (bcType_ == 1)
 		for (size_t j=0; j<nk_; ++j) {
 			k = k_(j);
 			bc_(j) = supplyFunction(k);
 		}
-	else if (bcType_ == -1)
+	else if (bcType_ == 0)
 		bc_.zeros();
-	else if (bcType_ == -2)
-		for (size_t j=0; j<nk_; ++j) {
-			k = k_(j);
-			bc_(j) = maxwell_boltzmann(k);
-		}
-	else if (bcType_ == -3)
+	else if (bcType_ == -1)
 		for (size_t j=0; j<nk_; ++j) {
 			k = k_(j);
 			bc_(j) = gaussian_bc(k);
 		}
 	else {
 		if (rG_ > 0) {
-			if (bcType_ == 1)
+			if (bcType_ == 2 || bcType_ == -2)
 				for (size_t j=0; j<nk_; ++j) {
 					k = k_(j);
 					bc_(j) = lorentz(k);
 				}
-			else if (bcType_ == 2)
+			else if (bcType_ == 3 || bcType_ == -3)
 				for (size_t j=0; j<nk_; ++j) {
 					k = k_(j);
 					bc_(j) = gauss(k);
 				}
-			else if (bcType_ == 3)
+			else if (bcType_ == 4 || bcType_ == -4)
 				for (size_t j=0; j<nk_; ++j) {
 					k = k_(j);
 					bc_(j) = voigt(k);
@@ -537,20 +541,17 @@ void WignerFunction::setBoundCond(){
 			// 	}
 			// 	c = conv(a, b);
 			else {
+				cout << "# ERROR WHILE SETTING BOUNDARY CONDITIONS" << endl;
 				cout << "# bcType_ = " << bcType_
-					<< " IS WRONG BOUNDARY CONDITION TYPE INT, SETTING BC TO SUPPLY FUNCTION" << endl;
-				for (size_t j=0; j<nk_; ++j) {
-					k = k_(j);
-					bc_(j) = supplyFunction(k);
-				}
+					<< " IS WRONG BOUNDARY CONDITION TYPE INT" << endl;
+				exit(0);
 			}
 		}
 		else {
-			cout << "# rG_ = " << rG_<< " SCATTERING RATE SHOULD BE GREATER THAN 0, SETTING BC TO SUPPLY FUNCTION" << endl;
-			for (size_t j=0; j<nk_; ++j) {
-				k = k_(j);
-				bc_(j) = supplyFunction(k);
-			}
+			cout << "# ERROR WHILE SETTING BOUNDARY CONDITIONS" << endl;
+			cout << "# rG_ = " << rG_
+				<< " SCATTERING RATE SHOULD BE GREATER THAN 0" << endl;
+			exit(0);
 		}
 	}
 	std::ofstream file;
@@ -565,8 +566,8 @@ void WignerFunction::setBoundCond(){
 
 // Supply function (E(k))
 double WignerFunction::supplyFunction(double k){
-	// double mu = k > 0 ? uL_ : uR_;
-	double mu = uF_;
+	double mu = k > 0 ? uL_ : uR_;
+	// double mu = uF_;
 	double m = m_;
 	double c = m/M_PI*KB/AU_eV*temp_, ex = -(k*k/m/2.-mu)/(KB/AU_eV*temp_);	 // [au]
 	// double c = 4*M_PI*m*KB/AU_eV*temp_, ex = -(k*k/m/2.-mu)/(KB/AU_eV*temp_);	 // [au]
@@ -597,7 +598,8 @@ double WignerFunction::gaussian_bc(double k){
 	double mu = uF_;
 	// double mu = k > 0 ? uL_ : uR_;
 	double m = m_;
-	double pF = sqrt(uF_*2.*m);
+	// double pF = sqrt(uF_*2.*m);
+	double uF = 0; // uF_
 	double kBT = KB/AU_eV*temp_;
 	double sigma = 1;
 	// double c = 1./sqrt(2.*M_PI*m*(KB/AU_eV*temp_)*sigma*sigma);
@@ -605,14 +607,14 @@ double WignerFunction::gaussian_bc(double k){
 	// double c = 4*M_PI*m*KB/AU_eV*temp_, ex = -(k*k/m/2.-mu)/(KB/AU_eV*temp_);	 // [au]
 	// double c = 1./sqrt(2.*M_PI*m*kBT)/sigma*cD_;
 	double c = pow((2.*M_PI*m*kBT)*sigma*sigma,-1/2.)*cD_;
-	double ex = exp(-k*k/2./m/kBT/sigma/sigma);  // (k-pF)*(k-pF)
+	double ex = exp(-(k*k/2./m-uF)/kBT/sigma/sigma);  // (k-pF)*(k-pF)
 	return c * ex;
 }
 
 
 
 // Supply function (x)
-inline double WignerFunction::sf_x(double mu, double x){
+inline double WignerFunction::sf_x(double mu, double x) {
 	double m = m_;
 	double c = m/M_PI*KB/AU_eV*temp_, ex = -(x-mu)/(KB/AU_eV*temp_);	 // [au]
 	if (ex < 700)
@@ -626,7 +628,7 @@ inline double WignerFunction::sf_x(double mu, double x){
 
 
 // Gaussian with sigma parameter
-double WignerFunction::gaussian_x(double mu, double x){
+double WignerFunction::gaussian_x(double mu, double x) {
 	// double mu = uF_+uBias_;
 	// double mu = k > 0 ? uL_ : uR_;
 	double sigma = 1;
@@ -638,15 +640,46 @@ double WignerFunction::gaussian_x(double mu, double x){
 	return c * ex;
 }
 
+double WignerFunction::eqFun_x(double mu, double x) {
+	double m = m_;
+	double kBT = KB/AU_eV*temp_;
+	double c, ex;
+	if (bcType_ > 0) {
+		c = m/M_PI*KB/AU_eV*temp_, ex = -(x-mu)/(KB/AU_eV*temp_);	 // [au]
+		if (ex < 700)
+			return c * log(exp(ex)+1);
+		else{
+			if (ex > 0)
+				return c * ex;
+			else return 0;
+		}
+	}
+	else {
+		double sigma = 1;
+		c = pow((2.*M_PI*m*kBT)*sigma*sigma,-1/2.)*cD_;
+		ex = exp(-x/kBT/sigma/sigma);	 // [au]
+		// double c = 4*M_PI*m*KB/AU_eV*temp_, ex = -(k*k/m/2.-mu)/(KB/AU_eV*temp_);	 // [au]
+		return c * ex;
+	}
+}
+
 
 // Lorentz * SF convolution
 double WignerFunction::lorentz(double k){
 	// double mu = k > 0 ? uL_ : uR_;
 	double mu = uF_;
 	double m = m_;
+	int bcType = bcType_;
 	double u = k*k/m/2., g = Gamma_;
 	// Lorentz profile
 	auto f = [g](double x) { return g/(x*x+g*g)/M_PI; };
+	// Equilibrium function for electrons in contact
+	// auto f_eq = [mu, bcType, gaussian_x, sf_x](double x) {
+	// 	if (bcType < 0)
+	// 		return gaussian_x(mu, x);
+	// 	else
+	// 		return sf_x(mu, x);
+	// };
 	// convolution
 	size_t N = 1e4, i;
 	double h = (40/beta_+mu)/float(N);  // 40 from exp(x) -> 0 in SF
@@ -655,11 +688,11 @@ double WignerFunction::lorentz(double k){
 	for (i=1; i<N-1; i++){
 		x0 = i*h, x1 = (i+1)*h;
 		xm2 = (x0+x1)/2., xm1 = (x0+xm2)/2., xm3 = (xm2+x1)/2.;
-		fb += 7*f(x0-u) * gaussian_x(mu, x0) +
-					32*f(xm1-u) * gaussian_x(mu, xm1) +
-					12*f(xm2-u) * gaussian_x(mu, xm2) +
-					32*f(xm3-u) * gaussian_x(mu, xm3) +
-					7*f(x1-u) * gaussian_x(mu, x1);
+		fb += 7*f(x0-u) * eqFun_x(mu, x0) +
+			32*f(xm1-u) * eqFun_x(mu, xm1) +
+			12*f(xm2-u) * eqFun_x(mu, xm2) +
+			32*f(xm3-u) * eqFun_x(mu, xm3) +
+			7*f(x1-u) * eqFun_x(mu, x1);
 	}
 	fb *= 2*h/4./45.;
 	// vec a(N, fill::zeros), b(N, fill::zeros), c(N, fill::zeros);
@@ -680,6 +713,13 @@ double WignerFunction::gauss(double k){
 	double u = k*k/m/2., g = Gamma_;
 	// Gauss profile
 	auto f = [g](double x) { return 1/g/sqrt(2*M_PI)*exp(-x*x/2./g/g); };
+	// Equilibrium function for electrons in contact
+	// auto f_eq = [mu, bcType, gaussian_x, sf_x](double x) {
+	// 	if (bcType < 0)
+	// 		return gaussian_x(mu, x);
+	// 	else
+	// 		return sf_x(mu, x);
+	// };
 	// convolution
 	int N = 1e4, i;
 	double fb = 0;
@@ -688,11 +728,11 @@ double WignerFunction::gauss(double k){
 	for (i=1; i<N-1; i++){
 		x0 = i*h, x1 = (i+1)*h;
 		xm2 = (x0+x1)/2., xm1 = (x0+xm2)/2., xm3 = (xm2+x1)/2.;
-		fb += 7*f(x0-u) * gaussian_x(mu, x0) +
-					32*f(xm1-u) * gaussian_x(mu, xm1) +
-					12*f(xm2-u) * gaussian_x(mu, xm2) +
-					32*f(xm3-u) * gaussian_x(mu, xm3) +
-					7*f(x1-u) * gaussian_x(mu, x1);
+		fb += 7*f(x0-u) * eqFun_x(mu, x0) +
+			32*f(xm1-u) * eqFun_x(mu, xm1) +
+			12*f(xm2-u) * eqFun_x(mu, xm2) +
+			32*f(xm3-u) * eqFun_x(mu, xm3) +
+			7*f(x1-u) * eqFun_x(mu, x1);
 	}
 	return fb*2*h/4./45.;
 }
@@ -716,6 +756,13 @@ double WignerFunction::voigt(double k) {
 	auto f = [eta, g](double x)
 		{ return eta*( g/(x*x+g*g)/M_PI ) +  // lorentz
 			(1-eta)*( 1/g/sqrt(2*M_PI)*exp(-x*x/2./g/g) ); };  // gauss
+	// Equilibrium function for electrons in contact
+	// auto f_eq = [mu, bcType, gaussian_x, sf_x](double x) {
+	// 	if (bcType < 0)
+	// 		return gaussian_x(mu, x);
+	// 	else
+	// 		return sf_x(mu, x);
+	// };
 	// convolution
 	int N = 1e4, i;
 	double fb = 0;
@@ -724,11 +771,11 @@ double WignerFunction::voigt(double k) {
 	for (i=1; i<N-1; i++){
 		x0 = i*h, x1 = (i+1)*h;
 		xm2 = (x0+x1)/2., xm1 = (x0+xm2)/2., xm3 = (xm2+x1)/2.;
-		fb += 7*f(x0-u) * gaussian_x(mu, x0) +
-			32*f(xm1-u) * gaussian_x(mu, xm1) +
-			12*f(xm2-u) * gaussian_x(mu, xm2) +
-			32*f(xm3-u) * gaussian_x(mu, xm3) +
-			7*f(x1-u) * gaussian_x(mu, x1);
+		fb += 7*f(x0-u) * eqFun_x(mu, x0) +
+			32*f(xm1-u) * eqFun_x(mu, xm1) +
+			12*f(xm2-u) * eqFun_x(mu, xm2) +
+			32*f(xm3-u) * eqFun_x(mu, xm3) +
+			7*f(x1-u) * eqFun_x(mu, x1);
 	}
 	return fb*2*h/4./45.;
 }

@@ -17,12 +17,6 @@ public:
 	int calc_mode_;
 	double v_max_;
 	int nv_;
-	void setSysContacts(double irG, char idist)
-			{ rG_ = irG*t0_, Gamma_ = rG_*.5, bcType_ = idist; }
-
-	// #################### Set system dissipation ####################
-	void setSysDissipation(double irR, double irM, double ilambda)
-			{ rR_ = irR*t0_, rM_ = irM*t0_, lambda_ = ilambda*a0_*a0_*t0_; }
 	*/
 
 	// Default constructor
@@ -60,6 +54,8 @@ public:
 		lambda_(0),
 		bcType_(0),
 		useNLP_(false),
+		useQC_(false),
+		uBias_BC_(false),
 		f_(mat(nx_, nk_)),
 		fe_(mat(nx_, nk_)),
 		f0_(mat(nx_, nk_)),
@@ -119,23 +115,31 @@ public:
 	void set_lYZ(double lYZ) { lYZ_ = lYZ; }
 	void set_part_num(double part_num) { part_num_ = part_num; }
 	void set_kmax(double kmax) { kmax_ = kmax; }
-	void set_dt(double dt) { dt_ = dt; }
+	void set_dt(double dt) {
+		dt_ = dt;
+		courant_num_ = dt_*kmax_/m_/dx_;
+	}
 	void set_cD(double cD) { cD_ = cD; }
-	void set_uF(double uF) { uF_ = uF, set_uF_ = true; }
-	void set_temp(double temp) { temp_ = temp; }
+	void set_uF(double uF) {
+		uF_ = uF, set_uF_ = true;
+		uL_ = uF_, uR_ = uF_;
+	}
+	void set_temp(double temp) {
+		temp_ = temp;
+		beta_ = 1./KB/temp_*AU_eV;
+	}
 	void set_epsilonR(double epsilonR) { epsilonR_ = epsilonR; }
 	void set_uBias(double uBias) { uBias_ = uBias; }
 	void set_useNLP(bool useNLP) { useNLP_ = useNLP; }
+	void set_useQC(bool useQC) { useQC_ = useQC; }
+	void set_uBias_BC(bool uBias_BC) { uBias_BC_ = uBias_BC; }
 
 	void update() {
 		nxk_ = nx_*nk_, nk2_ = size_t(nk_/2.);
 		l_ = lD_ + 2*lC_;
 		dx_ = l_/float(nx_-1);
-		kmax_ < 0 ? M_PI/2./dx_ : kmax_;
+		kmax_ = kmax_ < 0 ? M_PI/2./dx_ : kmax_;
 		dk_ = 2.*kmax_/float(nk_-1);
-		courant_num_ = dt_*kmax_/m_/dx_;
-		beta_ = 1./KB/temp_*AU_eV;
-		uF_ = set_uF_ ? uF_ : calcFermiEn(cD_, m_, temp_);  // Fermi energy
 		f_ = mat(nx_, nk_, fill::zeros);
 		fe_ = mat(nx_, nk_, fill::zeros);
 		f0_ = mat(nx_, nk_, fill::zeros);
@@ -145,15 +149,18 @@ public:
 		uC_ = vec(nx_, fill::zeros);
 		uB_ = vec(nx_, fill::zeros);
 		du_ = vec(nx_, fill::zeros);
+		dddu_ = vec(nx_, fill::zeros);
 		uStart_ = vec(nx_, fill::zeros);
 		bc_ = vec(nk_, fill::zeros);
-		x_ = vec(nx_, fill::zeros);
-		k_ = vec(nk_, fill::zeros);
-		sin_ = mat(nk_,nk_*nk2_);
 		cdX_ = vec(nx_, fill::zeros), cdK_ = vec(nk_, fill::zeros);
 		currD_ = vec(nx_, fill::zeros);
-		for (size_t i=0; i<nx_; ++i) x_(i) = i*dx_;
-		for (size_t j=0; j<nk_; ++j) k_(j) = dk_*(j-(nk_-1)*.5);
+		x_ = vec(nx_, fill::zeros);
+		for (size_t i=0; i<nx_; ++i)
+			x_(i) = i*dx_;
+		k_ = vec(nk_, fill::zeros);
+		for (size_t j=0; j<nk_; ++j)
+			k_(j) = dk_*(j-(nk_-1)*.5);
+		sin_ = mat(nk_,nk_*nk2_);
 		// #pragma omp parallel for collapse(3)
 		for (size_t j=0; j<nk_; ++j)
 				for (size_t g=0; g<nk_; g++)
@@ -188,6 +195,7 @@ public:
 	void diffusionTerm(size_t, size_t, double);       // Filling matrice with drift term
 	void driftTerm(size_t, size_t, double);       // Filling matrice with drift term
 	void scatteringTerm(size_t, size_t, double);       // Filling matrice with drift term
+	void quantumCorrTerm(size_t, size_t, double);
 
 	void solveRec();							// Wigner equation solved recursively
 	void solveMatrixEq();						// Wigner equation solved by solving matrix equation
@@ -203,18 +211,17 @@ public:
 	double gaussian_bc(double);
 	double gaussian_x(double, double);
 
+	double eqFun_x(double, double);
 	double lorentz(double);	 // Lorentz profile
 	double gauss(double);	 // Gauss
 	double voigt(double);	 // Voigt profile
 
 	// wignerTools.cpp
 	void setPotBias(double);
-	void addGaussPot(double, double, double);
-	void setRTD(double, double, double, double, double);
-	void setSysContacts(double, char);
-	void setSysDissipation(double, double, double);
+	void addGaussBarr(double, double, double);
+	void addRectBarr(double, double, double, double);
 	void addWavePacket();
-	double WavePacket_TE(double, double);
+	double WavePacket_TEV(double, double);
 	double nC(double, double);
 	double fermiInt(double, double);
 	double calcFermiEn(double, double, double);
@@ -249,7 +256,7 @@ public:
 	double rR_, rM_, rG_, Gamma_, rF_;				// Scattering rate (1/tau)
 	double lambda_;								// Localization rate
 	int bcType_;									// Distribution used as bc
-	bool useNLP_;
+	bool useNLP_, useQC_, uBias_BC_;
 
 	// private:
 
@@ -262,6 +269,7 @@ public:
 	vec uC_; // Hartree potential / bias potential
 	vec uB_;  // Band offset
 	vec du_;  // Potential derivative
+	vec dddu_;  // Potential third derivative
 	vec uStart_;  // Potential
 	vec bc_;  // Boundary condition
 	vec x_;  // Position values
@@ -274,7 +282,7 @@ public:
 	sp_mat a_;
 	vec b_;
 
-	vec iv_i_, iv_v_;
+	vec iv_i_, iv_v_, iv_iRange_, iv_n_;
 };
 
 

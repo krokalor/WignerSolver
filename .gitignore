@@ -37,11 +37,14 @@
 *.eps
 
 # Gnuplot/GLE scripts
-*.gp
-*.gle
+# *.gp
+# *.gle
 
 # Output files
 *.dat
 *.out
 *.z
-out
+*.csv
+
+# Run file
+run
