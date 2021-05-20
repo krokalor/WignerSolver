@@ -249,9 +249,9 @@ void WignerFunction::printParam()
 	cout.width(cw_n); cout<<"# fermi_energy";
 	cout.width(cw_v); cout<<uF_;
 	cout.width(cw_v); cout<<uF_*AU_eV<<'#'<<endl;
-	cout.width(cw_n); cout<<"# set_uF";
-	cout.width(cw_v); cout<<(set_uF_ ? "true" : "false");
-	cout.width(cw_v); cout<<(set_uF_ ? "true" : "false")<<'#'<<endl;
+	// cout.width(cw_n); cout<<"# set_uF";
+	// cout.width(cw_v); cout<<(set_uF_ ? "true" : "false");
+	// cout.width(cw_v); cout<<(set_uF_ ? "true" : "false")<<'#'<<endl;
 	// ////////// Wave packet ////////// WRITE SI OUTPUT#
 	cout.width(cw_n); cout<<"# gwp_x0";
 	cout.width(cw_v); cout<<gwp_x0_;

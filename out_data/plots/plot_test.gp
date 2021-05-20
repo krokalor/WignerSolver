@@ -61,7 +61,7 @@ set xlabel ""
 set key over
 
 plot [:] [:] file u 1:2 w l ls 2 axes x1y2,\
-    '' u 1:4 w l ls 1
+    '' u 1:3 w l ls 1
 
 #
 ##### Plot 2 #####
@@ -72,14 +72,13 @@ set size 1,0.54
 
 set format x "%.0f"
 set xlabel "x [nm]"
-# set ylabel "j(x) [Acm^{-2}]"
-# set y2label "U(x) [eV]" textcolor "#0000ff"
-unset logscale
-set key below
+set logscale y
+set key over
 
 x0 = 35; s = 20; U0 = 0.03
 plot [:] file u 1:2 w l ls 2 axes x1y2,\
-    '' u 1:5 w l ls 1
-    # '' u 1:7 w p ls 3,\
+    '' u 1:4 w l ls 1
+    # '' u 1:7 w l ls 3 axes x1y2,\
+    # '' u 1:5 w l ls 1
     # U0*exp(-(x-x0)*(x-x0)/s/s)*(-8./s/s/s/s/s/s*(x-x0)*(x-x0)*(x-x0)+12/s/s/s/s*(x-x0))
     # U0*exp(-(x-x0)*(x-x0)/s/s) w l ls 3

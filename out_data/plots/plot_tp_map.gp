@@ -38,9 +38,7 @@ set origin .04,0
 AU_nm = 0.0529
 AU_cm2 = 2.8e-17
 
-folder = 'dane/'
-
-splot [1e-13:1e-10] [-0.04:0.04] folder.'tpMap.out' u 1:2:3
+splot [1e-13:1e-10] [-0.06:0.06] '../tpMap.out' u 1:2:3
 # splot [0:2*pi] [0:2*pi] sin(x)*cos(y)
 
 

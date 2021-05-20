@@ -28,53 +28,51 @@ int main(){
 	duration<double> t_elapsed;
 	t_start = high_resolution_clock::now();
 
-	WignerFunction f;
+	double nx = 150, nk = 150;
+	double lD = 1000/AU_nm, lC = 1500/AU_nm;
+	double k_max = 0.15;  // -1
 
-	f.set_m(0.067);
-	f.set_temp(77);
-	f.set_nx(200), f.set_nk(200);
-	f.set_lD(20/AU_nm), f.set_lC(15/AU_nm);
-	f.set_kmax(.1);
-	f.set_dt(5*1e-15/AU_s);
-	f.set_cD(2e18*AU_cm3); // 2e18*AU_cm3
-	f.set_uF(f.calcFermiEn(f.cD_, f.m_, f.temp_));  // 0.087/AU_eV
-	// f.set_lYZ(1e-8/AU_cm2);
-	// f.set_part_num(1);
+	double m = 0.067;
+	double temp = 77;
+	double cD = 2e18*AU_cm3;
+	double uF = calcFermiEn(cD, m, temp);  // calcFermiEn(cD, m, temp) 0.087/AU_eV
+	double dt = 5*1e-15/AU_s;
+	double rR = 0, rM = 0, rF = 0, rG = 0, lambda = 0;
+
+	WignerFunction f(nx, lD, lC, nk, k_max);
+
+	vec x_arr = f.get_x_arr(), k_arr = f.get_k_arr();
+
+	f.set_m(m);
+	f.set_temp(temp);
+	f.set_cD(cD);
+	f.set_uF(uF);
+	f.set_dt(dt);
+	f.set_rR(rR), f.set_rM(rM), f.set_rF(rF), f.set_rG(rG), f.set_lambda(lambda);
+
 	f.set_useQC(false);
 	f.set_useNLP(false);
-	f.set_uBias_BC(false);
+	f.set_uBias_BC(true);
 
-	// This function updates arrays sizes after nx_ and nk_ change
-	f.update();
-
-	//
 	// Warunek brzegowy
 	// 0 -> 0, 1 -> SF, 2:4 -> splot with SF, -1 -> Gauss, -2:-4 splot with Gauss
-	f.bcType_ = 1, f.rG_ = 0;  // 1./(1e-13/AU_s);
+	f.set_bcType(1);
 
 	//
 	// Potencjał
 	cout<<"# Setting up potential"<<endl;
-	f.set_uBias(0.2/AU_eV);
-	// f.setPotBias(0.2/AU_eV);
-	// f.addGaussBarr(0.1/AU_eV, 25/AU_nm, 5/AU_nm);
-	// f.addRectBarr(0.3/AU_eV, 20/AU_nm, 5/AU_nm, 10);
-	// f.addRectBarr(0.3/AU_eV, 27.5/AU_nm, 5/AU_nm, 10);
-	// f.addRectBarr(0.27/AU_eV, f.lC_+1.4/AU_nm, 2.8/AU_nm, 10);
-	// f.addRectBarr(0.27/AU_eV, f.lC_+(2.8+4.5+1.4)/AU_nm, 2.8/AU_nm, 10);
-	// f.readPotential("out_data/poisson_pot/poisson_pot-0eV-50nm.in");
+	f.set_uBias(0./AU_eV);
+	// f.setPotBias(0.1/AU_eV);
+	// f.addRectBarr(0.3/AU_eV, 17.5/AU_nm, 2/AU_nm, 10);
+	// f.addRectBarr(0.3/AU_eV, 22.5/AU_nm, 2/AU_nm, 10);
+	// f.addGaussBarr(0.3/AU_eV, 2000/AU_nm, 500/AU_nm);
+	// f.readPotential("out_data/poisson_pot/poisson_pot-0eV-2um.in");
 	// f.u_ = f.u_ + f.uStart_;
 	// f.uStart_ = f.uC_;
 
 	//
 	// FUNKCJA RÓWNOWAGOWA
-	// f.setEquilibriumFunction("pot.in", false);
-
-	//
-	// Dyssypacja
-	// f.rR_ = 1./(1e-12/AU_s);  // 1./(1e-12/AU_s);
-	// f.rM_ = 1./(1e-12/AU_s);  // 1./(1e-12/AU_s);
-	// f.lambda_ = 0*AU_nm*AU_nm*AU_s;  // [nm^-2*s^-1]
+	// f.setEquilibriumFunction("out_data/poisson_pot/poisson_pot-0eV-2um.in", false);
 
 	f.printParam();
 
@@ -85,6 +83,11 @@ int main(){
 	// f.saveWignerFun();
 
 	//
+	// Boltzmann-Poisson
+	cout<<"# Solving BTE+PE"<<endl;
+	f.solveWignerPoisson(0.4/AU_eV, 1e-5, 1, 200);  // uBias, alpha, beta, n_max
+
+	//
 	// Poisson test
 	// Poisson1D p(200, 1/AU_nm);
 	// p.rho_ = -1*normpdf(linspace(0, 200, 200), 100, 10);
@@ -93,26 +96,23 @@ int main(){
 	// p.testPoisson();
 
 	//
-	// Boltzmann-Poisson
-	cout<<"# Solving BTE+PE"<<endl;
-	f.solveWignerPoisson();
-
-	//
 	// Barriera gaussowska
 	// gaussBarrier(f);
 
 	//
 	// Zalezność funkcji rozkładu od dyssypacji
-	// dissDecoh(f, 1e-13, 1e-10, 10, 0.0/AU_eV, 0.001/AU_eV, 10);
+	// dissDecoh(f, 1e-13, 1e-10, 5, 0.0/AU_eV, 0.001/AU_eV, 10);
 
 	//
 	// Charakterystyka J-V
-	// f.calc_IVchar(0.0/AU_eV, 0.4/AU_eV, 10);
+	// f.calc_IVchar(0.0/AU_eV, 0.4/AU_eV, 5);
 	// vec fit = polyfit(f.iv_v_, f.iv_i_, 1);
 	// fit.print();
 	// f.saveWignerFun();
 
-	f.calcCurr(), f.calcCD_X(), f.calcCD_K();
+	double curr = f.calcCurr();
+	f.calcCD_X(), f.calcCD_K();
+	vec cdX = f.get_cdX(), cdK = f.get_cdK();
 
 	// vec nx_1 (f.nx_, fill::zeros), nx_2 (f.nx_, fill::zeros);
 	// vec jx_1 (f.nx_, fill::zeros), jx_2 (f.nx_, fill::zeros);
@@ -127,20 +127,22 @@ int main(){
 	// 	}
 	// }
 
-	vec an_pot (f.nx_, fill::zeros);
+	vec an_pot (nx, fill::zeros);
 	double sig = 20/AU_nm, x0 = 35/AU_nm;
-	for (size_t i=0; i<f.nx_; ++i)
-		an_pot(i) = 0.03/AU_eV*exp(-(f.x_(i)-x0)*(f.x_(i)-x0)/sig/sig)*(-8/pow(sig,6)*pow(f.x_(i)-x0,3)+12/pow(sig,4)*(f.x_(i)-x0));
+	for (size_t i=0; i<nx; ++i)
+		an_pot(i) = 0.03/AU_eV*exp(-(x_arr(i)-x0)*(x_arr(i)-x0)/sig/sig)
+		*(-8/pow(sig,6)*pow(x_arr(i)-x0,3)+12/pow(sig,4)*(x_arr(i)-x0));
 
-	field<std::string> header(7);
+	field<std::string> header(8);
 	mat out_data;
-	out_data.insert_cols(0, f.x_*AU_nm), header(0) = "x [nm]";
-	out_data.insert_cols(1, f.u_*AU_eV), header(1) = "U [eV]";  // col. 2
-	out_data.insert_cols(2, f.currD_*AU_Acm2), header(2) = "J [Acm^{-2}]";  // col. 3
-	out_data.insert_cols(3, f.cdX_/AU_cm3), header(3) = "n [cm^{-3}]";  // col. 4
-	out_data.insert_cols(4, f.du_), header(4) = "U' [au]";  // col. 5
-	out_data.insert_cols(5, f.dddu_), header(5) = "U''' [au]";  // col. 6
-	out_data.insert_cols(6, an_pot), header(6) = "U'''_{an} [au]";  // col. 6
+	out_data.insert_cols(0, x_arr*AU_nm), header(0) = "x [nm]";
+	out_data.insert_cols(1, f.get_u()*AU_eV), header(1) = "U [eV]";  // col. 2
+	out_data.insert_cols(2, f.get_currD()*AU_Acm2), header(2) = "J(x) [Acm^{-2}]";  // col. 3
+	out_data.insert_cols(3, cdX/AU_cm3), header(3) = "n [cm^{-3}]";  // col. 4
+	out_data.insert_cols(4, f.get_du()*AU_eV/AU_nm), header(4) = "U' [eV/nm]";  // col. 5
+	out_data.insert_cols(5, f.get_dddu()), header(5) = "U''' [au]";  // col. 6
+	out_data.insert_cols(6, f.get_uB()*AU_eV), header(6) = "U^B [eV]";  // col. 7
+	out_data.insert_cols(7, f.get_uC()*AU_eV), header(7) = "U^C [eV]";  // col. 7
 	// out_data.insert_cols(5, nx_1/AU_cm3), header(5) = "nx+[cm^-3]";  // col. 6
 	// out_data.insert_cols(6, nx_2/AU_cm3), header(6) = "nx-[cm^-3]";  // col. 7
 	// out_data.insert_cols(7, (nx_2-nx_1)/AU_cm3), header(7) = "(nx+)-(nx-)[cm^-3]";  // col. 8
@@ -153,24 +155,24 @@ int main(){
 	file.open("out_data/cdX.out", std::ios::out);
 	file<<"# Carrier density in 'x' space\n";
 	file<<"# x [au]  n(x) [au]\n";
-	for (size_t i=0; i<f.nx_; ++i)
-		file<<f.x_(i)<<'\t'<<f.cdX_(i)<<'\n';
+	for (size_t i=0; i<nx; ++i)
+		file<<x_arr<<'\t'<<cdX(i)<<'\n';
 	file.close();
 
 	file.open("out_data/cdK.out", std::ios::out);
 	file<<"# Carrier density in 'k' space\n";
 	file<<"# p [au]  n(k) [au]\n";
-	for (size_t j=0; j<f.nk_; ++j)
-		file<<f.k_(j)<<'\t'<<f.cdK_(j)<<'\n';
+	for (size_t j=0; j<nk; ++j)
+		file<<k_arr(j)<<'\t'<<cdK(j)<<'\n';
 	file.close();
 
-	file.open("out_data/pot.out", std::ios::out);
-	file<<"# x [au]  U [au]\n";
-	for (size_t i=0; i<f.nx_; ++i)
-		file<<f.x_(i)<<' '<<f.u_(i)<<'\n';
-	file.close();
+	// file.open("out_data/pot.out", std::ios::out);
+	// file<<"# x [au]  U [au]\n";
+	// for (size_t i=0; i<f.nx_; ++i)
+	// 	file<<f.x_(i)<<' '<<f.u_(i)<<'\n';
+	// file.close();
 
-	cout<<"# Final current = "<<f.calcCurr()*AU_Acm2<<" [Acm^-2]"<<endl;
+	cout<<"# Final current = "<<curr*AU_Acm2<<" [Acm^-2]"<<endl;
 	cout<<"# N = "<<f.calcNorm()/AU_cm2<<" [cm^-2]"<<endl;
 	// cout<<"# int{dp} f_BC = "<<calcInt(f.bc_, f.dk_)/AU_cm3<<" [a.u.]"<<endl;
 
@@ -185,9 +187,17 @@ int main(){
 
 }
 
+
+/*
 void gaussBarrier(WignerFunction& f) {
-	vec nx_1 (f.nx_, fill::zeros), nx_2 (f.nx_, fill::zeros);
-	vec jx_1 (f.nx_, fill::zeros), jx_2 (f.nx_, fill::zeros);
+
+	size_t nx = f.get_nx(), nk = f.get_nk();
+	double m = f.get_m();
+	mat f;
+
+	vec nx_1 (nx, fill::zeros), nx_2 (nx, fill::zeros);
+	vec jx_1 (nx, fill::zeros), jx_2 (nx, fill::zeros);
+
 
 	// f.setPotBias(0.02/AU_eV);
 	f.uB_.zeros();
@@ -258,9 +268,14 @@ void dissDecoh(WignerFunction& f, double t_start, double t_end, size_t n_step, d
 	mat tpMap(n_step, f.nk_, fill::zeros);
 	mat ivMap(n_step, nv, fill::zeros);
 
-	f.calc_IVchar(v_min, v_max, nv);
-	fit = polyfit(f.iv_v_, f.iv_i_, 1);
-	double r0 = 1/fit(0), r = 0;
+	bool calcIVchar = false;
+	double r0 = 0, r = 0;
+
+	if (calcIVchar) {
+		f.calc_IVchar(v_min, v_max, nv);
+		fit = polyfit(f.iv_v_, f.iv_i_, 1);
+		r0 = 1/fit(0);
+	}
 
 	std::ofstream out;
 	out.open("out_data/diss_tau.out", std::ios::out);
@@ -270,7 +285,7 @@ void dissDecoh(WignerFunction& f, double t_start, double t_end, size_t n_step, d
 	cout<<"# i  tS [s]  j/j0  n/n0  R\n";
 	for (size_t i = 0; i < n_step; ++i) {
 		t = t_start*pow(10,(n_step-1-i)*t_step);
-		f.rR_ = 1/(t/AU_s);
+		// f.rR_ = 1/(t/AU_s);
 		f.rM_ = 1/(t/AU_s);
 		// f.solveWignerEq();
 		f.solveWignerPoisson();
@@ -278,16 +293,23 @@ void dissDecoh(WignerFunction& f, double t_start, double t_end, size_t n_step, d
 		for (size_t k=0; k<f.nk_; ++k)
 			tpMap(i, k) = nE_k(k);
 		j = f.calcCurr(), n = f.calcNorm();
+		//
 		// I-V char
-		f.calc_IVchar(v_min, v_max, nv);
-		fit = polyfit(f.iv_v_, f.iv_i_, 1);
-		r = 1/fit(0);
-		for (size_t l=0; l<nv; ++l)
-			ivMap(i, l) = f.iv_i_(l);
+		if (calcIVchar) {
+			f.calc_IVchar(v_min, v_max, nv);
+			fit = polyfit(f.iv_v_, f.iv_i_, 1);
+			r = 1/fit(0);
+			for (size_t l=0; l<nv; ++l)
+				ivMap(i, l) = f.iv_i_(l);
+		}
 		// out<<i<<'\t'<<t<<'\t'<<j/j0<<'\t'<<1./fit(0)<<endl;
 		// cout<<i<<'\t'<<t<<'\t'<<j/j0<<'\t'<<1./fit(0)<<endl;
-		out<<i<<'\t'<<t<<'\t'<<j/j0<<'\t'<<n/n0<<'\t'<<r/r0<<endl;
-		cout<<i<<'\t'<<t<<'\t'<<j/j0<<'\t'<<n/n0<<'\t'<<r/r0<<endl;
+		out<<i<<'\t'<<t<<'\t'<<j/j0<<'\t'<<n/n0;
+		if (calcIVchar) out<<'\t'<<r/r0;
+		out<<endl;
+		cout<<i<<'\t'<<t<<'\t'<<j/j0<<'\t'<<n/n0;
+		if (calcIVchar) cout<<'\t'<<r/r0;
+		cout<<endl;
 		f.saveWignerFun();
 	}
 	out.close();
@@ -307,20 +329,22 @@ void dissDecoh(WignerFunction& f, double t_start, double t_end, size_t n_step, d
 	}
 	tpMap_out.close();
 
-	std:: ofstream ivMap_out;
-	ivMap_out.open("out_data/ivMap.out", std::ios::out);
-	ivMap_out<<"# tau [s]  p [au]  f(p) [au]\n";
-	for (size_t i = 0; i < n_step; ++i) {
-		t = t_start*pow(10,(n_step-1-i)*t_step);
-		for (size_t l=0; l<nv; ++l) {
-			ivMap_out<<t<<' '<<f.iv_v_(l)
-				// <<'\t'<<f.f_(size_t(f.nx_/2.),k)
-				<<'\t'<<ivMap(i,l)
-				<<'\n';
+	if (calcIVchar) {
+		std:: ofstream ivMap_out;
+		ivMap_out.open("out_data/ivMap.out", std::ios::out);
+		ivMap_out<<"# tau [s]  p [au]  f(p) [au]\n";
+		for (size_t i = 0; i < n_step; ++i) {
+			t = t_start*pow(10,(n_step-1-i)*t_step);
+			for (size_t l=0; l<nv; ++l) {
+				ivMap_out<<t<<' '<<f.iv_v_(l)
+					// <<'\t'<<f.f_(size_t(f.nx_/2.),k)
+					<<'\t'<<ivMap(i,l)
+					<<'\n';
+			}
+			ivMap_out<<'\n';
 		}
-		ivMap_out<<'\n';
+		ivMap_out.close();
 	}
-	ivMap_out.close();
 
 }
 
@@ -383,3 +407,4 @@ void calcTimeChar(WignerFunction& f) {
 	out.close();
 
 }
+*/

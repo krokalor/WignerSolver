@@ -41,8 +41,7 @@ void WignerFunction::solveWignerEq(){
 			diffusionTerm(i, j, -1);
 			driftTerm(i, j, -1);
 			scatteringTerm(i, j, -1);
-			if (false)  // useQC_
-				quantumCorrTerm(i, j, -1);
+			if (useQC_) quantumCorrTerm(i, j, -1);
 		}  // end j loop
 	}  // end i loop
 
@@ -85,8 +84,7 @@ void WignerFunction::solveTimeEv(){
 			diffusionTerm(i, j, dt_);
 			driftTerm(i, j, dt_);
 			scatteringTerm(i, j, dt_);
-			if (false)  // useQC_
-				quantumCorrTerm(i, j, dt_);
+			if (useQC_) quantumCorrTerm(i, j, dt_);
 		}  // end j loop
 	}  // end i loop
 
@@ -100,8 +98,8 @@ void WignerFunction::solveTimeEv(){
 	// spsolve(x, a, b, "superlu");
 
 	for (size_t i=0; i<nx_; ++i)
-			for (size_t j=0; j<nk_; ++j)
-					f_(i,j) = x(i*nk_+j) - f_(i,j);
+		for (size_t j=0; j<nk_; ++j)
+			f_(i,j) = x(i*nk_+j) - f_(i,j);
 }
 
 
@@ -176,7 +174,7 @@ void WignerFunction::diffusionTerm(size_t i, size_t j, double dt){
 			a_(r, (i+2)*nk_+j) += -C;
 		}
 	}
-	if (k_(j)>0.) {
+	else if (k_(j)>0.) {
 		if (i==0) {
 			a_(r, r) += 3*C;
 			b_(r) += 3*bj;
@@ -305,15 +303,15 @@ void WignerFunction::driftTerm(size_t i, size_t j, double dt){
 		//   }
 		// }
 		// UDS2
-		if (F<=0.) {
+		if (F<0.) {
 			if (j==nk_-1) {
 				a_(r, r) += -3*C;
-				// b_(r) += -3*bj;
+				b_(r) += -3*fermiDirac(kmax_);
 			}
 			else if (j==nk_-2) {
 				a_(r, r) += -3*C;
 				a_(r, r+1) += 4*C;
-				// b_(r) += bj;
+				b_(r) += fermiDirac(kmax_);
 			}
 			else {
 				a_(r, r) += -3*C;
@@ -321,15 +319,15 @@ void WignerFunction::driftTerm(size_t i, size_t j, double dt){
 				a_(r, r+2) += -C;
 			}
 		}
-		if (F>0.) {
+		if (F>=0.) {
 			if (j==0) {
 				a_(r, r) += 3*C;
-				// b_(r) += 3*bj;
+				b_(r) += 3*fermiDirac(-kmax_);
 			}
 			else if (j==1) {
 				a_(r, r) += 3*C;
 				a_(r, r-1) += -4*C;
-				// b_(r) += -bj;
+				b_(r) += -fermiDirac(-kmax_);
 			}
 			else {
 				a_(r, r) += 3*C;
@@ -338,20 +336,24 @@ void WignerFunction::driftTerm(size_t i, size_t j, double dt){
 			}
 		}
 		// // UDS1
-		// if (F > 0){
-		// 	if (j == 0)
-		// 		a_(r, r) += C;
-		// 	else{
-		// 		a_(r, r) += C;
-		// 		a_(r, r-1) += -C;
-		// 	}
-		// }
-		// else if (F <= 0){
-		// 	if (j == nk_-1)
+		// if (F <= 0) {
+		// 	if (j == nk_-1) {
 		// 		a_(r, r) += -C;
+		// 		b_(r) += -fermiDirac(kmax_);
+		// 	}
 		// 	else{
 		// 		a_(r, r) += -C;
 		// 		a_(r, r+1) += C;
+		// 	}
+		// }
+		// else if (F > 0) {
+		// 	if (j == 0) {
+		// 		a_(r, r) += C;
+		// 		b_(r) += fermiDirac(-kmax_);
+		// 	}
+		// 	else {
+		// 		a_(r, r) += C;
+		// 		a_(r, r-1) += -C;
 		// 	}
 		// }
 		// // CDS1

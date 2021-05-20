@@ -5,23 +5,25 @@ using namespace wigner;
 
 
 void WignerFunction::setEquilibriumFunction(std::string input_pot, bool read_pot){
-	solveWignerEq();
-	calcCD_X();
-	vec nx = cdX_;
+	// solveWignerEq();
+	// calcCD_X();
+	// vec nx = cdX_;
 	double uBias = uBias_;
-	setPotBias(0.);
+	// setPotBias(0.);
+	set_uBias(0.);
 	if (read_pot) {
 		readPotential(input_pot);
 		uC_ = uStart_;
 	}
 	solveWignerEq();
-	calcCD_X();
-	vec nx_0 = cdX_;
+	// calcCD_X();
+	// vec nx_0 = cdX_;
 	for (size_t i=0; i<nx_; ++i)
 		for (size_t j=0; j<nk_; ++j)
 			fe_(i,j) = f_(i,j);  // *nx(i)/nx_0(i)
 	f_.zeros();
-	setPotBias(uBias);
+	// setPotBias(uBias);
+	set_uBias(uBias);
 }
 
 
@@ -284,20 +286,6 @@ void WignerFunction::addRectBarr(double u0 = 0.3/AU_eV, double x0 = 1000, double
 // ############################## WP initial conditions ##############################
 //
 void WignerFunction::addWavePacket() {
-	/*
-	double deviceHW = 1e+6/a0_;
-	gwp_tl_ = sqrt(2*M_PI*beta_/m_);
-	gwp_dx_ = 0.28 * gwp_tl_;  // 0.28
-	gwp_dp_ = sqrt(2*m_/beta_);
-	gwp_x0_ = 3*gwp_dx_;
-	gwp_A_ = part_num_ /
-					(2.*M_PI*gwp_dx_*gwp_dp_*deviceHW*deviceHW*gwp_p0_*gwp_p0_);
-			*/
-	// gwp_dp_ = 1./(2*gwp_dx_);
-	// gwp_p0_ = sqrt(2*m_*uF_);
-	// double deviceHW = 1e3*1e3 / AU_nm/AU_nm;  // Pole przekroju (szer. x wysokość)
-	// gwp_A_ = part_num_ /
-	// 	(2.*M_PI*gwp_dx_*gwp_dp_*deviceHW*gwp_p0_*gwp_p0_);
 	gwp_A_ = cD_*lC_ / (gwp_dx_*gwp_dp_*2*M_PI);
 	cout<<"# Setting up GWP with parameters:\n"
 	<<"# gwp_x0 = "<<gwp_x0_*AU_nm<<" nm, "<<gwp_x0_<<" a.u.\n"
@@ -325,161 +313,6 @@ double WignerFunction::WavePacket_TEV(double x, double k)
 			*(k-gwp_p0_)*(k-gwp_p0_)-(x-gwp_x0_)*(x-gwp_x0_)
 			/2./gwp_dx_/gwp_dx_ )/M_PI; }
 
-
-void WignerFunction::calc_IVchar(double v_min, double v_max, size_t nv){
-	double dv = (v_max-v_min)/(nv-1), v = 0, curr, currD_range, carrNum;
-	double uBias = uBias_;
-	iv_v_ = vec(nv, fill::zeros), iv_i_ = vec(nv, fill::zeros);
-	iv_iRange_ = vec(nv, fill::zeros), iv_n_ = vec(nv, fill::zeros);
-	// double E;
-	std::ofstream ivChar, vpMap;
-	ivChar.open("out_data/ivChar.out", std::ios::out);
-	vpMap.open("out_data/vpMap.out", std::ios::out);
-	vpMap<<"# u_B [eV]  p [a.u]  1/4  1/2  3/4\n";
-	ivChar<<"# u_B [eV]  J [Acm^{-2}]  |max(J)-min(J)|  N\n";
-	// cout<<"# u_B [eV]  J [Acm^{-2}]  |max(J)-min(J)|  N\n";
-	for (size_t i = 0; i < nv; ++i) {
-		v = v_min+i*dv;
-		// setPotBias(v);
-		set_uBias(v);
-		solveWignerEq();
-		// solveWignerPoisson();
-		curr = calcCurr();
-		currD_range = range(currD_);
-		carrNum = calcNorm();
-		calcCD_K();
-		// E = i*dv/lD_ * AU_eV/1e3 / AU_cm;
-		ivChar<<v*AU_eV<<' '<<curr*AU_Acm2<<' '<<currD_range*AU_Acm2<<' '<<carrNum/AU_cm2<<endl;
-		// cout<<v*AU_eV<<' '<<curr*AU_Acm2<<' '<<currD_range*AU_Acm2<<' '<<carrNum/AU_cm2<<endl;  // <<' '<<calcNorm()/AU_cm2<<endl;
-		iv_v_(i) = v, iv_i_(i) = curr, iv_iRange_(i) = currD_range, iv_n_(i) = carrNum;
-		for (size_t j=0; j<nk_; ++j) {
-				vpMap<<v*AU_eV<<' '<<k_(j)
-					<<' '<<cdK_(j)
-					// <<' '<<f_(size_t(nx_/4.),j)  // col. 3
-					// <<' '<<f_(size_t(nx_/2.),j)  // col. 4
-					// <<' '<<f_(size_t(nx_*3/4.),j)  // col. 5
-					<<'\n';
-		}
-		vpMap<<'\n';
-	}
-	ivChar.close();
-	vpMap.close();
-	uBias_ = uBias;
-}
-
-
-void WignerFunction::calcMobility() {
-
-	vec el_f(nx_, fill::zeros);
-	vec mob(nx_, fill::zeros);
-
-	calcCD_X();
-	calcCurr();
-	vec dnedx = calcDer(cdX_, dx_);
-
-	for (size_t i = 0; i < nx_; ++i)
-		el_f(i) = -du_(i);
-
-	for (size_t i = 0; i < nx_; ++i) {
-		double m = cdX_(i)*el_f(i)+KB/AU_eV*temp_*dnedx(i);
-		mob(i) = currD_(i)/m * AU_cm2/AU_eV/AU_s;
-	}
-
-	/*
-	for (size_t i = 0; i < nx_; ++i)
-		cout<<x_(i)<<' '<<mob(i)<<' '<<ne(i)<<' '<<dnedx(i) \
-			<<' '<<u_(i)*AU_eV<<' '<<el_f(i)<<' '<<jn(i)<<' '<<mob(i)*KB*temp_<<endl;
-			*/
-
-	// Average mobility
-	double mob_av = 0;
-	for (size_t i = 1; i < nx_; ++i)
-		mob_av += (mob(i-1) + mob(i))*dx_/2./lD_;
-	cout<<m_<<' '<<mob_av<<endl;
-
-}
-
-
-//
-// FERMI INTEGRAL
-//
-
-
-//
-// Density of states
-//
-inline double WignerFunction::nC(double m, double T)
-	{ return 2.*pow(m*KB*T/AU_eV/2./M_PI, 3./2.); }  // [au]
-
-
-//
-// Calculates Fermi integral, eta - relative Fermi level - (Ec-Ef)/kb/T
-//
-inline double WignerFunction::fermiInt(double n, double eta) {
-	// Calculate Fermi integral
-	auto fi = [n, eta](double x) { return pow(x, n)*exp(eta-x)/(exp(eta-x)+1); } ;
-	size_t N = 100, j;
-	double h = 1./float(N);
-	int i1 = 0, i2 = 0;
-	for (size_t i=1; i<N; ++i){
-		j = i*h;
-		// # i1 += (fi(j)+4*fi((j+1)*h)+fi((j+2)*h))*h/3
-		// # i2 += (fi(1/j/h)+4*fi(1/(j+1)/h)+fi(1/(j+2)/h))/(j*h)**2*h/3
-		i1 += (fi(j)+fi(j+h))*h/2.;
-		i2 += pow( (fi(1./j)+fi(1./(j+h)))/j, 2. )*h/2.;
-	}
-	double integral = i1+i2;
-	// std::tgamma(n+1) <- calculates gamma function for n+1
-	return 1./std::tgamma(n+1.)*integral;
-}
-
-
-//
-// Calc Fermi integral
-//
-double WignerFunction::calcFermiEn(double n0, double m, double T) {
-	// Calculate Fermi energy from el. density using Fermi integral
-	double eta = 0., f = 0.;
-	double x = n0/nC(m, T);  // For GaAs, 300 K -> x = 4.6
-	//  Looking for eta
-	if (x > fermiInt(.5, 5.)) {
-		// TODO: Zamienić wyrażenie asymptotyczne na aproksymację
-		eta = pow(x*std::tgamma(5./2.), 2./3.);
-		/*
-		eta = log(x) + 0.25*pow(2., .5)*x \
-			+ (3/16.-1/9.*pow(3., .5))*x*x \
-			+ (1/8.+5/48.*pow(2., .5)-1/9.*pow(6., .5))*x*x*x \
-			+ (1585/6912+5/32.*pow(2., .5)-5/24.*pow(3., .5)-1/25.*pow(5., .5))*x*x*x*x; */
-		// eta = log(x) + 3.53553E-1*x - 4.95009E-3*pow(x, 2.) + 1.48386E-4*pow(x, 3.) - 4.42563E-6*pow(x, 4.);
-		/*
-		while (f < x) {
-			eta += 0.01;
-			f = pow(eta, 3./2.)/std::tgamma(5/2);
-			}
-		*/
-	}
-	else if (x < fermiInt(.5, -2.))
-		eta = log(x);  // *pow(2,-3/2.)*x
-	else {
-		if (x > fermiInt(.5, 0.)) {
-			while (f < x) {
-				eta += 1e-3;
-				f = fermiInt(.5, eta);
-			}
-		}
-		else {
-			while (f > x) {
-				eta -= 1e-3;
-				f = fermiInt(.5, eta);
-			}
-		}
-	}
-	eta = eta*KB*T - M_PI*M_PI*KB*T/12./eta;
-	// cout<<"eta = "<<eta/(KB*T)<<", x = "<<x<<endl;
-	return eta/AU_eV;
-}
-
-
 double WignerFunction::calcFermiEn_MB(double n0, double m, double T) {
 	double kBT = KB/AU_eV*T;
 	double A = pow(m,3/2.)/sqrt(2)/pow(M_PI,3/2.)*pow(kBT,3/2.);
@@ -495,43 +328,28 @@ double WignerFunction::calcFermiEn_MB(double n0, double m, double T) {
 // TODO: wskaźniki na funkcję
 
 void WignerFunction::setBoundCond(){
+	uR_ = uF_;
+	uL_ = uBias_BC_ ? uF_ + uBias_ : uF_;
 	Gamma_ = rG_*.5;
-	// double cD = cD_ * 2*lC_/l_;
-	// cout<<"# cD = "<<cD/AU_cm3<<", uL = uR = "<<uL_*AU_eV<<endl;
-	if (uBias_BC_)
-		uR_ = uF_, uL_ = uF_ + uBias_;
-	else
-		uR_ = uF_, uL_ = uF_;
-	double k;
 	if (bcType_ == 1)
-		for (size_t j=0; j<nk_; ++j) {
-			k = k_(j);
-			bc_(j) = supplyFunction(k);
-		}
+		for (size_t j=0; j<nk_; ++j)
+			bc_(j) = supplyFunction(k_(j));
 	else if (bcType_ == 0)
 		bc_.zeros();
 	else if (bcType_ == -1)
-		for (size_t j=0; j<nk_; ++j) {
-			k = k_(j);
-			bc_(j) = gaussian_bc(k);
-		}
+		for (size_t j=0; j<nk_; ++j)
+			bc_(j) = gaussian_bc(k_(j));
 	else {
 		if (rG_ > 0) {
 			if (bcType_ == 2 || bcType_ == -2)
-				for (size_t j=0; j<nk_; ++j) {
-					k = k_(j);
-					bc_(j) = lorentz(k);
-				}
+				for (size_t j=0; j<nk_; ++j)
+					bc_(j) = lorentz(k_(j));
 			else if (bcType_ == 3 || bcType_ == -3)
-				for (size_t j=0; j<nk_; ++j) {
-					k = k_(j);
-					bc_(j) = gauss(k);
-				}
+				for (size_t j=0; j<nk_; ++j)
+					bc_(j) = gauss(k_(j));
 			else if (bcType_ == 4 || bcType_ == -4)
-				for (size_t j=0; j<nk_; ++j) {
-					k = k_(j);
-					bc_(j) = voigt(k);
-				}
+				for (size_t j=0; j<nk_; ++j)
+					bc_(j) = voigt(k_(j));
 			// TODO: Armadillo convolution
 			// else if (bcType_ == 4)
 			// 	vec a = vec(nk_, fill::zeros), b = vec(nk_, fill::zeros), c;
@@ -580,6 +398,14 @@ double WignerFunction::supplyFunction(double k){
 	}
 }
 
+double WignerFunction::fermiDirac(double k){
+	double mu = k > 0 ? uL_ : uR_;
+	// double mu = uF_;
+	double m = m_;
+	double ex = (k*k/m/2.-mu)/(KB/AU_eV*temp_);	 // [au]
+	return 1./(exp(ex)+1);
+}
+
 
 // Maxwell-Boltzmann distribution
 double WignerFunction::maxwell_boltzmann(double k){;
@@ -595,11 +421,8 @@ double WignerFunction::maxwell_boltzmann(double k){;
 
 // Gaussian with sigma parameter
 double WignerFunction::gaussian_bc(double k){
-	double mu = uF_;
-	// double mu = k > 0 ? uL_ : uR_;
 	double m = m_;
 	// double pF = sqrt(uF_*2.*m);
-	double uF = 0; // uF_
 	double kBT = KB/AU_eV*temp_;
 	double sigma = 1;
 	// double c = 1./sqrt(2.*M_PI*m*(KB/AU_eV*temp_)*sigma*sigma);
@@ -607,7 +430,7 @@ double WignerFunction::gaussian_bc(double k){
 	// double c = 4*M_PI*m*KB/AU_eV*temp_, ex = -(k*k/m/2.-mu)/(KB/AU_eV*temp_);	 // [au]
 	// double c = 1./sqrt(2.*M_PI*m*kBT)/sigma*cD_;
 	double c = pow((2.*M_PI*m*kBT)*sigma*sigma,-1/2.)*cD_;
-	double ex = exp(-(k*k/2./m-uF)/kBT/sigma/sigma);  // (k-pF)*(k-pF)
+	double ex = exp(-(k*k/2./m)/kBT/sigma/sigma);  // (k-pF)*(k-pF)
 	return c * ex;
 }
 
@@ -778,4 +601,162 @@ double WignerFunction::voigt(double k) {
 			7*f(x1-u) * eqFun_x(mu, x1);
 	}
 	return fb*2*h/4./45.;
+}
+
+
+//
+// Other functions
+//
+
+
+void WignerFunction::calc_IVchar(double v_min, double v_max, size_t nv){
+	double dv = (v_max-v_min)/(nv-1), v = 0, curr, currD_range, carrNum;
+	double uBias = uBias_;
+	iv_v_ = vec(nv, fill::zeros), iv_i_ = vec(nv, fill::zeros);
+	iv_iRange_ = vec(nv, fill::zeros), iv_n_ = vec(nv, fill::zeros);
+	// double E;
+	std::ofstream ivChar, vpMap;
+	ivChar.open("out_data/ivChar.out", std::ios::out);
+	vpMap.open("out_data/vpMap.out", std::ios::out);
+	vpMap<<"# u_B [eV]  p [a.u]  1/4  1/2  3/4\n";
+	ivChar<<"# u_B [eV]  J [Acm^{-2}]  |max(J)-min(J)|  N\n";
+	// cout<<"# u_B [eV]  J [Acm^{-2}]  |max(J)-min(J)|  N\n";
+	for (size_t i = 0; i < nv; ++i) {
+		v = v_min+i*dv;
+		// set_uBias(v);
+		// solveWignerEq();
+		solveWignerPoisson(v, 2e-5, 1, 200);
+		curr = calcCurr();
+		currD_range = range(currD_);
+		carrNum = calcNorm();
+		calcCD_K();
+		// E = i*dv/lD_ * AU_eV/1e3 / AU_cm;
+		ivChar<<v*AU_eV<<' '<<curr*AU_Acm2<<' '<<currD_range*AU_Acm2<<' '<<carrNum/AU_cm2<<endl;
+		// cout<<v*AU_eV<<' '<<curr*AU_Acm2<<' '<<currD_range*AU_Acm2<<' '<<carrNum/AU_cm2<<endl;  // <<' '<<calcNorm()/AU_cm2<<endl;
+		iv_v_(i) = v, iv_i_(i) = curr, iv_iRange_(i) = currD_range, iv_n_(i) = carrNum;
+		for (size_t j=0; j<nk_; ++j) {
+				vpMap<<v*AU_eV<<' '<<k_(j)
+					<<' '<<cdK_(j)
+					// <<' '<<f_(size_t(nx_/4.),j)  // col. 3
+					// <<' '<<f_(size_t(nx_/2.),j)  // col. 4
+					// <<' '<<f_(size_t(nx_*3/4.),j)  // col. 5
+					<<'\n';
+		}
+		vpMap<<'\n';
+	}
+	ivChar.close();
+	vpMap.close();
+	uBias_ = uBias;
+}
+
+
+void WignerFunction::calcMobility() {
+
+	vec el_f(nx_, fill::zeros);
+	vec mob(nx_, fill::zeros);
+
+	calcCD_X();
+	calcCurr();
+	vec dnedx = calcDer(cdX_, dx_);
+
+	for (size_t i = 0; i < nx_; ++i)
+		el_f(i) = -du_(i);
+
+	for (size_t i = 0; i < nx_; ++i) {
+		double m = cdX_(i)*el_f(i)+KB/AU_eV*temp_*dnedx(i);
+		mob(i) = currD_(i)/m * AU_cm2/AU_eV/AU_s;
+	}
+
+	/*
+	for (size_t i = 0; i < nx_; ++i)
+		cout<<x_(i)<<' '<<mob(i)<<' '<<ne(i)<<' '<<dnedx(i) \
+			<<' '<<u_(i)*AU_eV<<' '<<el_f(i)<<' '<<jn(i)<<' '<<mob(i)*KB*temp_<<endl;
+			*/
+
+	// Average mobility
+	double mob_av = 0;
+	for (size_t i = 1; i < nx_; ++i)
+		mob_av += (mob(i-1) + mob(i))*dx_/2./lD_;
+	cout<<m_<<' '<<mob_av<<endl;
+
+}
+
+
+//
+// FERMI INTEGRAL
+//
+
+
+//
+// Density of states
+//
+inline double nC(double m, double T)
+	{ return 2.*pow(m*KB*T/AU_eV/2./M_PI, 3./2.); }  // [au]
+
+
+//
+// Calculates Fermi integral, eta - relative Fermi level - (Ec-Ef)/kb/T
+//
+inline double fermiInt(double n, double eta) {
+	// Calculate Fermi integral
+	auto fi = [n, eta](double x) { return pow(x, n)*exp(eta-x)/(exp(eta-x)+1); } ;
+	size_t N = 100, j;
+	double h = 1./float(N);
+	int i1 = 0, i2 = 0;
+	for (size_t i=1; i<N; ++i){
+		j = i*h;
+		// # i1 += (fi(j)+4*fi((j+1)*h)+fi((j+2)*h))*h/3
+		// # i2 += (fi(1/j/h)+4*fi(1/(j+1)/h)+fi(1/(j+2)/h))/(j*h)**2*h/3
+		i1 += (fi(j)+fi(j+h))*h/2.;
+		i2 += pow( (fi(1./j)+fi(1./(j+h)))/j, 2. )*h/2.;
+	}
+	double integral = i1+i2;
+	// std::tgamma(n+1) <- calculates gamma function for n+1
+	return 1./std::tgamma(n+1.)*integral;
+}
+
+
+//
+// Calc Fermi integral
+//
+double calcFermiEn(double n0, double m, double T) {
+	// Calculate Fermi energy from el. density using Fermi integral
+	double eta = 0., f = 0.;
+	double x = n0/nC(m, T);  // For GaAs, 300 K -> x = 4.6
+	//  Looking for eta
+	if (x > fermiInt(.5, 5.)) {
+		// TODO: Zamienić wyrażenie asymptotyczne na aproksymację
+		eta = pow(x*std::tgamma(5./2.), 2./3.);
+		/*
+		eta = log(x) + 0.25*pow(2., .5)*x \
+			+ (3/16.-1/9.*pow(3., .5))*x*x \
+			+ (1/8.+5/48.*pow(2., .5)-1/9.*pow(6., .5))*x*x*x \
+			+ (1585/6912+5/32.*pow(2., .5)-5/24.*pow(3., .5)-1/25.*pow(5., .5))*x*x*x*x; */
+		// eta = log(x) + 3.53553E-1*x - 4.95009E-3*pow(x, 2.) + 1.48386E-4*pow(x, 3.) - 4.42563E-6*pow(x, 4.);
+		/*
+		while (f < x) {
+			eta += 0.01;
+			f = pow(eta, 3./2.)/std::tgamma(5/2);
+			}
+		*/
+	}
+	else if (x < fermiInt(.5, -2.))
+		eta = log(x);  // *pow(2,-3/2.)*x
+	else {
+		if (x > fermiInt(.5, 0.)) {
+			while (f < x) {
+				eta += 1e-3;
+				f = fermiInt(.5, eta);
+			}
+		}
+		else {
+			while (f > x) {
+				eta -= 1e-3;
+				f = fermiInt(.5, eta);
+			}
+		}
+	}
+	eta = eta*KB*T - M_PI*M_PI*KB*T/12./eta;
+	// cout<<"eta = "<<eta/(KB*T)<<", x = "<<x<<endl;
+	return eta/AU_eV;
 }

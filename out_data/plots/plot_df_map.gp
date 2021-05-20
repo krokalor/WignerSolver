@@ -11,7 +11,7 @@ set style line 3 lc rgb '#FF0000' lw 2 dashtype 1
 set style line 4 lc rgb '#008000' lw 2 dashtype 1
 set style line 5 lc rgb '#800000' lw 2 dashtype 1
 
-# set palette rgbformulae 30,31,32
+# set palette rgb 30,31,32
 # set hidden3d
 # set ticslevel 0.8
 # set isosample 50

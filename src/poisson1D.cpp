@@ -3,7 +3,7 @@
 
 using namespace poisson;
 
-void Poisson1D::solve() { solve_tridiag (); }  // solve_gummel solve_tridiag
+void Poisson1D::solve() { solve_gummel (); }  // solve_gummel solve_tridiag
 
 void Poisson1D::solve_gummel() {
 	// Solving Poisson equation using Gummel algorithm
@@ -60,7 +60,7 @@ void Poisson1D::solve_tridiag() {
 	vec d(nx_, fill::zeros), x(nx_, fill::zeros);  // A*x = d
 
 	for (size_t i=0; i<nx_; ++i)
-		d(i) = h_*h_/epsilon*rho_(i);
+		d(i) = -h_*h_/epsilon*rho_(i);
 
 	// Dirichlet BC
 	d(0) -= dirichletL_, d(nx_-1) -= dirichletR_;
