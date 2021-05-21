@@ -17,11 +17,11 @@ class Poisson1D {
 			nE_ = vec(nx_, fill::zeros);
 			uOld_ = vec(nx_, fill::zeros);
 			uNew_ = vec(nx_, fill::zeros);
+			du_ = vec(nx_, fill::zeros);
 			dPu_ = sp_mat(nx_, nx_);
 			pFun_ = vec(nx_, fill::zeros);
 			epsilonR_ = 1, temp_ = 300, beta_ = 1;
 			dirichletL_ = 0, dirichletR_ = 0;
-			neumannL_ = 0, neumannR_ = 0;
 		}
 		~Poisson1D(){};
 
@@ -34,7 +34,6 @@ class Poisson1D {
 		size_t nx_;
 		double h_, l_;
 		double dirichletL_, dirichletR_;
-		double neumannL_, neumannR_;
 		double epsilonR_, temp_;
 		double beta_;  // potential mixing
 
@@ -42,6 +41,7 @@ class Poisson1D {
 		vec nE_;
 		vec uOld_;
 		vec uNew_;
+		vec du_;
 
 		vec pFun_;
 		sp_mat dPu_;

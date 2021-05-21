@@ -145,15 +145,23 @@ class matrix {
 };
 
 
+//
+// Funkcje do liczenia całek i pochodnych
+// Definicje tych funkcji znajdują się w pliku wignerTools.cpp
+//
+
+
 // #################### funkcja do liczenia całki ####################
 template <class T>
 double calcInt(vec f, T h){
 	size_t n = f.size();
 	T ig = 0;
-	for (size_t i=1; i<n; ++i)
-		ig += (f(i-1) + f(i))*h/2.;
+	for (size_t i=1; i<n/2; ++i)
+		// ig += (f(i-1) + f(i))*h/2.;  // trapezoid
+		ig += (f(2*i-2)+4*f(2*i-1)+f(2*i))*h/3.;  // simpson
 	return ig;
 }
+
 
 // #################### funkcja do liczenia pochodnej ####################
 template <class T>
@@ -161,11 +169,34 @@ vec calcDer(vec f, T h){
 	size_t n = f.size();
 	vec df(n);
 	for (size_t i=1; i<n-1; ++i)
-		df(i) =(-f(i-1)+f(i+1))/h/2.;
+		// df(i) = (1/12.*f(i-2)-2/3.*f(i-1)+2/3.*f(i+1)-1/12.*f(i+2))/h;
+		df(i) = (-f(i-1)+f(i+1))/h/2.;
 	df(0) = (-3.*f(0)+4.*f(1)-f(2))/h/2.;
 	df(n-1) = (3.*f(n-1)-4.*f(n-2)+f(n-3))/h/2.;
+	// df(1) = (-f(0)+f(2))/h/2.;
+	// df(n-2) = (-f(n-3)+f(n-1))/h/2.;
+	// df(0) = (-f(0)+f(1))/h;
+	// df(n-1) = (f(n-1)-f(n-2))/h;
+	// df(0) = df(1);
+	// df(n-1) = df(n-2);
 	return df;
 }
 
+
+// #################### funkcja do liczenia trzeciej pochodnej ####################
+template <class T>
+vec calcThirdDer(vec f, T h){
+	size_t n = f.size();
+	vec df(n);
+	for (size_t i=2; i<n-2; ++i)
+		df(i) = (-f(i-2)/2.+f(i-1)-f(i+1)+f(i+2)/2.)/h/h/h;
+	df(0) = (-f(0)+3.*f(1)-3*f(2)+f(3))/h/h/h;
+	df(1) = (-f(1)+3.*f(2)-3*f(3)+f(4))/h/h/h;
+	df(n-1) = (f(n-1)-3.*f(n-2)+3.*f(n-3)-f(n-4))/h/h/h;
+	df(n-2) = (f(n-2)-3.*f(n-3)+3.*f(n-4)-f(n-5))/h/h/h;
+	return df;
+}
+
+double calcFermiEn(double n0, double m, double T);
 
 #endif

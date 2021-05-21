@@ -89,7 +89,7 @@ std::map<std::string, double> readParam(std::string filename){
 void WignerFunction::saveWignerFun() {
 	size_t i, j;
 	std::ofstream wf;
-	wf.open("wyniki/dane/wf.out", std::ios::out);
+	wf.open("out_data/wf.out", std::ios::out);
 	wf<<"# Norma [cm^-2]: "<<calcNorm()/AU_cm2<<'\n';
 	wf<<"# x [nm] k [a.u.] f [a.u.]\n";
 	for (i=0; i<nx_; ++i){
@@ -100,64 +100,83 @@ void WignerFunction::saveWignerFun() {
 		wf<<"\n";
 	}
 	wf.close();
-	wf.open("wyniki/dane/wf.z", ios::out);
-	wf<<"# nx "<<nx_<<" ny "<<nk_<<" xmin "<<0<<" xmax "<<l_*AU_nm<<" ymin "<<-kmax_<<" ymax "<<kmax_<<'\n';
-	for (j=0; j<nk_; ++j){
-		for (i=0; i<nx_; ++i)
-			wf<<f_(i,j)<<' ';
-			// file<<i*dx_<<' '<<dk_*(j-(nk_-1)*.5)<<' '<<f_(i,j)/s<<"  ! "<<f_(i,j)<<'\n';
-		wf<<'\n';
-	}
-	wf.close();
+	// wf.open("out_data/wf.z", ios::out);
+	// wf<<"# nx "<<nx_<<" ny "<<nk_<<" xmin "<<0<<" xmax "<<l_*AU_nm<<" ymin "<<-kmax_<<" ymax "<<kmax_<<'\n';
+	// for (j=0; j<nk_; ++j){
+	// 	for (i=0; i<nx_; ++i)
+	// 		wf<<f_(i,j)<<' ';
+	// 		// file<<i*dx_<<' '<<dk_*(j-(nk_-1)*.5)<<' '<<f_(i,j)/s<<"  ! "<<f_(i,j)<<'\n';
+	// 	wf<<'\n';
+	// }
+	// wf.close();
 }
 
 
 void WignerFunction::readPotential(std::string input_file){
-	std::ifstream file (input_file);
-	array<double> x, u;
+	std::ifstream input_pot (input_file);
+	vec x(nx_, fill::zeros), u(nx_, fill::zeros);
+	size_t j = 0;
 	std::string::size_type sz;
-	if (file.is_open()){
+	if(!input_pot) {
+		cout<<"# COULDN'T OPEN AN POTENTIAL INPUT FILE: "<<input_file<<endl;
+		exit(0);
+	}
+	else {
+		cout<<"# READING POTENTIAL FROM FILE: "<<input_file<<endl;
 		std::string line;
-		while ( getline (file,line) ){
-			try {
-				x.add( std::stod(line, &sz) ), u.add( std::stod(line.substr(sz)) );
-			} catch (const std::invalid_argument& ia) {
-				cout << "## WARNING: EXCEPTION FOUND WHILE READING POTENTIAL FILE; TYPE: " << ia.what() << endl;
+		while ( getline (input_pot,line) ){
+			if (line[0] != '#'){
+				try {
+					x(j) = std::stod(line, &sz), u(j) = std::stod(line.substr(sz));
+					++j;
+				} catch (const std::invalid_argument& ia) {
+					cout << "## ERROR: EXCEPTION FOUND WHILE READING POTENTIAL FILE; TYPE: " << ia.what() << endl;
+					exit(0);
+				} catch (const std::logic_error& ie) {
+					cout << "## ERROR: EXCEPTION FOUND WHILE READING POTENTIAL FILE; TYPE: " << ie.what() << endl;
+					exit(0);
+				}
 			}
 		}
-		file.close();
+		input_pot.close();
 	}
-	if (x.size() != x_.size()){
-		double device_lenght = l_-2*lC_;
-		for (size_t p=0; p<x_.size(); ++p){
-			if (x_(p)<=x(0))
-				uStart_(p) = u(0);
-
-			else if (x_(p)>x(x.size()-1))
-				uStart_(p) = u(x.size()-1);
-
-			else {
-				for (size_t i=0; i<x.size()-1; ++i)
-					if (x_(p)>x(i) && x_(p)<=x(i+1))
-						uStart_(p) = u(i+1);
-			}
-
-		}
-		std::ofstream test ("wyniki/dane/potential.out");
-		for (size_t i=0; i<x_.size(); ++i)
-			test<<x_(i)<<' '<<u_(i)<<'\n';
-		test.close();
-		if (x(x.size()-1)>device_lenght)
-			cout<<"WARNING: Potential exceeds device lenght\n";
-	}
-	else{
-		for (size_t i=0; i<x.size(); ++i)
-			uStart_(i) = u(i);
-		std::ofstream test ("wyniki/dane/potential.out");
-		for (size_t_vec_d i=0; i<x_.size(); ++i)
-			test<<x_(i)<<' '<<uStart_(i)<<'\n';
-		test.close();
-	}
+	uStart_.zeros();
+	uStart_ = u;
+	std::ofstream test ("out_data/input_potential_test.out");
+	for (size_t i=0; i<x_.size(); ++i)
+		test<<x_(i)<<' '<<uStart_(i)<<'\n';
+	test.close();
+	// if (x.size() != x_.size()){
+	// 	double device_lenght = l_-2*lC_;
+	// 	for (size_t p=0; p<x_.size(); ++p){
+	// 		if (x_(p)<=x(0))
+	// 			uStart_(p) = u(0);
+	//
+	// 		else if (x_(p)>x(x.size()-1))
+	// 			uStart_(p) = u(x.size()-1);
+	//
+	// 		else {
+	// 			for (size_t i=0; i<x.size()-1; ++i)
+	// 				if (x_(p)>x(i) && x_(p)<=x(i+1))
+	// 					uStart_(p) = u(i+1);
+	// 		}
+	//
+	// 	}
+	// 	std::ofstream test ("out_data/potential.out");
+	// 	for (size_t i=0; i<x_.size(); ++i)
+	// 		test<<x_(i)<<' '<<u_(i)<<'\n';
+	// 	test.close();
+	// 	if (x(x.size()-1)>device_lenght)
+	// 		cout<<"WARNING: Potential exceeds device lenght\n";
+	// }
+	// else{
+	// 	for (size_t i=0; i<x.size(); ++i)
+	// 		uStart_(i) = u(i);
+	// 	std::ofstream test ("out_data/potential.out");
+	// 	for (size_t_vec_d i=0; i<x_.size(); ++i)
+	// 		test<<x_(i)<<' '<<uStart_(i)<<'\n';
+	// 	test.close();
+	// }
 }
 
 
@@ -230,15 +249,9 @@ void WignerFunction::printParam()
 	cout.width(cw_n); cout<<"# fermi_energy";
 	cout.width(cw_v); cout<<uF_;
 	cout.width(cw_v); cout<<uF_*AU_eV<<'#'<<endl;
-	cout.width(cw_n); cout<<"# set_uF";
-	cout.width(cw_v); cout<<(set_uF_ ? "true" : "false");
-	cout.width(cw_v); cout<<(set_uF_ ? "true" : "false")<<'#'<<endl;
-	cout.width(cw_n); cout<<"# max_voltage";
-	cout.width(cw_v); cout<<v_max_;
-	cout.width(cw_v); cout<<v_max_*AU_eV<<'#'<<endl;
-	cout.width(cw_n); cout<<"# voltage_step_nr";
-	cout.width(cw_v); cout<<nv_;
-	cout.width(cw_v); cout<<'-'<<'#'<<endl;
+	// cout.width(cw_n); cout<<"# set_uF";
+	// cout.width(cw_v); cout<<(set_uF_ ? "true" : "false");
+	// cout.width(cw_v); cout<<(set_uF_ ? "true" : "false")<<'#'<<endl;
 	// ////////// Wave packet ////////// WRITE SI OUTPUT#
 	cout.width(cw_n); cout<<"# gwp_x0";
 	cout.width(cw_v); cout<<gwp_x0_;
@@ -282,7 +295,7 @@ void WignerFunction::printParam()
 	// cout.width(cw_v); cout<<cR_;
 	// cout.width(cw_v); cout<<'-'<<'#'<<endl;
 	cout.width(cw_n); cout<<"# v_bias";
-	cout.width(cw_v); cout<<uB_;
+	cout.width(cw_v); cout<<uBias_;
 	cout.width(cw_v); cout<<'-'<<'#'<<endl;
 
 	cout.fill('=');
