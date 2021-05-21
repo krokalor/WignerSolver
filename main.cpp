@@ -28,8 +28,8 @@ int main(){
 	duration<double> t_elapsed;
 	t_start = high_resolution_clock::now();
 
-	double nx = 150, nk = 150;
-	double lD = 1000/AU_nm, lC = 1500/AU_nm;
+	double nx = 250, nk = 250;
+	double lD = 10/AU_nm, lC = 15/AU_nm;
 	double k_max = 0.15;  // -1
 
 	double m = 0.067;
@@ -56,6 +56,7 @@ int main(){
 
 	// Warunek brzegowy
 	// 0 -> 0, 1 -> SF, 2:4 -> splot with SF, -1 -> Gauss, -2:-4 splot with Gauss
+	cout<<"Set up BC"<<endl;
 	f.set_bcType(1);
 
 	//
@@ -82,10 +83,17 @@ int main(){
 	// f.solveWignerEq();
 	// f.saveWignerFun();
 
+	// // #pragma omp parallel for schedule(dynamic)
+	// for (size_t i=0; i<50; ++i) {
+	// 	cout<<"solveWigner: "<<i<<' '<<omp_get_thread_num()<<endl;
+	// 	// f.set_uBias(i*0.01);
+	// 	f.solveWignerEq();
+	// }
+
 	//
 	// Boltzmann-Poisson
 	cout<<"# Solving BTE+PE"<<endl;
-	f.solveWignerPoisson(0.4/AU_eV, 1e-5, 1, 200);  // uBias, alpha, beta, n_max
+	f.solveWignerPoisson(0.1/AU_eV, 1e-2, 1, 100);  // uBias, alpha, beta, n_max
 
 	//
 	// Poisson test

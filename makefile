@@ -13,8 +13,11 @@ OBJS = src/WignerFunction.o \
 	src/solveWignerPoisson.o \
 	src/poisson1D.o \
 	main.o
-LDLIBS = -lsuperlu -larmadillo -lopenblas -llapack -lm -lstdc++ #-m64 -I${MKLROOT}/include # -mkl
-#-lsuperlu -L/home/karol/intel/compilers_and_libraries_2019.0.117/linux/mkl/lib -llapack -L/opt/OpenBLAS/lib/ -lm
+LDLIBS = -larmadillo -lsuperlu -lopenblas -lm -lstdc++ -fopenmp
+#-lblas -llapack
+#-lsuperlu -larmadillo -lopenblas -lm -fopenmp #-m64 -I${MKLROOT}/include # -mkl
+#-lsuperlu -L/home/karol/intel/compilers_and_libraries_2019.0.117/linux/mkl/lib -llapack -L/opt/OpenBLAS/lib/ -lm  -lopenblas -lm
+# -lm -- math library
 
 run: $(OBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDLIBS)

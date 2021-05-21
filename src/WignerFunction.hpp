@@ -97,23 +97,25 @@ public:
 		sin_(mat(nk_,nk_*nk2_)),
 		cdX_(vec(nx_, fill::zeros)),
 		cdK_(vec(nk_, fill::zeros)),
-		currD_(vec(nx_, fill::zeros))
-		// cR_(iv["dconc_right"]),
+		currD_(vec(nx_, fill::zeros)),
+		a_(sp_mat(nxk_, nxk_)),
+		b_(vec(nxk_, fill::zeros))
 		{
-
+		cout<<"## Start: WignerFunction default constructor"<<endl;
 		// ########## Configuration space array values ##########
+		cout<<"# Setting up configuration space array values"<<endl;
 		for (size_t i=0; i<nx_; ++i) x_(i) = i*dx_;
-
 		// ########## Wave vector space array values ##########
+		cout<<"# Setting up wave vector space array values"<<endl;
 		for (size_t j=0; j<nk_; ++j) k_(j) = dk_*(j-(nk_-1)*.5);
-
 		// ########## NLP sinus values ##########
 		// #pragma omp parallel for collapse(3)
+		cout<<"# Setting up NLP sine values"<<endl;
 		for (size_t j=0; j<nk_; ++j)
 				for (size_t g=0; g<nk_; g++)
 						for (size_t h=0; h<nk2_; h++)
 								sin_(j,g*nk2_+h) = sin(2*M_PI/nk_*h*(j-g));
-
+		cout<<"## End: WignerFunction default constructor"<<endl;
 	}  // End of constructor
 
 	WignerFunction(size_t i_nx, double i_lD, double i_lC,
@@ -144,19 +146,25 @@ public:
 		sin_(mat(nk_,nk_*nk2_)),
 		cdX_(vec(nx_, fill::zeros)),
 		cdK_(vec(nk_, fill::zeros)),
-		currD_(vec(nx_, fill::zeros))
+		currD_(vec(nx_, fill::zeros)),
+		a_(sp_mat(nxk_, nxk_)),
+		b_(vec(nxk_, fill::zeros))
 		{
+		cout<<"## Start: WignerFunction constructor"<<endl;
 		// ########## Configuration space array values ##########
+		cout<<"# Setting up configuration space array values"<<endl;
 		for (size_t i=0; i<nx_; ++i) x_(i) = i*dx_;
 		// ########## Wave vector space array values ##########
+		cout<<"# Setting up wave vector space array values"<<endl;
 		for (size_t j=0; j<nk_; ++j) k_(j) = dk_*(j-(nk_-1)*.5);
 		// ########## NLP sinus values ##########
 		// #pragma omp parallel for collapse(3)
+		cout<<"# Setting up NLP sine values"<<endl;
 		for (size_t j=0; j<nk_; ++j)
 				for (size_t g=0; g<nk_; g++)
 						for (size_t h=0; h<nk2_; h++)
 								sin_(j,g*nk2_+h) = sin(2*M_PI/nk_*h*(j-g));
-
+		cout<<"## End: WignerFunction constructor"<<endl;
 	}  // End of constructor
 
 	~WignerFunction(){}

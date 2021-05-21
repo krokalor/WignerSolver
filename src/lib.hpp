@@ -197,6 +197,8 @@ vec calcThirdDer(vec f, T h){
 	return df;
 }
 
-double calcFermiEn(double n0, double m, double T);
+double calcFermiEn(double, double, double);
+
+std::map<std::string, double> readParam(std::string);
 
 #endif

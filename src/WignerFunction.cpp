@@ -12,8 +12,6 @@ void WignerFunction::initEq() {
 	u_ = uB_ + uC_;
 	du_ = calcDer(u_, dx_);
 	dddu_ = calcThirdDer(u_, dx_);
-	a_ = sp_mat(nxk_, nxk_);
-	b_ = vec(nxk_, fill::zeros);
 }
 
 // ############################## Numerical WF solution ##############################
