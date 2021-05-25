@@ -12,6 +12,7 @@ void WignerFunction::initEq() {
 	u_ = uB_ + uC_;
 	du_ = calcDer(u_, dx_);
 	dddu_ = calcThirdDer(u_, dx_);
+	a_.zeros(), b_.zeros();
 }
 
 // ############################## Numerical WF solution ##############################

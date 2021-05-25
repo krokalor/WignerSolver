@@ -37,13 +37,13 @@ void Poisson1D::solve_gummel() {
 		}
 	}
 
-	du_.zeros();
-	superlu_opts settings;
-	// settings.symmetric = true;
+	vec x(nx_);
+    superlu_opts settings;
+	settings.symmetric = true;
 	// settings.refine = superlu_opts::REF_EXTRA;
-	spsolve(du_, dPu_, pFun_, "superlu", settings);
+	spsolve(x, dPu_, pFun_, "superlu", settings);
 
-	du_ = du_*beta_;
+	du_ = x*beta_;
 	uNew_ = uOld_ + du_;
 
 }

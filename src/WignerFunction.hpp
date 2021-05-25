@@ -189,6 +189,7 @@ public:
 	vec get_u() { return u_; }
 	vec get_uB() { return uB_; }
 	vec get_uC() { return uC_; }
+	vec get_uStart() { return uStart_; }
 	vec get_du() { return du_; }
 	vec get_dddu() { return dddu_; }
 	vec get_currD() { return currD_; }
@@ -227,6 +228,8 @@ public:
 
 	void set_lYZ(double lYZ) { lYZ_ = lYZ; }
 	void set_part_num(double part_num) { part_num_ = part_num; }
+
+	void set_uC(vec uC) { uC_ = uC; }
 
 	double calcNorm();
 	double calcEX();

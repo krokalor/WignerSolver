@@ -4,26 +4,25 @@
 using namespace wigner;
 
 
-void WignerFunction::setEquilibriumFunction(std::string input_pot, bool read_pot){
+void WignerFunction::setEquilibriumFunction(std::string input_file, bool read_data){
 	// solveWignerEq();
 	// calcCD_X();
 	// vec nx = cdX_;
-	double uBias = uBias_;
-	// setPotBias(0.);
-	set_uBias(0.);
-	if (read_pot) {
-		readPotential(input_pot);
-		uC_ = uStart_;
+	if (read_data) {
+		fe_.load(input_file);
 	}
-	solveWignerEq();
-	// calcCD_X();
-	// vec nx_0 = cdX_;
-	for (size_t i=0; i<nx_; ++i)
-		for (size_t j=0; j<nk_; ++j)
-			fe_(i,j) = f_(i,j);  // *nx(i)/nx_0(i)
-	f_.zeros();
-	// setPotBias(uBias);
-	set_uBias(uBias);
+	else {
+		double uBias = uBias_, rR = rR_;
+		uBias_ = 0, rR_ = 0.;
+		solveWignerEq();
+		// calcCD_X();
+		// vec nx_0 = cdX_;
+		for (size_t i=0; i<nx_; ++i)
+			for (size_t j=0; j<nk_; ++j)
+				fe_(i,j) = f_(i,j);  // *nx(i)/nx_0(i)
+		f_.zeros();
+		uBias_ = uBias, rR_ = rR;
+	}
 }
 
 
@@ -625,7 +624,7 @@ void WignerFunction::calc_IVchar(double v_min, double v_max, size_t nv){
 		v = v_min+i*dv;
 		// set_uBias(v);
 		// solveWignerEq();
-		solveWignerPoisson(v, 2e-5, 1, 200);
+		solveWignerPoisson(v, 4e-5, 1, 1000);
 		curr = calcCurr();
 		currD_range = range(currD_);
 		carrNum = calcNorm();
@@ -646,6 +645,8 @@ void WignerFunction::calc_IVchar(double v_min, double v_max, size_t nv){
 	}
 	ivChar.close();
 	vpMap.close();
+	vec fit = polyfit(iv_v_, iv_i_, 1);
+	fit.print();
 	uBias_ = uBias;
 }
 

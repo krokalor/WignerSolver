@@ -6,8 +6,6 @@ using namespace wigner;
 using namespace poisson;
 
 
-// TODO: solveWignerPoisson -> solved recursively ?
-
 void WignerFunction::solveWignerPoisson
 	(double u_bias, double i_alpha, double i_beta, size_t i_n_max){
 
@@ -30,7 +28,7 @@ void WignerFunction::solveWignerPoisson
 	// Convergence criteria
 	size_t n_max = i_n_max, n_it = 0;
 	size_t n_dJ = 0, n_dU = 0, n_dRho = 0, n_conv = 1;
-	double max_dJ = 100/AU_Acm2, max_dU = 5e-5/AU_eV, max_pFun = 1e-8/AU_eV;
+	double max_dJ = 100/AU_Acm2, max_dU = 1e-4/AU_eV, max_pFun = 1e-8/AU_eV;
 	double max_dRho = 2e-6*AU_cm3/E0;
 	bool conv = false, pFun_zero = false;
 
@@ -54,8 +52,10 @@ void WignerFunction::solveWignerPoisson
 	poisson_step<<"it,x [nm],rho [cm^{-3}],uNew [eV],{/Symbol d}u [eV],du/dx [au],J [Acm^{-2}]\n";
 	tr_char<<"it.,Curr. [Acm^{-2}],nE [cm^{-2}],q [cm^{-2}],dj [Acm^{-2}],max(du) [eV]";
 	cout<<"# it.\tCurr. [Acm^-2]\tnE [cm^-2]\tnD [cm^-2]\tq [cm^-2]\tdj [Acm^-2]\tmax(du) [eV]\tmax(pFun) [ev]\tmax(rho) [C/cm^3]\n"<<endl;
-	while ( !( n_dRho > n_conv && n_dU > n_conv ) && n_it < n_max ) {
+	while ( !( n_dJ > n_conv && n_dU > n_conv ) && n_it < n_max ) {
 		// && pFun_zero  !( n_dRho > n_conv &&  (n_dU > n_conv) && (n_dJ > n_conv) )
+
+		// TODO: Change order (BTE -> PE)
 
 		//
 		// Solve Poisson eq.
@@ -73,8 +73,7 @@ void WignerFunction::solveWignerPoisson
 		//
 		// Mixing old and new el. density
 		rho_new = (1.-alpha)*rho_old + alpha*(nD - cdX_);
-		p.rho_ = rho_new;
-		p.nE_ = cdX_;
+		p.rho_ = rho_new, p.nE_ = cdX_;
 
 		//
 		// Check current convergance

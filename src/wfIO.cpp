@@ -100,6 +100,7 @@ void WignerFunction::saveWignerFun() {
 		wf<<"\n";
 	}
 	wf.close();
+	f_.save("out_data/wf.bin");
 	// wf.open("out_data/wf.z", ios::out);
 	// wf<<"# nx "<<nx_<<" ny "<<nk_<<" xmin "<<0<<" xmax "<<l_*AU_nm<<" ymin "<<-kmax_<<" ymax "<<kmax_<<'\n';
 	// for (j=0; j<nk_; ++j){

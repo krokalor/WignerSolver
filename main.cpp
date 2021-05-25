@@ -28,16 +28,21 @@ int main(){
 	duration<double> t_elapsed;
 	t_start = high_resolution_clock::now();
 
-	double nx = 250, nk = 250;
-	double lD = 10/AU_nm, lC = 15/AU_nm;
+	double nx = 150, nk = 150;
+	double lD = 1000/AU_nm, lC = 1500/AU_nm;
 	double k_max = 0.15;  // -1
 
 	double m = 0.067;
-	double temp = 77;
+	double temp = 300;
 	double cD = 2e18*AU_cm3;
 	double uF = calcFermiEn(cD, m, temp);  // calcFermiEn(cD, m, temp) 0.087/AU_eV
 	double dt = 5*1e-15/AU_s;
-	double rR = 0, rM = 0, rF = 0, rG = 0, lambda = 0;
+
+	double rR = 1/(1e-12/AU_s);  // 1/(1e-12/AU_s)
+	double rM = 1/(1e-12/AU_s);
+	double rF = 0;
+	double rG = 0;
+	double lambda = 0;
 
 	WignerFunction f(nx, lD, lC, nk, k_max);
 
@@ -67,13 +72,12 @@ int main(){
 	// f.addRectBarr(0.3/AU_eV, 17.5/AU_nm, 2/AU_nm, 10);
 	// f.addRectBarr(0.3/AU_eV, 22.5/AU_nm, 2/AU_nm, 10);
 	// f.addGaussBarr(0.3/AU_eV, 2000/AU_nm, 500/AU_nm);
-	// f.readPotential("out_data/poisson_pot/poisson_pot-0eV-2um.in");
-	// f.u_ = f.u_ + f.uStart_;
-	// f.uStart_ = f.uC_;
+	// f.readPotential("out_data/poisson_pot/poisson_pot_2um_0eV.in");
+	// f.set_uC(f.get_uStart());
 
 	//
 	// FUNKCJA RÓWNOWAGOWA
-	// f.setEquilibriumFunction("out_data/poisson_pot/poisson_pot-0eV-2um.in", false);
+	f.setEquilibriumFunction("out_data/wf_feq_p.bin", true);
 
 	f.printParam();
 
@@ -93,7 +97,8 @@ int main(){
 	//
 	// Boltzmann-Poisson
 	cout<<"# Solving BTE+PE"<<endl;
-	f.solveWignerPoisson(0.1/AU_eV, 1e-2, 1, 100);  // uBias, alpha, beta, n_max
+	f.solveWignerPoisson(0.2/AU_eV, 4e-5, 1, 2000);  // uBias, alpha, beta, n_max
+	f.saveWignerFun();
 
 	//
 	// Poisson test
@@ -114,8 +119,6 @@ int main(){
 	//
 	// Charakterystyka J-V
 	// f.calc_IVchar(0.0/AU_eV, 0.4/AU_eV, 5);
-	// vec fit = polyfit(f.iv_v_, f.iv_i_, 1);
-	// fit.print();
 	// f.saveWignerFun();
 
 	double curr = f.calcCurr();
