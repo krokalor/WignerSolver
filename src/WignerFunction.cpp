@@ -1,6 +1,9 @@
 #include "lib.hpp"
 #include "WignerFunction.hpp"
 
+#include "Eigen/Dense"
+using namespace Eigen;
+
 using namespace wigner;
 
 
@@ -22,16 +25,8 @@ void WignerFunction::solveWignerEq(){
 	initEq();
 	// readPotential();
 
-	vec x(nxk_, fill::zeros);
 	// setBoundCond();
 	// setEquilibriumFunction();
-
-	// Setting up solver options
-	superlu_opts opts;
-	// opts.symmetric = false;
-	// opts.equilibrate = true;
-	// opts.refine = superlu_opts::REF_EXTRA;  // 	iterative refinement in extra precision
-	// opts.allow_ugly  = true;
 
 	// TODO: OpenMP parallel calculations
 	// #pragma omp parallel for collapse(2) shared(a_, b_)
@@ -44,7 +39,33 @@ void WignerFunction::solveWignerEq(){
 		}  // end j loop
 	}  // end i loop
 
-	spsolve(x, a_, b_, "superlu", opts);  // use SuperLU solver
+	MatrixXd a((int)nxk_,(int)nxk_);
+	for (size_t i=0; i<nx_; ++i)
+		for (size_t j=0; j<nk_; ++j)
+			a(i,j) = a_(i,j);
+	VectorXd b((int)nxk_);
+	for (size_t i=0; i<nxk_; ++i)
+		b(i) = b_(i);
+	VectorXd x =  a.lu().solve(b);
+
+	Matrix3d A;
+	Vector3d B;
+	A << 1,2,3,  4,5,6,  7,8,10;
+	B << 3, 3, 4;
+	cout << "Here is the matrix A:\n" << A << endl;
+	cout << "Here is the vector b:\n" << B << endl;
+	Vector3d X = A.lu().solve(B);
+	cout << "The solution is:\n" << X << endl;
+
+	// Setting up solver options
+	superlu_opts opts;
+	// opts.symmetric = false;
+	// opts.equilibrate = true;
+	// opts.refine = superlu_opts::REF_EXTRA;  // 	iterative refinement in extra precision
+	// opts.allow_ugly  = true;
+
+	// vec x(nxk_, fill::zeros);
+	// spsolve(x, a_, b_, "superlu", opts);  // use SuperLU solver
 	// spsolve(x, a, b, "superlu");
 
 	f_.zeros();

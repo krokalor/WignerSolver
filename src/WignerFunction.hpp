@@ -177,6 +177,8 @@ public:
 	double get_lD() { return lD_; }
 	double get_lC() { return lC_; }
 	double get_m() { return m_; }
+	double get_temp() { return temp_; }
+	double get_cD() { return cD_; }
 	double get_uF() { return uF_; }
 	double get_dt(){ return dt_; }
 	double get_rR() { return rR_; }

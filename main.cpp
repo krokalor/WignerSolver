@@ -28,32 +28,20 @@ int main(){
 	duration<double> t_elapsed;
 	t_start = high_resolution_clock::now();
 
-	double nx = 150, nk = 150;
-	double lD = 1000/AU_nm, lC = 1500/AU_nm;
+	double nx = 50, nk = 50;
+	double lD = 10/AU_nm, lC = 15/AU_nm;
 	double k_max = 0.15;  // -1
-
-	double m = 0.067;
-	double temp = 300;
-	double cD = 2e18*AU_cm3;
-	double uF = calcFermiEn(cD, m, temp);  // calcFermiEn(cD, m, temp) 0.087/AU_eV
-	double dt = 5*1e-15/AU_s;
-
-	double rR = 1/(1e-12/AU_s);  // 1/(1e-12/AU_s)
-	double rM = 1/(1e-12/AU_s);
-	double rF = 0;
-	double rG = 0;
-	double lambda = 0;
 
 	WignerFunction f(nx, lD, lC, nk, k_max);
 
 	vec x_arr = f.get_x_arr(), k_arr = f.get_k_arr();
 
-	f.set_m(m);
-	f.set_temp(temp);
-	f.set_cD(cD);
-	f.set_uF(uF);
-	f.set_dt(dt);
-	f.set_rR(rR), f.set_rM(rM), f.set_rF(rF), f.set_rG(rG), f.set_lambda(lambda);
+	f.set_m(0.067);
+	f.set_temp(300);
+	f.set_cD(2e18*AU_cm3);
+	f.set_uF( calcFermiEn(f.get_cD(), f.get_m(), f.get_temp()) );
+	f.set_dt(5*1e-15/AU_s);
+	f.set_rR(0), f.set_rM(0), f.set_rF(0), f.set_rG(0), f.set_lambda(0);
 
 	f.set_useQC(false);
 	f.set_useNLP(false);
@@ -67,7 +55,7 @@ int main(){
 	//
 	// Potencjał
 	cout<<"# Setting up potential"<<endl;
-	f.set_uBias(0./AU_eV);
+	f.set_uBias(0.1/AU_eV);
 	// f.setPotBias(0.1/AU_eV);
 	// f.addRectBarr(0.3/AU_eV, 17.5/AU_nm, 2/AU_nm, 10);
 	// f.addRectBarr(0.3/AU_eV, 22.5/AU_nm, 2/AU_nm, 10);
@@ -77,15 +65,15 @@ int main(){
 
 	//
 	// FUNKCJA RÓWNOWAGOWA
-	f.setEquilibriumFunction("out_data/wf_feq_p.bin", true);
+	// f.setEquilibriumFunction("out_data/wf_feq_p.bin", true);
 
 	f.printParam();
 
 	//
 	// Boltzmann
-	// cout<<"# Solving BTE"<<endl;
-	// f.solveWignerEq();
-	// f.saveWignerFun();
+	cout<<"# Solving BTE"<<endl;
+	f.solveWignerEq();
+	f.saveWignerFun();
 
 	// // #pragma omp parallel for schedule(dynamic)
 	// for (size_t i=0; i<50; ++i) {
@@ -96,9 +84,9 @@ int main(){
 
 	//
 	// Boltzmann-Poisson
-	cout<<"# Solving BTE+PE"<<endl;
-	f.solveWignerPoisson(0.2/AU_eV, 4e-5, 1, 2000);  // uBias, alpha, beta, n_max
-	f.saveWignerFun();
+	// cout<<"# Solving BTE+PE"<<endl;
+	// f.solveWignerPoisson(0.2/AU_eV, 4e-5, 1, 2000);  // uBias, alpha, beta, n_max
+	// f.saveWignerFun();
 
 	//
 	// Poisson test

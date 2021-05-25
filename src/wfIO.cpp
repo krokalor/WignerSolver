@@ -302,5 +302,6 @@ void WignerFunction::printParam()
 	cout.fill('=');
 	cout.width(cw_n+2*cw_v);
 	cout<<'#'<<'#'<<endl;
+	cout.fill(' ');
 	cout<<endl;
 }

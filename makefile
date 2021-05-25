@@ -6,16 +6,15 @@ CXXFLAGS = -std=c++11 -g -O2\
 	-Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op \
 	-Wmissing-declarations -Wmissing-include-dirs -Wnoexcept -Wold-style-cast \
 	-Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo \
-	-Wstrict-null-sentinel -Wswitch-default -Wundef -Werror -Wno-unused -fopenmp # -Wstrict-overflow=4 -fopenmp
+	-Wstrict-null-sentinel -Wswitch-default -Wundef -Wno-unused -fopenmp # -Wstrict-overflow=4 -fopenmp -Werror
 CXX = g++ # icpc
 OBJS = src/WignerFunction.o \
 	src/wfIO.o src/wignerTools.o \
 	src/solveWignerPoisson.o \
 	src/poisson1D.o \
 	main.o
-LDLIBS = -larmadillo -lsuperlu -lopenblas
-# -lblas -llapack -lm -lstdc++
-#-lblas -llapack -> -lopenblas
+LDLIBS = -larmadillo -lsuperlu -lblas -llapack
+#-lblas <-> -lopenblas
 #-lsuperlu -larmadillo -lopenblas -lm -fopenmp #-m64 -I${MKLROOT}/include # -mkl
 #-lsuperlu -L/home/karol/intel/compilers_and_libraries_2019.0.117/linux/mkl/lib -llapack -L/opt/OpenBLAS/lib/ -lm  -lopenblas -lm
 # -lm -- math library
