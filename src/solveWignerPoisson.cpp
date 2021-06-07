@@ -28,7 +28,7 @@ void WignerFunction::solveWignerPoisson
 	// Convergence criteria
 	size_t n_max = i_n_max, n_it = 0;
 	size_t n_dJ = 0, n_dU = 0, n_dRho = 0, n_conv = 1;
-	double max_dJ = 100/AU_Acm2, max_dU = 1e-4/AU_eV, max_pFun = 1e-8/AU_eV;
+	double max_dJ = 100/AU_Acm2, max_dU = 1e-6/AU_eV, max_pFun = 1e-8/AU_eV;
 	double max_dRho = 2e-6*AU_cm3/E0;
 	bool conv = false, pFun_zero = false;
 
@@ -51,8 +51,10 @@ void WignerFunction::solveWignerPoisson
 	std::ofstream tr_char("out_data/tr_char.csv");
 	poisson_step<<"it,x [nm],rho [cm^{-3}],uNew [eV],{/Symbol d}u [eV],du/dx [au],J [Acm^{-2}]\n";
 	tr_char<<"it.,Curr. [Acm^{-2}],nE [cm^{-2}],q [cm^{-2}],dj [Acm^{-2}],max(du) [eV]";
+
+	cout.width( 5 );
 	cout<<"# it.\tCurr. [Acm^-2]\tnE [cm^-2]\tnD [cm^-2]\tq [cm^-2]\tdj [Acm^-2]\tmax(du) [eV]\tmax(pFun) [ev]\tmax(rho) [C/cm^3]\n"<<endl;
-	while ( !( n_dJ > n_conv && n_dU > n_conv ) && n_it < n_max ) {
+	while ( !( n_dU > n_conv ) && n_it < n_max ) {
 		// && pFun_zero  !( n_dRho > n_conv &&  (n_dU > n_conv) && (n_dJ > n_conv) )
 
 		// TODO: Change order (BTE -> PE)
@@ -65,7 +67,8 @@ void WignerFunction::solveWignerPoisson
 		//
 		// Solve Wigner/Boltzmann eq
 		uC_ = p.uNew_;
-		solveWignerEq();
+		// solveWignerEq();
+		solveTimeEv();
 		calcCD_X(), calcCD_K();
 		curr = calcCurr();
 		j0 = j1, j1 = currD_;
@@ -93,8 +96,12 @@ void WignerFunction::solveWignerPoisson
 
 		nc = calcNorm(), nd = calcInt(nD, dx_), q = calcInt(p.rho_, dx_);
 
-		cout<<n_it
-			<<'\t'<<curr*AU_Acm2
+		cout.width( 5 );
+		cout<<n_it;
+		cout.width( 5 );
+		cout.setf( ios::scientific );
+		cout.precision( 2 );
+		cout<<'\t'<<curr*AU_Acm2
 			<<'\t'<<nc
 			<<'\t'<<nd
 			<<'\t'<<q
@@ -157,13 +164,13 @@ void WignerFunction::solveWignerPoisson
 	tr_char.close();
 
 	uStart_ = p.uNew_;
-	std::ofstream pot_out;
-	pot_out.open("out_data/poisson_pot/poisson_pot.out", std::ios::out);
-	pot_out<<"# i u(i)\n";
-	for (size_t i=0; i<nx_; ++i)
-			pot_out<<x_(i)<<' '<<uStart_(i)<<'\n';
-	pot_out.close();
-	// uStart_ = p.uNew_;
+	// std::ofstream pot_out;
+	// pot_out.open("out_data/poisson_pot/poisson_pot.out", std::ios::out);
+	// pot_out<<"# i u(i)\n";
+	// for (size_t i=0; i<nx_; ++i)
+	// 		pot_out<<x_(i)<<' '<<uStart_(i)<<'\n';
+	// pot_out.close();
+	uStart_.save("out_data/poisson_pot.bin");
 	// out_data.reset();
 	// out_out.save("out_data/poisson_pot/poissson_pot.out", arma_ascii);
 	// out_data.insert_cols(x_(i)), out_data.insert_cols(uStart_(i));

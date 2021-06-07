@@ -23,7 +23,7 @@ set border linecolor rgb "white" lw 1
 # set title '{/Symbol t}_R = 1x10^{-12} s, J = 3.71568x10^{06} A/cm^2'
 
 set ylabel 'p [a.u.]' textcolor "black" # offset -0.5,0
-set xlabel 'x [nm]' # offset 0,-0.5
+set xlabel 'x [{/Symbol m}m]' # offset 0,-0.5
 
 set xtics textcolor "black"
 set ytics textcolor "black" # -0.03,0.01,0.03
@@ -33,7 +33,7 @@ set mytics
 
 set cbrange [:]
 set cbtics textcolor "black"
-set cblabel 'Density function [a.u.]' offset 1
+set cblabel 'g(x,p) [a.u.]' offset 1
 
 # set format cb "%.1tx10^{%T}"
 
@@ -48,9 +48,10 @@ set origin .04,0
 AU_nm = 0.0529
 AU_cm2 = 2.8e-17
 
-splot [:] [:] '../wf.out' u ($1*AU_nm):2:3 with pm3d
-# splot [0:2*pi] [0:2*pi] sin(x)*cos(y)
+set label "U_{bias} = 100 meV" at graph 0.1,0.9 textcolor "white" front
 
+splot [0:4] [:] '../wf.out' u ($1*AU_nm/1e3):2:3 with pm3d
+# splot [0:2*pi] [0:2*pi] sin(x)*cos(y)
 
 # set palette rgb 7,5,15; # "traditional pm3d\n(black-blue-red-yellow)"
 # set palette rgb 3,11,6; # "green-red-violet"

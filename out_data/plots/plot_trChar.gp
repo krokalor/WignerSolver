@@ -44,20 +44,10 @@ set xrange[:]
 set yrange[:]
 
 set key bottom right
-
-# 0 mV
-# set label at 9.15,3.52e-9 point pointtype 7 pointsize 1
-# set label at 23.61,-7.897e-9 point pointtype 7 pointsize 1
-# 10 mV
-# set label at 5.63,1.00296e5 point pointtype 7 pointsize 1
-# set label at 3.575,4.88959e5 point pointtype 7 pointsize 1
-# 100 mV
-# set label at 3.224,4.237e6 point pointtype 7 pointsize 1
-# set label at 4.49,2.697e6 point pointtype 7 pointsize 1
-# set label at 8.19,5.6134e6 point pointtype 7 pointsize 1
+set logscale y
 
 #
 ##### Plot #####
 #
 
-plot '../tr_char.csv' u 1:2 w l ls 1 axes x1y1 notitle
+plot '../tr_char.csv' u 1:2 w lp ls 1 axes x1y1 notitle

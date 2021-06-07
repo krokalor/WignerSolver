@@ -9,7 +9,7 @@ void WignerFunction::setEquilibriumFunction(std::string input_file, bool read_da
 	// calcCD_X();
 	// vec nx = cdX_;
 	if (read_data) {
-		fe_.load(input_file);
+		fEq_.load(input_file);
 	}
 	else {
 		double uBias = uBias_, rR = rR_;
@@ -19,7 +19,7 @@ void WignerFunction::setEquilibriumFunction(std::string input_file, bool read_da
 		// vec nx_0 = cdX_;
 		for (size_t i=0; i<nx_; ++i)
 			for (size_t j=0; j<nk_; ++j)
-				fe_(i,j) = f_(i,j);  // *nx(i)/nx_0(i)
+				fEq_(i,j) = f_(i,j);  // *nx(i)/nx_0(i)
 		f_.zeros();
 		uBias_ = uBias, rR_ = rR;
 	}
@@ -168,6 +168,22 @@ double WignerFunction::calcEK(){
 }
 
 
+double WignerFunction::calcEK2(){
+	double sum_x = 0, sum_k;
+	for (size_t i=0; i<nx_; ++i) {
+		sum_k = 0;
+		for (size_t j=1; j<nk_; ++j)
+			sum_k += ( f_(i,j) + f_(i,j-1) ) * k_(j)*k_(j) * dk_/2.;
+		if (i == 0 || i == nx_-1)
+			sum_x += sum_k * dx_/2.;
+		else
+			sum_x += sum_k * dx_;
+	}
+	if (bcType_ > 0) sum_x /= 2.*M_PI;
+	return sum_x / calcNorm();
+}
+
+
 double WignerFunction::calcSDK(){
 	double ev = 0, ev2 = 0, s_ev, s_ev2;
 	/*
@@ -284,22 +300,23 @@ void WignerFunction::addRectBarr(double u0 = 0.3/AU_eV, double x0 = 1000, double
 //
 // ############################## WP initial conditions ##############################
 //
-void WignerFunction::addWavePacket() {
-	gwp_A_ = cD_*lC_ / (gwp_dx_*gwp_dp_*2*M_PI);
+void WignerFunction::addWavePacket(double gwp_x0, double gwp_dx,
+		double gwp_k0, double gwp_dk) {
+	double A = cD_*lC_ / (gwp_dx*gwp_dk*2*M_PI);
 	cout<<"# Setting up GWP with parameters:\n"
-	<<"# gwp_x0 = "<<gwp_x0_*AU_nm<<" nm, "<<gwp_x0_<<" a.u.\n"
-	<<"# gwp_dx = "<<gwp_dx_*AU_nm<<" nm, "<<gwp_dx_<<" a.u.\n"
-	<<"# gwp_p0 = "<<gwp_p0_<<" a.u.\n"
-	<<"# gwp_dp = "<<gwp_dp_<<" a.u.\n"
-	<<"# gwp_A = "<<gwp_A_/AU_cm2<<" cm^-2, "<<gwp_A_<<" a.u.\n"
+	<<"# gwp_x0 = "<<gwp_x0*AU_nm<<" nm, "<<gwp_x0<<" a.u.\n"
+	<<"# gwp_dx = "<<gwp_dx*AU_nm<<" nm, "<<gwp_dx<<" a.u.\n"
+	<<"# gwp_p0 = "<<gwp_k0<<" a.u.\n"
+	<<"# gwp_dp = "<<gwp_dk<<" a.u.\n"
+	<<"# gwp_A = "<<A/AU_cm2<<" cm^-2, "<<A<<" a.u.\n"
 	<<"# cD_*lC_ = "<<cD_*lC_/AU_cm2<<" cm^-2\n"<<endl;
 	// double s2 = 2*gwp_dx_*gwp_dx_;
-	double sx = 2*gwp_dx_*gwp_dx_, sp = 2*gwp_dp_*gwp_dp_;
+	double sx = 2*gwp_dx*gwp_dx, sk = 2*gwp_dk*gwp_dk;
 	for (size_t i=0; i<nx_; ++i) {
 		for (size_t j=0; j<nk_; ++j)
 			f_(i,j) += exp(
-				- (k_(j)-gwp_p0_)*(k_(j)-gwp_p0_)/sp
-				- (x_(i)-gwp_x0_)*(x_(i)-gwp_x0_)/sx  ) * gwp_A_; // * gwp_A_, / M_PI
+				- (k_(j)-gwp_k0)*(k_(j)-gwp_k0)/sk
+				- (x_(i)-gwp_x0)*(x_(i)-gwp_x0)/sx  ) * A; // * gwp_A_, / M_PI
 	}
 }
 
@@ -307,16 +324,11 @@ void WignerFunction::addWavePacket() {
 //
 //  WP evolution (no potential)
 //
-double WignerFunction::WavePacket_TEV(double x, double k)
-	{ return exp( -2*gwp_dx_*gwp_dx_
-			*(k-gwp_p0_)*(k-gwp_p0_)-(x-gwp_x0_)*(x-gwp_x0_)
-			/2./gwp_dx_/gwp_dx_ )/M_PI; }
-
-double WignerFunction::calcFermiEn_MB(double n0, double m, double T) {
-	double kBT = KB/AU_eV*T;
-	double A = pow(m,3/2.)/sqrt(2)/pow(M_PI,3/2.)*pow(kBT,3/2.);
-	return log(n0/A)*kBT;
-}
+double WignerFunction::WavePacket_TEV(double gwp_x0, double gwp_dx,
+		double gwp_k0, double gwp_dk, double x, double k)
+	{ return exp( -2*gwp_dx*gwp_dx
+			*(k-gwp_k0)*(k-gwp_k0)-(x-gwp_x0)*(x-gwp_x0)
+			/2./gwp_dx/gwp_dx )/M_PI; }
 
 
 //

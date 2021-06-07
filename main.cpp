@@ -28,34 +28,40 @@ int main(){
 	duration<double> t_elapsed;
 	t_start = high_resolution_clock::now();
 
-	double nx = 50, nk = 50;
-	double lD = 10/AU_nm, lC = 15/AU_nm;
+	double nx = 150, nk = 150;
+	double lD = 1000/AU_nm, lC = 1500/AU_nm;
 	double k_max = 0.15;  // -1
 
 	WignerFunction f(nx, lD, lC, nk, k_max);
 
-	vec x_arr = f.get_x_arr(), k_arr = f.get_k_arr();
+	vec x_val = f.get_x_arr(), k_val = f.get_k_arr();
+	double dx = f.get_dx(), dk = f.get_dk();
 
 	f.set_m(0.067);
 	f.set_temp(300);
 	f.set_cD(2e18*AU_cm3);
 	f.set_uF( calcFermiEn(f.get_cD(), f.get_m(), f.get_temp()) );
-	f.set_dt(5*1e-15/AU_s);
-	f.set_rR(0), f.set_rM(0), f.set_rF(0), f.set_rG(0), f.set_lambda(0);
+	f.set_dt(.005*1e-15/AU_s);
+	f.set_rR(0), f.set_rM(0); // 1/(1e-12/AU_s)
+	f.set_rG(0), f.set_rF(0), f.set_lambda(0);
 
 	f.set_useQC(false);
 	f.set_useNLP(false);
 	f.set_uBias_BC(true);
 
+	// "UDS1", "UDS2", "UDS3" (only for K), "HDS22"
+	f.set_diffSch_K("UDS2");
+	f.set_diffSch_P("UDS2");
+
 	// Warunek brzegowy
 	// 0 -> 0, 1 -> SF, 2:4 -> splot with SF, -1 -> Gauss, -2:-4 splot with Gauss
-	cout<<"Set up BC"<<endl;
-	f.set_bcType(1);
+	cout<<"# Setting up BC"<<endl;
+	f.set_bcType(0);
 
 	//
 	// Potencjał
 	cout<<"# Setting up potential"<<endl;
-	f.set_uBias(0.1/AU_eV);
+	f.set_uBias(0./AU_eV);
 	// f.setPotBias(0.1/AU_eV);
 	// f.addRectBarr(0.3/AU_eV, 17.5/AU_nm, 2/AU_nm, 10);
 	// f.addRectBarr(0.3/AU_eV, 22.5/AU_nm, 2/AU_nm, 10);
@@ -65,27 +71,38 @@ int main(){
 
 	//
 	// FUNKCJA RÓWNOWAGOWA
-	// f.setEquilibriumFunction("out_data/wf_feq_p.bin", true);
+	// f.setEquilibriumFunction("out_data/wf_feq_BP_tR1e-10.bin", true);
 
 	f.printParam();
 
 	//
 	// Boltzmann
-	cout<<"# Solving BTE"<<endl;
-	f.solveWignerEq();
-	f.saveWignerFun();
+	// cout<<"# Solving BTE"<<endl;
+	// f.solveWignerEq();
+	// f.saveWignerFun();
 
-	// // #pragma omp parallel for schedule(dynamic)
-	// for (size_t i=0; i<50; ++i) {
-	// 	cout<<"solveWigner: "<<i<<' '<<omp_get_thread_num()<<endl;
-	// 	// f.set_uBias(i*0.01);
-	// 	f.solveWignerEq();
+	f.addWavePacket(500/AU_nm, 100/AU_nm, sqrt(2*f.get_m()*f.get_uF()), 0.005);
+	// double t_total = 1000e-15/AU_s, t = 0, dt = f.get_dt();
+	// while (t <= t_total) {
+	// 	t += dt;
+	// 	f.solveTimeEv();
+	// 	f.saveWignerFun();
+	// 	cout<<t*AU_s*1e15<<' '<<f.calcEK()<<' '<<sqrt(f.calcEK2())<<endl;
 	// }
 
 	//
 	// Boltzmann-Poisson
-	// cout<<"# Solving BTE+PE"<<endl;
-	// f.solveWignerPoisson(0.2/AU_eV, 4e-5, 1, 2000);  // uBias, alpha, beta, n_max
+	cout<<"# Solving BTE+PE"<<endl;
+	f.solveWignerPoisson(0./AU_eV, 1, 1, 100);  // uBias, alpha, beta, n_max
+	f.saveWignerFun();
+
+	// mat wf;
+	// wf.load("out_data/wf_100meV_tR1e-10.bin");
+	// wf = f.get_wf();
+	// // for (size_t i=0; i<nx; ++i)
+	// // 	for (size_t j=0; j<nk; ++j)
+	// // 		wf(i,j) = wf(i,j)*k_val(j);
+	// f.set_wf(wf);
 	// f.saveWignerFun();
 
 	//
@@ -106,12 +123,35 @@ int main(){
 
 	//
 	// Charakterystyka J-V
-	// f.calc_IVchar(0.0/AU_eV, 0.4/AU_eV, 5);
+	// f.calc_IVchar(0.0/AU_eV, 0.02/AU_eV, 4);
 	// f.saveWignerFun();
+
+	//
+	// FINAL RESULTS
+	//
+
+	cout.setf( ios::scientific ), cout.precision( 5 );
 
 	double curr = f.calcCurr();
 	f.calcCD_X(), f.calcCD_K();
 	vec cdX = f.get_cdX(), cdK = f.get_cdK();
+
+	double n = f.calcNorm();
+	cout<<"# <p> = "<<f.calcEK()<<", sqrt(<p^2>) = "<<sqrt(f.calcEK2())
+		<<", J(<p>) = "<<f.calcEK()/f.get_m()*n/f.get_l()*AU_Acm2
+		<<", J(sqrt(<p^2>)) = "<<sqrt(f.calcEK2())/f.get_m()*n/f.get_l()*AU_Acm2<<endl;
+
+	// vec exK (nx, fill::zeros), exK2 (nx, fill::zeros);
+	// for (size_t i=0; i<nx; ++i) {
+	// 	for (size_t j=1; j<nk; ++j) {
+	// 		exK(i) += ( wf(i,j) + wf(i,j-1) )/n * k_val(j) * dk/2.;
+	// 		exK2(i) += ( wf(i,j) + wf(i,j-1) )/n * k_val(j)*k_val(j) * dk/2.;
+	// 	}
+	// }
+	// for (size_t i=0; i<nx; ++i)
+	// 	cout<<x_val(i)<<' '<<exK(i)<<' '<<sqrt(exK2(i))
+	// 		<<' '<<exK(i)*cdX(i)/f.get_m()*AU_Acm2
+	// 		<<' '<<sqrt(exK2(i))*cdX(i)/f.get_m()*AU_Acm2<<endl;
 
 	// vec nx_1 (f.nx_, fill::zeros), nx_2 (f.nx_, fill::zeros);
 	// vec jx_1 (f.nx_, fill::zeros), jx_2 (f.nx_, fill::zeros);
@@ -129,17 +169,17 @@ int main(){
 	vec an_pot (nx, fill::zeros);
 	double sig = 20/AU_nm, x0 = 35/AU_nm;
 	for (size_t i=0; i<nx; ++i)
-		an_pot(i) = 0.03/AU_eV*exp(-(x_arr(i)-x0)*(x_arr(i)-x0)/sig/sig)
-		*(-8/pow(sig,6)*pow(x_arr(i)-x0,3)+12/pow(sig,4)*(x_arr(i)-x0));
+		an_pot(i) = 0.03/AU_eV*exp(-(x_val(i)-x0)*(x_val(i)-x0)/sig/sig)
+		*(-8/pow(sig,6)*pow(x_val(i)-x0,3)+12/pow(sig,4)*(x_val(i)-x0));
 
 	field<std::string> header(8);
 	mat out_data;
-	out_data.insert_cols(0, x_arr*AU_nm), header(0) = "x [nm]";
+	out_data.insert_cols(0, x_val*AU_nm), header(0) = "x [nm]";
 	out_data.insert_cols(1, f.get_u()*AU_eV), header(1) = "U [eV]";  // col. 2
 	out_data.insert_cols(2, f.get_currD()*AU_Acm2), header(2) = "J(x) [Acm^{-2}]";  // col. 3
 	out_data.insert_cols(3, cdX/AU_cm3), header(3) = "n [cm^{-3}]";  // col. 4
 	out_data.insert_cols(4, f.get_du()*AU_eV/AU_nm), header(4) = "U' [eV/nm]";  // col. 5
-	out_data.insert_cols(5, f.get_dddu()), header(5) = "U''' [au]";  // col. 6
+	out_data.insert_cols(5, f.get_d3u()), header(5) = "U''' [au]";  // col. 6
 	out_data.insert_cols(6, f.get_uB()*AU_eV), header(6) = "U^B [eV]";  // col. 7
 	out_data.insert_cols(7, f.get_uC()*AU_eV), header(7) = "U^C [eV]";  // col. 7
 	// out_data.insert_cols(5, nx_1/AU_cm3), header(5) = "nx+[cm^-3]";  // col. 6
@@ -155,21 +195,15 @@ int main(){
 	file<<"# Carrier density in 'x' space\n";
 	file<<"# x [au]  n(x) [au]\n";
 	for (size_t i=0; i<nx; ++i)
-		file<<x_arr<<'\t'<<cdX(i)<<'\n';
+		file<<x_val(i)<<'\t'<<cdX(i)<<'\n';
 	file.close();
 
 	file.open("out_data/cdK.out", std::ios::out);
 	file<<"# Carrier density in 'k' space\n";
 	file<<"# p [au]  n(k) [au]\n";
 	for (size_t j=0; j<nk; ++j)
-		file<<k_arr(j)<<'\t'<<cdK(j)<<'\n';
+		file<<k_val(j)<<'\t'<<cdK(j)<<'\n';
 	file.close();
-
-	// file.open("out_data/pot.out", std::ios::out);
-	// file<<"# x [au]  U [au]\n";
-	// for (size_t i=0; i<f.nx_; ++i)
-	// 	file<<f.x_(i)<<' '<<f.u_(i)<<'\n';
-	// file.close();
 
 	cout<<"# Final current = "<<curr*AU_Acm2<<" [Acm^-2]"<<endl;
 	cout<<"# N = "<<f.calcNorm()/AU_cm2<<" [cm^-2]"<<endl;

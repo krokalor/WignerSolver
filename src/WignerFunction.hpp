@@ -36,15 +36,13 @@ class WignerFunction{
 
 	// device cross section (1um x 1um)
 	double lYZ_ = 1e-6*1e-6 * 1e18/AU_nm/AU_nm;
-	double part_num_;  // particle number
-	double gwp_dx_, gwp_dp_; // Wave packet parameters
-	double gwp_x0_, gwp_p0_;
-	double gwp_A_;
+	double part_num_ = 1e5;  // particle number
 
 	bool useNLP_, useQC_, uBias_BC_;  // bool variables
+	std::string diffSch_K_ = "UDS2", diffSch_P_ = "UDS2";
 
 	mat f_;  // Wigner function
-	mat fe_;  // Equilibrium Wigner function
+	mat fEq_;  // Equilibrium Wigner function
 	mat f0_;  // Wigner function before time evolution
 	mat fL_;  // Wigner function for el. from LEFT contact
 	mat fR_;  // Wigner function for el. from RIGHT contact
@@ -52,7 +50,7 @@ class WignerFunction{
 	vec uC_; // Hartree potential / bias potential
 	vec uB_;  // Band offset
 	vec du_;  // Potential derivative
-	vec dddu_;  // Potential third derivative
+	vec d3u_;  // Potential third derivative
 	vec uStart_;  // Potential
 	vec bc_;  // Boundary condition
 	vec x_;  // Position values
@@ -82,7 +80,7 @@ public:
 		nk2_ (size_t(nk_/2.)),
 		nxk_ (nx_*nk_),
 		f_(mat(nx_, nk_)),
-		fe_(mat(nx_, nk_)),
+		fEq_(mat(nx_, nk_)),
 		f0_(mat(nx_, nk_)),
 		fL_(mat(nx_, nk_)),
 		fR_(mat(nx_, nk_)),
@@ -90,6 +88,7 @@ public:
 		uC_(vec(nx_, fill::zeros)),
 		uB_(vec(nx_, fill::zeros)),
 		du_(vec(nx_, fill::zeros)),
+		d3u_(vec(nx_, fill::zeros)),
 		uStart_(vec(nx_, fill::zeros)),
 		bc_(vec(nk_, fill::zeros)),
 		x_(vec(nx_, fill::zeros)),
@@ -131,7 +130,7 @@ public:
 		nk2_ (size_t(nk_/2.)),
 		nxk_ (nx_*nk_),
 		f_(mat(nx_, nk_)),
-		fe_(mat(nx_, nk_)),
+		fEq_(mat(nx_, nk_)),
 		f0_(mat(nx_, nk_)),
 		fL_(mat(nx_, nk_)),
 		fR_(mat(nx_, nk_)),
@@ -139,6 +138,7 @@ public:
 		uC_(vec(nx_, fill::zeros)),
 		uB_(vec(nx_, fill::zeros)),
 		du_(vec(nx_, fill::zeros)),
+		d3u_(vec(nx_, fill::zeros)),
 		uStart_(vec(nx_, fill::zeros)),
 		bc_(vec(nk_, fill::zeros)),
 		x_(vec(nx_, fill::zeros)),
@@ -193,10 +193,11 @@ public:
 	vec get_uC() { return uC_; }
 	vec get_uStart() { return uStart_; }
 	vec get_du() { return du_; }
-	vec get_dddu() { return dddu_; }
+	vec get_d3u() { return d3u_; }
 	vec get_currD() { return currD_; }
 	vec get_cdX() { return cdX_; }
 	vec get_cdK() { return cdK_; }
+	mat get_wf() { return f_; }
 
 	void set_m(double m) { m_ = m; }
 	void set_temp(double temp) {
@@ -212,30 +213,33 @@ public:
 		dt_ = dt;
 		courant_num_ = dt_*kmax_/m_/dx_;
 	}
-
 	void set_rR(double rR) { rR_ = rR; }
 	void set_rM(double rM) { rM_ = rM; }
 	void set_rF(double rF) { rF_ = rF; }
 	void set_rG(double rG) { rG_ = rG; }
 	void set_lambda(double lambda) { lambda_ = lambda; }
-
 	void set_epsilonR(double epsilonR) { epsilonR_ = epsilonR; }
 	void set_uBias(double uBias) { uBias_ = uBias; }
-
 	void set_useNLP(bool useNLP) { useNLP_ = useNLP; }
 	void set_useQC(bool useQC) { useQC_ = useQC; }
 	void set_uBias_BC(bool uBias_BC) { uBias_BC_ = uBias_BC; }
-
 	void set_bcType(int bcType) { bcType_ = bcType; }
-
 	void set_lYZ(double lYZ) { lYZ_ = lYZ; }
 	void set_part_num(double part_num) { part_num_ = part_num; }
-
 	void set_uC(vec uC) { uC_ = uC; }
+	void set_wf(mat f) { f_ = f; }
+	void set_diffSch_K(std::string diffSch_K) { diffSch_K_ = diffSch_K; }
+	void set_diffSch_P(std::string diffSch_P) { diffSch_P_ = diffSch_P; }
+
+	void load_poisson_pot(std::string file) {
+		uStart_.load(file);
+		cout<<"## Poisson potential loaded from file: "<<file<<endl;
+	}
 
 	double calcNorm();
 	double calcEX();
 	double calcEK();
+	double calcEK2();
 	double calcSDK();
 	double calcSDX();
 	vec calcCD_X();
@@ -286,12 +290,11 @@ public:
 	void setPotBias(double);
 	void addGaussBarr(double, double, double);
 	void addRectBarr(double, double, double, double);
-	void addWavePacket();
-	double WavePacket_TEV(double, double);
+	void addWavePacket(double, double, double, double);
+	double WavePacket_TEV(double, double, double, double, double, double);
 	double nC(double, double);
 	double fermiInt(double, double);
 	double calcFermiEn(double, double, double);
-	double calcFermiEn_MB(double, double, double);
 };
 
 }

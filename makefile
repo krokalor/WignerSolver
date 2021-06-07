@@ -13,7 +13,7 @@ OBJS = src/WignerFunction.o \
 	src/solveWignerPoisson.o \
 	src/poisson1D.o \
 	main.o
-LDLIBS = -larmadillo -lsuperlu -lblas -llapack
+LDLIBS = -larmadillo -lsuperlu -lopenblas -llapack
 #-lblas <-> -lopenblas
 #-lsuperlu -larmadillo -lopenblas -lm -fopenmp #-m64 -I${MKLROOT}/include # -mkl
 #-lsuperlu -L/home/karol/intel/compilers_and_libraries_2019.0.117/linux/mkl/lib -llapack -L/opt/OpenBLAS/lib/ -lm  -lopenblas -lm
