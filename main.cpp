@@ -34,15 +34,16 @@ int main(){
 
 	WignerFunction f(nx, lD, lC, nk, k_max);
 
-	vec x_val = f.get_x_arr(), k_val = f.get_k_arr();
+	arma::vec x_val = f.get_x_arr(), k_val = f.get_k_arr();
 	double dx = f.get_dx(), dk = f.get_dk();
 
 	f.set_m(0.067);
 	f.set_temp(300);
+	f.set_epsilonR(13.1);
 	f.set_cD(2e18*AU_cm3);
 	f.set_uF( calcFermiEn(f.get_cD(), f.get_m(), f.get_temp()) );
 	f.set_dt(.005*1e-15/AU_s);
-	f.set_rR(0), f.set_rM(0); // 1/(1e-12/AU_s)
+	f.set_rR(0), f.set_rM(0); // 1./(1e-12/AU_s)
 	f.set_rG(0), f.set_rF(0), f.set_lambda(0);
 
 	f.set_useQC(false);
@@ -50,13 +51,14 @@ int main(){
 	f.set_uBias_BC(true);
 
 	// "UDS1", "UDS2", "UDS3" (only for K), "HDS22"
-	f.set_diffSch_K("UDS2");
-	f.set_diffSch_P("UDS2");
+	f.set_diffSch_K("HDS22");
+	f.set_diffSch_P("HDS22");
+	f.set_diffSch_J("HDS22");
 
 	// Warunek brzegowy
 	// 0 -> 0, 1 -> SF, 2:4 -> splot with SF, -1 -> Gauss, -2:-4 splot with Gauss
 	cout<<"# Setting up BC"<<endl;
-	f.set_bcType(0);
+	f.set_bcType(1);
 
 	//
 	// Potencjał
@@ -66,12 +68,12 @@ int main(){
 	// f.addRectBarr(0.3/AU_eV, 17.5/AU_nm, 2/AU_nm, 10);
 	// f.addRectBarr(0.3/AU_eV, 22.5/AU_nm, 2/AU_nm, 10);
 	// f.addGaussBarr(0.3/AU_eV, 2000/AU_nm, 500/AU_nm);
-	// f.readPotential("out_data/poisson_pot/poisson_pot_2um_0eV.in");
+	f.load_poisson_pot("out_data/poisson_pot/poisson_pot_100meV.bin");
 	// f.set_uC(f.get_uStart());
 
 	//
 	// FUNKCJA RÓWNOWAGOWA
-	// f.setEquilibriumFunction("out_data/wf_feq_BP_tR1e-10.bin", true);
+	// f.setEquilibriumFunction("out_data/wf_feq_BP.bin", true);
 
 	f.printParam();
 
@@ -81,7 +83,7 @@ int main(){
 	// f.solveWignerEq();
 	// f.saveWignerFun();
 
-	f.addWavePacket(500/AU_nm, 100/AU_nm, sqrt(2*f.get_m()*f.get_uF()), 0.005);
+	// f.addWavePacket(500/AU_nm, 100/AU_nm, sqrt(2*f.get_m()*f.get_uF()), 0.005);
 	// double t_total = 1000e-15/AU_s, t = 0, dt = f.get_dt();
 	// while (t <= t_total) {
 	// 	t += dt;
@@ -92,16 +94,19 @@ int main(){
 
 	//
 	// Boltzmann-Poisson
-	cout<<"# Solving BTE+PE"<<endl;
-	f.solveWignerPoisson(0./AU_eV, 1, 1, 100);  // uBias, alpha, beta, n_max
+	cout<<"# Solving B-P set of equations"<<endl;
+	// solveWignerPoisson(uBias, alpha, beta, n_max, timeDependent)
+	f.solveWignerPoisson(0.1/AU_eV, 2e-5, 1, 10, false);
 	f.saveWignerFun();
 
-	// mat wf;
-	// wf.load("out_data/wf_100meV_tR1e-10.bin");
+	// arma::mat wf1, wf2, wf;
 	// wf = f.get_wf();
-	// // for (size_t i=0; i<nx; ++i)
-	// // 	for (size_t j=0; j<nk; ++j)
-	// // 		wf(i,j) = wf(i,j)*k_val(j);
+	// wf1.load("out_data/wf_BP_100meV.bin");
+	// wf2.load("out_data/wf_feq_BP.bin");
+	// wf = f.get_wf();
+	// for (size_t i=0; i<nx; ++i)
+	// 	for (size_t j=0; j<nk; ++j)
+	// 		wf(i,j) = ( wf1(i,j) - wf2(i,j) );  //  * k_val(j)
 	// f.set_wf(wf);
 	// f.saveWignerFun();
 
@@ -123,7 +128,7 @@ int main(){
 
 	//
 	// Charakterystyka J-V
-	// f.calc_IVchar(0.0/AU_eV, 0.02/AU_eV, 4);
+	// f.calc_IVchar(0.0/AU_eV, 0.1/AU_eV, 4);
 	// f.saveWignerFun();
 
 	//
@@ -134,14 +139,14 @@ int main(){
 
 	double curr = f.calcCurr();
 	f.calcCD_X(), f.calcCD_K();
-	vec cdX = f.get_cdX(), cdK = f.get_cdK();
+	arma::vec cdX = f.get_cdX(), cdK = f.get_cdK();
 
 	double n = f.calcNorm();
 	cout<<"# <p> = "<<f.calcEK()<<", sqrt(<p^2>) = "<<sqrt(f.calcEK2())
 		<<", J(<p>) = "<<f.calcEK()/f.get_m()*n/f.get_l()*AU_Acm2
 		<<", J(sqrt(<p^2>)) = "<<sqrt(f.calcEK2())/f.get_m()*n/f.get_l()*AU_Acm2<<endl;
 
-	// vec exK (nx, fill::zeros), exK2 (nx, fill::zeros);
+	//  exK (nx, arma::fill::zeros), exK2 (nx, arma::fill::zeros);
 	// for (size_t i=0; i<nx; ++i) {
 	// 	for (size_t j=1; j<nk; ++j) {
 	// 		exK(i) += ( wf(i,j) + wf(i,j-1) )/n * k_val(j) * dk/2.;
@@ -153,8 +158,8 @@ int main(){
 	// 		<<' '<<exK(i)*cdX(i)/f.get_m()*AU_Acm2
 	// 		<<' '<<sqrt(exK2(i))*cdX(i)/f.get_m()*AU_Acm2<<endl;
 
-	// vec nx_1 (f.nx_, fill::zeros), nx_2 (f.nx_, fill::zeros);
-	// vec jx_1 (f.nx_, fill::zeros), jx_2 (f.nx_, fill::zeros);
+	//  nx_1 (f.nx_, arma::fill::zeros), nx_2 (f.nx_, arma::fill::zeros);
+	//  jx_1 (f.nx_, arma::fill::zeros), jx_2 (f.nx_, arma::fill::zeros);
 	// for (size_t i=0; i<f.nx_; ++i) {
 	// 	for (size_t j=0; j<f.nk2_; ++j) {
 	// 		nx_1(i) += f.f_(i,j)*f.dk_;
@@ -166,14 +171,14 @@ int main(){
 	// 	}
 	// }
 
-	vec an_pot (nx, fill::zeros);
+	arma::vec an_pot (nx, arma::fill::zeros);
 	double sig = 20/AU_nm, x0 = 35/AU_nm;
 	for (size_t i=0; i<nx; ++i)
 		an_pot(i) = 0.03/AU_eV*exp(-(x_val(i)-x0)*(x_val(i)-x0)/sig/sig)
 		*(-8/pow(sig,6)*pow(x_val(i)-x0,3)+12/pow(sig,4)*(x_val(i)-x0));
 
 	field<std::string> header(8);
-	mat out_data;
+	arma::mat out_data;
 	out_data.insert_cols(0, x_val*AU_nm), header(0) = "x [nm]";
 	out_data.insert_cols(1, f.get_u()*AU_eV), header(1) = "U [eV]";  // col. 2
 	out_data.insert_cols(2, f.get_currD()*AU_Acm2), header(2) = "J(x) [Acm^{-2}]";  // col. 3
@@ -226,10 +231,10 @@ void gaussBarrier(WignerFunction& f) {
 
 	size_t nx = f.get_nx(), nk = f.get_nk();
 	double m = f.get_m();
-	mat f;
+	arma::mat f;
 
-	vec nx_1 (nx, fill::zeros), nx_2 (nx, fill::zeros);
-	vec jx_1 (nx, fill::zeros), jx_2 (nx, fill::zeros);
+	arma::vec nx_1 (nx, arma::fill::zeros), nx_2 (nx, arma::fill::zeros);
+	arma::vec jx_1 (nx, arma::fill::zeros), jx_2 (nx, arma::fill::zeros);
 
 
 	// f.setPotBias(0.02/AU_eV);
@@ -297,9 +302,9 @@ void dissDecoh(WignerFunction& f, double t_start, double t_end, size_t n_step, d
 	f.solveWignerPoisson();
 	double j0 = f.calcCurr(), n0 = f.calcNorm();
 	double j=0, n=0, t=0;
-	vec fit, nE_k;
-	mat tpMap(n_step, f.nk_, fill::zeros);
-	mat ivMap(n_step, nv, fill::zeros);
+	arma::vec fit, nE_k;
+	arma::mat tpMap(n_step, f.nk_, arma::fill::zeros);
+	arma::mat ivMap(n_step, nv, arma::fill::zeros);
 
 	bool calcIVchar = false;
 	double r0 = 0, r = 0;
@@ -398,7 +403,7 @@ void calcTimeChar(WignerFunction& f) {
 	//
 	// Time evolution
 	double t_total = 2.05e-12/AU_s, t = 0, max_dj = 1e-4;
-	vec dj(f.nx_, fill::zeros), j0(f.nx_, fill::zeros), j1(f.nx_, fill::zeros);
+	arma::vec dj(f.nx_, arma::fill::zeros), j0(f.nx_, arma::fill::zeros), j1(f.nx_, arma::fill::zeros);
 	int n_min = 0, n_conv = 2, n_dj = 0, n_it = 0;
 	double nrmse_j = 0;
 	double j = 0, nc = 0, nc_prev = 0, dj_x = 0, j1_x = 0, j1_n = 0;

@@ -19,8 +19,8 @@ set style line 10 lc rgb '#000080' lt 1 lw 2 pt 7 ps 1 dashtype 1 # navy
 # Plot
 #
 
-set ylabel ''
-set y2label ''  textcolor '#FF0000'
+set ylabel 'U [eV]'
+set y2label 'J [Acm^{-2}]'  textcolor '#FF0000'
 set xlabel 'x [nm]'
 set ytics nomirror
 set y2tics nomirror textcolor '#FF0000'
@@ -32,8 +32,10 @@ set key over
 
 AU_nm = 0.0529; E0 = 1.602E-19; AU_cm2 = 2.8e-17; AU_cm = 5.29e-9
 
+# set label "Average current\n1.33e+04 Acm^{-2}" at graph 0.74,0.55 textcolor '#9400d3'
+
 # 1: x, 2: U, 3: Delta_U, 4: nC, 5: Current
 plot '../poisson_test.csv' u 1:2 w l ls 1, '' u 1:3 w l ls 2, '' u 1:4 w l ls 4,\
-    '' u 1:9 w l ls 3 axes x1y2
-    # '' u 1:7 w l ls 5 axes x1y2
+    '' u 1:5 w l ls 3 axes x1y2, '' u 1:10 w l ls 5 axes x1y2
+    # '' u 1:9 w l ls 5 axes x1y2 , [0:4000] 1.33e+04 w l ls 6 axes x1y2
     # '' u 1:5 w l ls 3 axes x1y2, '' u 1:6 w l ls 5 axes x1y2

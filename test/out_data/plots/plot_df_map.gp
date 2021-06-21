@@ -11,7 +11,7 @@ set style line 3 lc rgb '#FF0000' lw 2 dashtype 1
 set style line 4 lc rgb '#008000' lw 2 dashtype 1
 set style line 5 lc rgb '#800000' lw 2 dashtype 1
 
-# set palette rgbformulae 30,31,32
+# set palette rgb 30,31,32
 # set hidden3d
 # set ticslevel 0.8
 # set isosample 50
@@ -26,14 +26,14 @@ set ylabel 'p [a.u.]' textcolor "black" # offset -0.5,0
 set xlabel 'x [{/Symbol m}m]' # offset 0,-0.5
 
 set xtics textcolor "black"
-set ytics textcolor "black"
+set ytics textcolor "black" # -0.03,0.01,0.03
 
 set mxtics
 set mytics
 
-set cbrange [0:]
+set cbrange [:]
 set cbtics textcolor "black"
-set cblabel 'Density function [a.u.]' offset 1
+set cblabel 'g(x,p) [a.u.]' offset 1
 
 # set format cb "%.1tx10^{%T}"
 
@@ -48,9 +48,10 @@ set origin .04,0
 AU_nm = 0.0529
 AU_cm2 = 2.8e-17
 
-splot [:1] [:] '../wf.out' u ($1*AU_nm*1e-3):2:3 with pm3d
-# splot [0:2*pi] [0:2*pi] sin(x)*cos(y)
+set label "U_{bias} = 100 meV" at graph 0.1,0.9 textcolor "white" front
 
+splot [0:4] [:] '../wf.out' u ($1*AU_nm/1e3):2:3 with pm3d
+# splot [0:2*pi] [0:2*pi] sin(x)*cos(y)
 
 # set palette rgb 7,5,15; # "traditional pm3d\n(black-blue-red-yellow)"
 # set palette rgb 3,11,6; # "green-red-violet"

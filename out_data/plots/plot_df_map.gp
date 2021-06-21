@@ -33,7 +33,8 @@ set mytics
 
 set cbrange [:]
 set cbtics textcolor "black"
-set cblabel 'g(x,p) [a.u.]' offset 1
+# set cblabel 'f(x,p;{/Symbol t})-f(x,p;{/Symbol t}=0) [a.u.]' offset 1
+set cblabel 'f(x,p)-f_{eq}(x,p) [a.u.]' offset 1
 
 # set format cb "%.1tx10^{%T}"
 
@@ -49,6 +50,7 @@ AU_nm = 0.0529
 AU_cm2 = 2.8e-17
 
 set label "U_{bias} = 100 meV" at graph 0.1,0.9 textcolor "white" front
+# set label "{/Symbol t} = {/Symbol t}_M" at graph 0.1,0.85 textcolor "white" front
 
 splot [0:4] [:] '../wf.out' u ($1*AU_nm/1e3):2:3 with pm3d
 # splot [0:2*pi] [0:2*pi] sin(x)*cos(y)

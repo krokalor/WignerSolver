@@ -86,7 +86,7 @@ WignerEquationSolver::WignerEquationSolver(
         solve(0.0,false); // check!!!
         //--
 
-        // fill in B0 and C0 :
+        // arma::fill in B0 and C0 :
 #pragma omp parallel for
         for(size_t i=0; i<Nxk; ++i) B0[i] = B[i];
 #pragma omp parallel for

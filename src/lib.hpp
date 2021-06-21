@@ -23,7 +23,7 @@ export OMP_NESTED = false
 // using namespace std;
 using std::cout;
 using std::endl;
-using namespace arma;
+// using namespace arma;
 
 // ############################## TYPEDEFs ##############################
 // TODO: put into a namespace
@@ -153,7 +153,7 @@ class matrix {
 
 // #################### funkcja do liczenia całki ####################
 template <class T>
-double calcInt(vec f, T h){
+double calcInt(arma::vec f, T h){
 	size_t n = f.size();
 	T ig = 0;
 	for (size_t i=1; i<n/2; ++i)
@@ -163,18 +163,18 @@ double calcInt(vec f, T h){
 }
 
 
-// #################### funkcja do liczenia pochodnej ####################
+// #################### funkcja do liczenia pierwszej pochodnej ####################
 template <class T>
-vec calcDer(vec f, T h){
+arma::vec calcFirstDer(arma::vec f, T h){
 	size_t n = f.size();
-	vec df(n);
-	for (size_t i=1; i<n-1; ++i)
-		// df(i) = (1/12.*f(i-2)-2/3.*f(i-1)+2/3.*f(i+1)-1/12.*f(i+2))/h;
-		df(i) = (-f(i-1)+f(i+1))/h/2.;
+	arma::vec df(n, arma::fill::zeros);
+	for (size_t i=2; i<n-2; ++i)
+		df(i) = (1/12.*f(i-2)-2/3.*f(i-1)+2/3.*f(i+1)-1/12.*f(i+2))/h;
+		// df(i) = (-f(i-1)+f(i+1))/h/2.;
 	df(0) = (-3.*f(0)+4.*f(1)-f(2))/h/2.;
 	df(n-1) = (3.*f(n-1)-4.*f(n-2)+f(n-3))/h/2.;
-	// df(1) = (-f(0)+f(2))/h/2.;
-	// df(n-2) = (-f(n-3)+f(n-1))/h/2.;
+	df(1) = (-f(0)+f(2))/h/2.;
+	df(n-2) = (-f(n-3)+f(n-1))/h/2.;
 	// df(0) = (-f(0)+f(1))/h;
 	// df(n-1) = (f(n-1)-f(n-2))/h;
 	// df(0) = df(1);
@@ -183,11 +183,24 @@ vec calcDer(vec f, T h){
 }
 
 
+// #################### funkcja do liczenia drugiej pochodnej ####################
+template <class T>
+arma::vec calcSecondDer(arma::vec f, T h){
+	size_t n = f.size();
+	arma::vec df(n, arma::fill::zeros);
+	for (size_t i=1; i<n-1; ++i)
+		df(i) = (f(i-1)-2.*f(i)+f(i+1))/h/h;
+	df(0) = (2*f(0)-5.*f(1)+4*f(2)-f(3))/h/h;
+	df(n-1) = (2*f(n-1)-5.*f(n-2)+4*f(n-3)-f(n-4))/h/h;
+	return df;
+}
+
+
 // #################### funkcja do liczenia trzeciej pochodnej ####################
 template <class T>
-vec calcThirdDer(vec f, T h){
+arma::vec calcThirdDer(arma::vec f, T h){
 	size_t n = f.size();
-	vec df(n);
+	arma::vec df(n, arma::fill::zeros);
 	for (size_t i=2; i<n-2; ++i)
 		df(i) = (-f(i-2)/2.+f(i-1)-f(i+1)+f(i+2)/2.)/h/h/h;
 	df(0) = (-f(0)+3.*f(1)-3*f(2)+f(3))/h/h/h;
@@ -197,8 +210,9 @@ vec calcThirdDer(vec f, T h){
 	return df;
 }
 
-double calcFermiEn(double, double, double);
 
+double calcFermiEn(double, double, double);
 std::map<std::string, double> readParam(std::string);
+
 
 #endif

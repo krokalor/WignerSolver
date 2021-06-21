@@ -13,7 +13,7 @@ void WignerFunction::initEq() {
 	setBoundCond();
 	// setEquilibriumFunction();
 	u_ = uB_ + uC_;
-	du_ = calcDer(u_, dx_);
+	du_ = calcFirstDer(u_, dx_);
 	d3u_ = calcThirdDer(u_, dx_);
 	a_.zeros(), b_.zeros();
 }
@@ -39,15 +39,20 @@ void WignerFunction::solveWignerEq(){
 		}  // end j loop
 	}  // end i loop
 
-	// Setting up solver options
-	superlu_opts opts;
-	// opts.symmetric = false;
-	// opts.equilibrate = true;
-	// opts.refine = superlu_opts::REF_EXTRA;  // 	iterative refinement in extra precision
-	// opts.allow_ugly  = true;
+	// cout<<"# min(A) = "<<min(min(a_))<<endl;
+	// cout<<"# max(A) = "<<max(max(a_))<<endl;
 
-	vec x(nxk_, fill::zeros);
-	spsolve(x, a_, b_, "superlu", opts);  // use SuperLU solver
+	// Setting up solver options
+	arma::superlu_opts opts;
+	opts.symmetric = false;
+	opts.equilibrate = true;
+	opts.permutation = arma::superlu_opts::NATURAL;
+	opts.refine = arma::superlu_opts::REF_EXTRA;  // 	iterative refinement in extra precision
+	opts.allow_ugly  = true;
+	opts.pivot_thresh = 0.01;
+
+	arma::vec x(nxk_, arma::fill::zeros);
+	arma::spsolve(x, a_, b_, "superlu", opts);  // use SuperLU solver
 
 	//
 	// EIGEN
@@ -106,14 +111,14 @@ void WignerFunction::solveTimeEv(){
 		}  // end j loop
 	}  // end i loop
 
-	superlu_opts opts;
-	// opts.symmetric = false;
-	// opts.equilibrate = true;
+	arma::superlu_opts opts;
+	opts.symmetric = false;
+	opts.equilibrate = true;
 	// opts.refine = superlu_opts::REF_NONE;
 	// opts.refine = superlu_opts::REF_EXTRA;  // 	iterative refinement in extra precision
     // opts.allow_ugly  = true;
-	vec x(nxk_, fill::zeros);
-	spsolve(x, a_, b_, "superlu", opts);  // use SuperLU solver
+	arma::vec x(nxk_, arma::fill::zeros);
+	arma::spsolve(x, a_, b_, "superlu", opts);  // use SuperLU solver
 	// spsolve(x, a, b, "superlu");
 
 	for (size_t i=0; i<nx_; ++i)
@@ -242,21 +247,90 @@ void WignerFunction::diffusionTerm(size_t i, size_t j, double dt){
 			}
 		}
 	}
+	else if (diffSch_K_ == "UDS4") {
+		// UDS4
+		double C = k_(j)/m_/dx_/12.;
+		double B = bc_(j)*C;
+		if (dt > 0) C *= dt/2., B *= dt;
+		if (k_(j)<0.) {
+			if (i==nx_-1) {
+				a_(r, r) += -25*C;
+				b_(r) += -25*B;
+			}
+			else if (i==nx_-2) {
+				a_(r, r) += -25*C;
+				a_(r, (i+1)*nk_+j) += 48*C;
+				b_(r) += 23*B;
+			}
+			else if (i==nx_-3) {
+				a_(r, r) += -25*C;
+				a_(r, (i+1)*nk_+j) += 48*C;
+				a_(r, (i+2)*nk_+j) += -36*C;
+				b_(r) += -13*B;
+			}
+			else if (i==nx_-4) {
+				a_(r, r) += -25*C;
+				a_(r, (i+1)*nk_+j) += 48*C;
+				a_(r, (i+2)*nk_+j) += -36*C;
+				a_(r, (i+3)*nk_+j) += 16*C;
+				b_(r) += 3*B;
+			}
+			else {
+				a_(r, r) += -25*C;
+				a_(r, (i+1)*nk_+j) += 48*C;
+				a_(r, (i+2)*nk_+j) += -36*C;
+				a_(r, (i+3)*nk_+j) += 16*C;
+				a_(r, (i+4)*nk_+j) += -3*C;
+			}
+		}
+		else if (k_(j)>0.) {
+			if (i==0) {
+				a_(r, r) += 25*C;
+				b_(r) += 25*C;
+			}
+			else if (i==1) {
+				a_(r, r) += 25*C;
+				a_(r, (i-1)*nk_+j) += -48*C;
+				b_(r) += -23*B;
+			}
+			else if (i==2) {
+				a_(r, r) += 25*C;
+				a_(r, (i-1)*nk_+j) += -48*C;
+				a_(r, (i-2)*nk_+j) += 36*C;
+				b_(r) += 13*B;
+			}
+			else if (i==3) {
+				a_(r, r) += 25*C;
+				a_(r, (i-1)*nk_+j) += -48*C;
+				a_(r, (i-2)*nk_+j) += 36*C;
+				a_(r, (i-3)*nk_+j) += -16*C;
+				b_(r) += -3*B;
+			}
+			else {
+				a_(r, r) += 25*C;
+				a_(r, (i-1)*nk_+j) += -48*C;
+				a_(r, (i-2)*nk_+j) += 36*C;
+				a_(r, (i-3)*nk_+j) += -16*C;
+				a_(r, (i-4)*nk_+j) += 3*C;
+			}
+		}
+	}
 	else if (diffSch_K_ == "HDS22") {
 		// HDS22
 		double alpha = 2., beta = 1.;
-		double D = k_(j)/m_/dx_/2./(alpha+beta);
+		double C = k_(j)/m_/dx_/2.;
+		double D = C/(alpha+beta);
 		double B = bc_(j)*D;
-		if (dt > 0) D *= dt/2., B *= dt;
+		if (dt > 0) C *= dt/2., D *= dt/2., B *= dt;
 		if (k_(j)<0.) {
-			if (i==0) {
-				b_(r) += B*alpha;
-				a_(r, r) += -3.*beta*D;
-				a_(r, (i+1)*nk_ + j) += (alpha+4.*beta)*D;
-				a_(r, (i+2)*nk_ + j) += -beta*D;
-				// a_(r, r) += -3.*C;
-				// a_(r, (i+1)*nk_ + j) += 4.*C;
-				// a_(r, (i+2)*nk_ + j) += -C;
+			if (i==0) {  // UDS2 is used at outgoing boundary
+				// b_(r) += B*alpha;
+				// a_(r, r) += -3.*beta*D;
+				// a_(r, (i+1)*nk_ + j) += (alpha+4.*beta)*D;
+				// a_(r, (i+2)*nk_ + j) += -beta*D;
+				a_(r, r) += -3.*C;
+				a_(r, (i+1)*nk_ + j) += 4.*C;
+				a_(r, (i+2)*nk_ + j) += -C;
 			}
 			else if (i==nx_-1) {
 				a_(r, (i-1)*nk_ + j) += -alpha*D;
@@ -282,14 +356,14 @@ void WignerFunction::diffusionTerm(size_t i, size_t j, double dt){
 			}
 		}
 		if (k_(j)>0.) {
-			if (i==nx_-1) {
-				b_(r) += -alpha*B;
-				a_(r, r) += 3.*beta*D;
-				a_(r, (i-1)*nk_ + j) += -(alpha+4.*beta)*D;
-				a_(r, (i-2)*nk_ + j) += beta*D;
-				// a_(r, r) += 3.*C;
-				// a_(r, (i-1)*nk_ + j) += -4.*C;
-				// a_(r, (i-2)*nk_ + j) += C;
+			if (i==nx_-1) {  // UDS2 is used at outgoing boundary
+				// b_(r) += -alpha*B;
+				// a_(r, r) += 3.*beta*D;
+				// a_(r, (i-1)*nk_ + j) += -(alpha+4.*beta)*D;
+				// a_(r, (i-2)*nk_ + j) += beta*D;
+				a_(r, r) += 3.*C;
+				a_(r, (i-1)*nk_ + j) += -4.*C;
+				a_(r, (i-2)*nk_ + j) += C;
 			}
 			else if (i==0) {
 				a_(r, (i+1)*nk_ + j) += alpha*D;
@@ -583,91 +657,97 @@ inline void WignerFunction::scatteringTerm(size_t i, size_t j, double dt){
 	// #################### gamma term ####################
 	double C = -rF_;
 	if (dt > 0) C *= dt/2.;
-	a_(r,r) += C;
-	C *= k_(j)/dk_;
-	// UDS1
 	double F = -du_(i);  // klasyczna siła równa -du/dx
-	if (F > 0){
-		if (j == 0)
-			a_(r, r) += C;
-		else{
-			a_(r, r) += C;
-			a_(r, r-1) += -C;
+	// UDS1
+	// C *= k_(j)/dk_;
+	// a_(r,r) += C;
+	// if (F > 0){
+	// 	if (j == 0)
+	// 		a_(r, r) += C;
+	// 	else{
+	// 		a_(r, r) += C;
+	// 		a_(r, r-1) += -C;
+	// 	}
+	// }
+	// else if (F <= 0){
+	// 	if (j == nk_-1)
+	// 		a_(r, r) += -C;
+	// 	else{
+	// 		a_(r, r) += -C;
+	// 		a_(r, r+1) += C;
+	// 	}
+	// }
+	// HDS22
+	C *= k_(j)/dk_;
+	a_(r,r) += C;
+	double alpha = 2., beta = 1.;
+	double D = C/(alpha+beta);
+	if (F <= 0) {
+		if (j==0) {
+			b_(r) += fermiDirac(kmax_)*alpha*D;
+			a_(r, r) += -3.*beta*D;
+			a_(r, r+1) += (alpha+4.*beta)*D;
+			a_(r, r+2) += -beta*D;
+			// a_(r, r) += -3.*C;
+			// a_(r, r+1) += 4.*C;
+			// a_(r, r+2) += -C;
+		}
+		else if (j==nk_-1) {
+			a_(r, r-1) += -alpha*D;
+			a_(r, r) += -3.*beta*D;
+			b_(r) += -fermiDirac(kmax_)*(alpha+3.*beta)*D;
+			// a_(r, r) += -3.*C;
+			// b_(r) += -3.*fermiDirac(kmax_)*C;
+		}
+		else if (j==nk_-2) {
+			a_(r, r-1) += -alpha*D;
+			a_(r, r) += -3.*beta*D;
+			a_(r, r+1) += (alpha+4.*beta)*D;
+			b_(r) += fermiDirac(kmax_)*beta*D;
+			// a_(r, r) += -3.*C;
+			// a_(r, r+1) += 4.*C;
+			// b_(r) += fermiDirac(kmax_)*C;
+		}
+		else {
+			a_(r, r-1) += -alpha*D;
+			a_(r, r) += -3.*beta*D;
+			a_(r, r+1) += (alpha+4.*beta)*D;
+			a_(r, r+2) += -beta*D;
 		}
 	}
-	else if (F <= 0){
-		if (j == nk_-1)
-			a_(r, r) += -C;
-		else{
-			a_(r, r) += -C;
-			a_(r, r+1) += C;
+	else if (F > 0) {
+		if (j==nk_-1) {
+			b_(r) += -fermiDirac(-kmax_)*alpha*D;
+			a_(r, r) += 3.*beta*D;
+			a_(r, r-1) += -(alpha+4.*beta)*D;
+			a_(r, r-2) += beta*D;
+			// a_(r, r) += 3.*C;
+			// a_(r, r-1) += -4.*C;
+			// a_(r, r-2) += C;
+		}
+		else if (j==0) {
+			a_(r, r+1) += alpha*D;
+			a_(r, r) += 3.*beta*D;
+			b_(r) += fermiDirac(-kmax_)*(alpha+3.*beta)*D;
+			// a_(r, r) += 3.*C;
+			// b_(r) += 3.*fermiDirac(-kmax_)*C;
+		}
+		else if (j==1) {
+			a_(r, r+1) += alpha*D;
+			a_(r, r) += 3.*beta*D;
+			a_(r, r-1) += -(alpha+4.*beta)*D;
+			b_(r) += -fermiDirac(-kmax_)*beta*D;
+			// a_(r, r) += 3.*C;
+			// a_(r, r-1) += -4.*C;
+			// b_(r) += -fermiDirac(-kmax_)*C;
+		}
+		else {
+			a_(r, r+1) += alpha*D;
+			a_(r, r) += 3.*beta*D;
+			a_(r, r-1) += -(alpha+4.*beta)*D;
+			a_(r, r-2) += beta*D;
 		}
 	}
-	// // CDS1
-	// if (j==0) {
-	//   // a_(r, r) += -3.*C;
-	//   // a_(r, r+1) += 4.*C;
-	//   // a_(r, r+2) += -C;
-	//   a_(r, r+1) += C/2.;
-	// }
-	// else if (j==nk_-1) {
-	//   // a_(r, r) += 3.*C;
-	//   // a_(r, r-1) += -4.*C;
-	//   // a_(r, r-2) += C;
-	//   a_(r, r-1) += -C/2.;
-	// }
-	// else {
-	//   a_(r, r-1) += -C/2.;
-	//   a_(r, r+1) += C/2.;
-	// }
-	// // HDS1
-	// double F = -du_(i);  // klasyczna siła równa -du/dx
-	// double alpha = 2., beta = 1.;
-	// double D = C/(alpha+beta);
-	// if (F < 0.) {
-	//   if (j==0) {
-	//     a_(r, r) += -3.*C;
-	//     a_(r, r+1) += 4.*C;
-	//     a_(r, r+2) += -C;
-	//   }
-	//   else if (j==nk_-1) {
-	//     a_(r, r) += -3.*C;
-	//     // b_(r) += -3.*B;
-	//   }
-	//   else if (j==nk_-2) {
-	//     a_(r, r) += -3.*C;
-	//     a_(r, r+1) += 4.*C;
-	//     // b_(r) += B;
-	//   }
-	//   else {
-	//     a_(r, r-1) += -alpha*D;
-	//     a_(r, r) += -3.*beta*D;
-	//     a_(r, r+1) += (alpha+4.*beta)*D;
-	//     a_(r, r+2) += -beta*D;
-	//   }
-	// }
-	// if (F > 0.) {
-	//   if (j==nk_-1) {
-	//     a_(r, r) += 3.*C;
-	//     a_(r, r-1) += -4.*C;
-	//     a_(r, r-2) += C;
-	//   }
-	//   else if (j==0) {
-	//     a_(r, r) += 3.*C;
-	//     // b_(r) += 3.*B;
-	//   }
-	//   else if (j==1) {
-	//     a_(r, r) += 3.*C;
-	//     a_(r, r-1) += -4.*C;
-	//     // b_(r) += -B;
-	//   }
-	//   else {
-	//     a_(r, r+1) += alpha*D;
-	//     a_(r, r) += 3.*beta*D;
-	//     a_(r, r-1) += -(alpha+4.*beta)*D;
-	//     a_(r, r-2) += beta*D;
-	//   }
-	// }
 }
 
 

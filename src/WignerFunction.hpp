@@ -40,30 +40,31 @@ class WignerFunction{
 
 	bool useNLP_, useQC_, uBias_BC_;  // bool variables
 	std::string diffSch_K_ = "UDS2", diffSch_P_ = "UDS2";
+	std::string diffSch_J_ = "UDS2";
 
-	mat f_;  // Wigner function
-	mat fEq_;  // Equilibrium Wigner function
-	mat f0_;  // Wigner function before time evolution
-	mat fL_;  // Wigner function for el. from LEFT contact
-	mat fR_;  // Wigner function for el. from RIGHT contact
-	vec u_;  // Potential energy
-	vec uC_; // Hartree potential / bias potential
-	vec uB_;  // Band offset
-	vec du_;  // Potential derivative
-	vec d3u_;  // Potential third derivative
-	vec uStart_;  // Potential
-	vec bc_;  // Boundary condition
-	vec x_;  // Position values
-	vec k_;  // Wave vector values
-	mat sin_;  // Sine function values
-	vec cdX_;  // Carrier density in x / k
-	vec cdK_;
-	vec currD_;  // Current density
+	arma::mat f_;  // Wigner function
+	arma::mat fEq_;  // Equilibrium Wigner function
+	arma::mat f0_;  // Wigner function before time evolution
+	arma::mat fL_;  // Wigner function for el. from LEFT contact
+	arma::mat fR_;  // Wigner function for el. from RIGHT contact
+	arma::vec u_;  // Potential energy
+	arma::vec uC_; // Hartree potential / bias potential
+	arma::vec uB_;  // Band offset
+	arma::vec du_;  // Potential derivative
+	arma::vec d3u_;  // Potential third derivative
+	arma::vec uStart_;  // Potential
+	arma::vec bc_;  // Boundary condition
+	arma::vec x_;  // Position values
+	arma::vec k_;  // Wave vector values
+	arma::mat sin_;  // Sine function values
+	arma::vec cdX_;  // Carrier density in x / k
+	arma::vec cdK_;
+	arma::vec currD_;  // Current density
 
-	sp_mat a_;
-	vec b_;
+	arma::sp_mat a_;
+	arma::vec b_;
 
-	vec iv_i_, iv_v_, iv_iRange_, iv_n_;
+	arma::vec iv_i_, iv_v_, iv_iRange_, iv_n_;
 
 public:
 
@@ -79,26 +80,26 @@ public:
 		dk_ (2.*kmax_/float(nk_)),
 		nk2_ (size_t(nk_/2.)),
 		nxk_ (nx_*nk_),
-		f_(mat(nx_, nk_)),
-		fEq_(mat(nx_, nk_)),
-		f0_(mat(nx_, nk_)),
-		fL_(mat(nx_, nk_)),
-		fR_(mat(nx_, nk_)),
-		u_(vec(nx_, fill::zeros)),
-		uC_(vec(nx_, fill::zeros)),
-		uB_(vec(nx_, fill::zeros)),
-		du_(vec(nx_, fill::zeros)),
-		d3u_(vec(nx_, fill::zeros)),
-		uStart_(vec(nx_, fill::zeros)),
-		bc_(vec(nk_, fill::zeros)),
-		x_(vec(nx_, fill::zeros)),
-		k_(vec(nk_, fill::zeros)),
-		sin_(mat(nk_,nk_*nk2_)),
-		cdX_(vec(nx_, fill::zeros)),
-		cdK_(vec(nk_, fill::zeros)),
-		currD_(vec(nx_, fill::zeros)),
-		a_(sp_mat(nxk_, nxk_)),
-		b_(vec(nxk_, fill::zeros))
+		f_(arma::mat(nx_, nk_)),
+		fEq_(arma::mat(nx_, nk_)),
+		f0_(arma::mat(nx_, nk_)),
+		fL_(arma::mat(nx_, nk_)),
+		fR_(arma::mat(nx_, nk_)),
+		u_(arma::vec(nx_, arma::fill::zeros)),
+		uC_(arma::vec(nx_, arma::fill::zeros)),
+		uB_(arma::vec(nx_, arma::fill::zeros)),
+		du_(arma::vec(nx_, arma::fill::zeros)),
+		d3u_(arma::vec(nx_, arma::fill::zeros)),
+		uStart_(arma::vec(nx_, arma::fill::zeros)),
+		bc_(arma::vec(nk_, arma::fill::zeros)),
+		x_(arma::vec(nx_, arma::fill::zeros)),
+		k_(arma::vec(nk_, arma::fill::zeros)),
+		sin_(arma::mat(nk_,nk_*nk2_)),
+		cdX_(arma::vec(nx_, arma::fill::zeros)),
+		cdK_(arma::vec(nk_, arma::fill::zeros)),
+		currD_(arma::vec(nx_, arma::fill::zeros)),
+		a_(arma::sp_mat(nxk_, nxk_)),
+		b_(arma::vec(nxk_, arma::fill::zeros))
 		{
 		cout<<"## Start: WignerFunction default constructor"<<endl;
 		// ########## Configuration space array values ##########
@@ -129,26 +130,26 @@ public:
 		dk_ (2.*kmax_/float(nk_)),
 		nk2_ (size_t(nk_/2.)),
 		nxk_ (nx_*nk_),
-		f_(mat(nx_, nk_)),
-		fEq_(mat(nx_, nk_)),
-		f0_(mat(nx_, nk_)),
-		fL_(mat(nx_, nk_)),
-		fR_(mat(nx_, nk_)),
-		u_(vec(nx_, fill::zeros)),
-		uC_(vec(nx_, fill::zeros)),
-		uB_(vec(nx_, fill::zeros)),
-		du_(vec(nx_, fill::zeros)),
-		d3u_(vec(nx_, fill::zeros)),
-		uStart_(vec(nx_, fill::zeros)),
-		bc_(vec(nk_, fill::zeros)),
-		x_(vec(nx_, fill::zeros)),
-		k_(vec(nk_, fill::zeros)),
-		sin_(mat(nk_,nk_*nk2_)),
-		cdX_(vec(nx_, fill::zeros)),
-		cdK_(vec(nk_, fill::zeros)),
-		currD_(vec(nx_, fill::zeros)),
-		a_(sp_mat(nxk_, nxk_)),
-		b_(vec(nxk_, fill::zeros))
+		f_(arma::mat(nx_, nk_)),
+		fEq_(arma::mat(nx_, nk_)),
+		f0_(arma::mat(nx_, nk_)),
+		fL_(arma::mat(nx_, nk_)),
+		fR_(arma::mat(nx_, nk_)),
+		u_(arma::vec(nx_, arma::fill::zeros)),
+		uC_(arma::vec(nx_, arma::fill::zeros)),
+		uB_(arma::vec(nx_, arma::fill::zeros)),
+		du_(arma::vec(nx_, arma::fill::zeros)),
+		d3u_(arma::vec(nx_, arma::fill::zeros)),
+		uStart_(arma::vec(nx_, arma::fill::zeros)),
+		bc_(arma::vec(nk_, arma::fill::zeros)),
+		x_(arma::vec(nx_, arma::fill::zeros)),
+		k_(arma::vec(nk_, arma::fill::zeros)),
+		sin_(arma::mat(nk_,nk_*nk2_)),
+		cdX_(arma::vec(nx_, arma::fill::zeros)),
+		cdK_(arma::vec(nk_, arma::fill::zeros)),
+		currD_(arma::vec(nx_, arma::fill::zeros)),
+		a_(arma::sp_mat(nxk_, nxk_)),
+		b_(arma::vec(nxk_, arma::fill::zeros))
 		{
 		cout<<"## Start: WignerFunction constructor"<<endl;
 		// ########## Configuration space array values ##########
@@ -186,18 +187,18 @@ public:
 	double get_rF() { return rF_; }
 	double get_rG() { return rG_; }
 	double get_lambda() { return lambda_; }
-	vec get_x_arr() { return x_; }
-	vec get_k_arr() { return k_; }
-	vec get_u() { return u_; }
-	vec get_uB() { return uB_; }
-	vec get_uC() { return uC_; }
-	vec get_uStart() { return uStart_; }
-	vec get_du() { return du_; }
-	vec get_d3u() { return d3u_; }
-	vec get_currD() { return currD_; }
-	vec get_cdX() { return cdX_; }
-	vec get_cdK() { return cdK_; }
-	mat get_wf() { return f_; }
+	arma::vec get_x_arr() { return x_; }
+	arma::vec get_k_arr() { return k_; }
+	arma::vec get_u() { return u_; }
+	arma::vec get_uB() { return uB_; }
+	arma::vec get_uC() { return uC_; }
+	arma::vec get_uStart() { return uStart_; }
+	arma::vec get_du() { return du_; }
+	arma::vec get_d3u() { return d3u_; }
+	arma::vec get_currD() { return currD_; }
+	arma::vec get_cdX() { return cdX_; }
+	arma::vec get_cdK() { return cdK_; }
+	arma::mat get_wf() { return f_; }
 
 	void set_m(double m) { m_ = m; }
 	void set_temp(double temp) {
@@ -226,65 +227,66 @@ public:
 	void set_bcType(int bcType) { bcType_ = bcType; }
 	void set_lYZ(double lYZ) { lYZ_ = lYZ; }
 	void set_part_num(double part_num) { part_num_ = part_num; }
-	void set_uC(vec uC) { uC_ = uC; }
-	void set_wf(mat f) { f_ = f; }
+	void set_uC(arma::vec uC) { uC_ = uC; }
+	void set_wf(arma::mat f) { f_ = f; }
 	void set_diffSch_K(std::string diffSch_K) { diffSch_K_ = diffSch_K; }
 	void set_diffSch_P(std::string diffSch_P) { diffSch_P_ = diffSch_P; }
+	void set_diffSch_J(std::string diffSch_J) { diffSch_J_ = diffSch_J; }
 
 	void load_poisson_pot(std::string file) {
 		uStart_.load(file);
-		cout<<"## Poisson potential loaded from file: "<<file<<endl;
+		if (uStart_.size() != nx_) {
+			cout<<"ERROR IN load_poisson_pot: uStart_.size() != nx_"<<endl;
+			exit(0);
+		}
+		else
+			cout<<"## Poisson potential loaded from file: "<<file<<endl;
 	}
 
+	double calcCurr();					// Current density
 	double calcNorm();
 	double calcEX();
 	double calcEK();
 	double calcEK2();
 	double calcSDK();
 	double calcSDX();
-	vec calcCD_X();
-	vec calcCD_K();
+	arma::vec calcCD_X();
+	arma::vec calcCD_K();
 
 	void readPotential(std::string);                       // Read potential from file pot.in
 	void printParam();
-
-	void solveWignerEq();
-	void solveWignerEq_A();
-	void solveTimeEv();
-	double calcCurr();					// Current density
-	vec calcCurrArr();				// Current density array
 	void saveWignerFun();
-	void clearWignerFun();
 
 	void initEq();
+	void solveWignerEq();
+	void solveTimeEv();
+	void solveWignerPoisson(double, double, double, size_t, bool);
 
-	void setBoundCond();						// Boundary conditions
-	void setEquilibriumFunction(std::string, bool);				// Calculating equilibrium function
+	void setBoundCond();  // Boundary conditions
+	void setEquilibriumFunction(std::string, bool);  // Calculating equilibrium function
 
-	void diffusionTerm(size_t, size_t, double);       // Filling matrice with drift term
-	void driftTerm(size_t, size_t, double);       // Filling matrice with drift term
-	void scatteringTerm(size_t, size_t, double);       // Filling matrice with drift term
+	void diffusionTerm(size_t, size_t, double);  // Filling matrice with drift term
+	void driftTerm(size_t, size_t, double);  // Filling matrice with drift term
+	void scatteringTerm(size_t, size_t, double);  // Filling matrice with drift term
 	void quantumCorrTerm(size_t, size_t, double);
 
-	void solveRec();							// Wigner equation solved recursively
-	void solveMatrixEq();						// Wigner equation solved by solving matrix equation
+	void solveMatrixEq();  // Wigner equation solved by solving matrix equation
 
-	void solveWignerPoisson(double, double, double, size_t);
 	void calc_IVchar(double, double, size_t);
 	void calcMobility();
 
 	double fermiDirac(double);
-	double supplyFunction(double);		// Supply function
-	double sf_x(double, double);					// Supply function as function of x
+	double supplyFunction(double);  // Supply function
+	double sf_x(double, double);  // Supply function as function of x
 
 	double maxwell_boltzmann(double);
 	double gaussian_bc(double);
 	double gaussian_x(double, double);
 
 	double eqFun_x(double, double);
-	double lorentz(double);	 // Lorentz profile
-	double gauss(double);	 // Gauss
-	double voigt(double);	 // Voigt profile
+	double lorentz(double);  // Lorentz profile
+	double gauss(double);  // Gauss
+	double voigt(double);  // Voigt profile
 
 	// wignerTools.cpp
 	void setPotBias(double);

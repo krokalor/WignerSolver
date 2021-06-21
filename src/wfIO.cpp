@@ -99,7 +99,7 @@ void WignerFunction::saveWignerFun() {
 	}
 	wf_out.close();
 	f_.save("out_data/wf.bin");
-	wf_out.open("out_data/wf.z", ios::out);
+	wf_out.open("out_data/wf.z", std::ios::out);
 	wf_out<<"! nx "<<nx_<<" ny "<<nk_<<" xmin "<<0<<" xmax "<<l_*AU_nm<<" ymin "<<-kmax_<<" ymax "<<kmax_<<'\n';
 	for (size_t j=0; j<nk_; ++j){
 		for (size_t i=0; i<nx_; ++i)
@@ -112,7 +112,7 @@ void WignerFunction::saveWignerFun() {
 
 void WignerFunction::readPotential(std::string input_file){
 	std::ifstream input_pot (input_file);
-	vec x(nx_, fill::zeros), u(nx_, fill::zeros);
+	arma::vec x(nx_, arma::fill::zeros), u(nx_, arma::fill::zeros);
 	size_t j = 0;
 	std::string::size_type sz;
 	if(!input_pot) {

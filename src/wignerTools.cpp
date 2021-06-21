@@ -7,16 +7,20 @@ using namespace wigner;
 void WignerFunction::setEquilibriumFunction(std::string input_file, bool read_data){
 	// solveWignerEq();
 	// calcCD_X();
-	// vec nx = cdX_;
+	//  nx = cdX_;
 	if (read_data) {
 		fEq_.load(input_file);
+		if (fEq_.size() != f_.size()) {
+			cout<<"ERROR IN setEquilibriumFunction: fEq_.size() != f_.size()"<<endl;
+			exit(0);
+		}
 	}
 	else {
 		double uBias = uBias_, rR = rR_;
 		uBias_ = 0, rR_ = 0.;
 		solveWignerEq();
 		// calcCD_X();
-		// vec nx_0 = cdX_;
+		//  nx_0 = cdX_;
 		for (size_t i=0; i<nx_; ++i)
 			for (size_t j=0; j<nk_; ++j)
 				fEq_(i,j) = f_(i,j);  // *nx(i)/nx_0(i)
@@ -31,28 +35,78 @@ void WignerFunction::setEquilibriumFunction(std::string input_file, bool read_da
 //
 double WignerFunction::calcCurr() {
 	currD_.zeros();  // Current density  // array<double>
+	double a = 2., b = 1.;
 	//  cur1 - current density in node i-1/2
 	//  cur2 - current density in node i+1/2
-	for (size_t i=1; i<nx_-2; ++i) {
-		for (size_t j=0; j<nk2_; ++j){  // k < 0
-			// currD_(i) += k_(j)*f_(i+1, j);  // j(i-1/2)
-			// currD_(i) += k_(j)*f_(i, j);  // j(i+1/2)
-			// currD_(i) += k_(j)*(3.0*f_(i,j)-f_(i+1,j))*dk_/2./m_;  // j(i-1/2)
-			currD_(i) += k_(j)*(3*f_(i+1,j)-f_(i+2,j))*dk_/2./m_;  // j(i+1/2)
+	//  nc(nx_, arma::fill::zeros), nc_eq(nx_, arma::fill::zeros);
+	// for (size_t i=0; i<nx_; ++i) {
+	// 	for (size_t j=1; j<nk_/2; ++j) {
+	// 		nc(i) += (f_(i,2*j-2)+4*f_(i,2*j-1)+f_(i,2*j))*dk_/3.;  // simpson
+	// 		nc_eq(i) += (fEq_(i,2*j-2)+4*fEq_(i,2*j-1)+fEq_(i,2*j))*dk_/3.;  // simpson
+	// 	}
+	// 	// if (bcType_ > 0) nc(i) /= 2.*M_PI, nc_eq(i) /= 2.*M_PI;
+	// }
+	// Current density is calculated in node i+1/2
+	if (diffSch_J_ == "UDS1") {
+		for (size_t i=1; i<nx_; ++i) {
+			for (size_t j=0; j<nk2_; ++j)  // k < 0
+				currD_(i) += k_(j)*f_(i, j);
+				// currD_(i) += k_(j)*f_(i+1, j);  // j(i-1/2)
+			for (size_t j=nk2_; j<nk_; ++j)  // k > 0
+				currD_(i) += k_(j)*f_(i-1, j);
+				// currD_(i) += k_(j)*f_(i, j);  // j(i-1/2)
+			// currD_(i) /= 2.;
+			// currD_(i) -= rR_*(nc(i)-nc_eq(i));
+			if (bcType_ > 0) currD_(i) /= 2.*M_PI;
 		}
-		for (size_t j=nk2_; j<nk_; ++j){  // k > 0
-			// currD_(i) += k_(j)*f_(i, j);  // j(i-1/2)
-			// currD_(i) += k_(j)*f_(i-1, j);  // j(i+1/2)
-			// currD_(i) += k_(j)*(3.0*f_(i-1,j)-f_(i-2,j))*dk_/2./m_;  // j(i-1/2)
-			currD_(i) += k_(j)*(3*f_(i,j)-f_(i-1,j))*dk_/2./m_;  // j(i+1/2)
-		}
-		// currD_(i) /= 2.;
-		if (bcType_ > 0) currD_(i) /= 2.*M_PI;
+		currD_(0) = currD_(1);
+		currD_(nx_-1) = currD_(nx_-2);
 	}
-	currD_(0) = currD_(2);
-	// currD_(1) = currD_(2);
-	currD_(nx_-1) = currD_(nx_-3);
-	currD_(nx_-2) = currD_(nx_-3);
+	else if (diffSch_J_ == "UDS2") {
+		for (size_t i=1; i<nx_-2; ++i) {
+			for (size_t j=0; j<nk2_; ++j)  // k < 0
+				currD_(i) += k_(j)*(3*f_(i+1,j)-f_(i+2,j))*dk_/2./m_;
+				// currD_(i) += k_(j)*(3.0*f_(i,j)-f_(i+1,j))*dk_/2./m_;  // j(i-1/2)
+			for (size_t j=nk2_; j<nk_; ++j)  // k > 0
+				currD_(i) += k_(j)*(3*f_(i,j)-f_(i-1,j))*dk_/2./m_;
+				// currD_(i) += k_(j)*(3.0*f_(i-1,j)-f_(i-2,j))*dk_/2./m_;  // j(i-1/2)
+			if (bcType_ > 0) currD_(i) /= 2.*M_PI;
+		}
+		currD_(0) = currD_(1);
+		currD_(nx_-2) = currD_(nx_-3);
+		currD_(nx_-1) = currD_(nx_-2);
+	}
+	else if (diffSch_J_ == "UDS3") {
+		for (size_t i=2; i<nx_-3; ++i) {
+			for (size_t j=0; j<nk2_; ++j)  // k < 0
+				currD_(i) += k_(j)*(2*f_(i+3,j)-7*f_(i+2,j)+11*f_(i+1,j))*dk_/6./m_;
+			for (size_t j=nk2_; j<nk_; ++j)  // k > 0
+				currD_(i) += k_(j)*(2*f_(i-2,j)-7*f_(i-1,j)+11*f_(i,j))*dk_/6./m_;
+			if (bcType_ > 0) currD_(i) /= 2.*M_PI;
+		}
+		currD_(1) = currD_(2);
+		currD_(0) = currD_(1);
+		currD_(nx_-3) = currD_(nx_-4);
+		currD_(nx_-2) = currD_(nx_-3);
+		currD_(nx_-1) = currD_(nx_-2);
+	}
+	else if (diffSch_J_ == "HDS22") {
+		for (size_t i=1; i<nx_-2; ++i) {
+			for (size_t j=0; j<nk2_; ++j)  // k < 0
+				currD_(i) += k_(j)*dk_/m_*(a*f_(i,j)+(a+3*b)*f_(i+1,j)-b*f_(i+2,j))/2./(a+b);
+			for (size_t j=nk2_; j<nk_; ++j)  // k > 0
+				currD_(i) += k_(j)*dk_/m_*(a*f_(i+1,j)+(a+3*b)*f_(i,j)-b*f_(i-1,j))/2./(a+b);
+			if (bcType_ > 0) currD_(i) /= 2.*M_PI;
+		}
+		currD_(0) = currD_(1);
+		currD_(nx_-2) = currD_(nx_-3);
+		currD_(nx_-1) = currD_(nx_-2);
+	}
+	else {
+		cout<<"ERROR: WRONG DIFFERENTIATION SCHEME IN CURRENT DENSITY"
+		"PLEASE CHOOSE: UDS1, UDS2 OR HDS22"<<endl;
+		exit(0);
+	}
 	//
 	// Metoda prostokątów
 	// for (size_t i=0; i<nx_; ++i) {
@@ -74,16 +128,16 @@ double WignerFunction::calcCurr() {
 	// }
 	//
 	// Armadillo function
-	// mat f = f_;
+	// arma::mat f = f_;
 	// f.each_row() %= k_.t()/m_;
 	// currD_ = trapz(k_, f, 1);
 	return sum(currD_)*dx_/l_;
 }
 
 
-vec WignerFunction::calcCD_X(){
+arma::vec WignerFunction::calcCD_X(){
 	// Calculates carrier density in x space
-	// vec cd(nx_, fill::zeros);  // array<double>
+	//  cd(nx_, arma::fill::zeros);  // array<double>
 	cdX_.zeros();
 	// 	for (size_t j=0; j<nk2_; ++j){  // k < 0
 	// 		cdX_(i) += (3.0*f_(i,j)-f_(i+1,j));  // j(i-1/2)
@@ -106,9 +160,9 @@ vec WignerFunction::calcCD_X(){
 }
 
 
-vec WignerFunction::calcCD_K(){
+arma::vec WignerFunction::calcCD_K(){
 	// Calculates carrier density in k space
-	// vec cd(nk_, fill::zeros);  // array<double>
+	//  cd(nk_, arma::fill::zeros);  // array<double>
 	cdK_.zeros();
 	for (size_t j=0; j<nk_; ++j) {
 		for (size_t i=1; i<nx_/2; ++i)
@@ -301,7 +355,7 @@ void WignerFunction::addRectBarr(double u0 = 0.3/AU_eV, double x0 = 1000, double
 // ############################## WP initial conditions ##############################
 //
 void WignerFunction::addWavePacket(double gwp_x0, double gwp_dx,
-		double gwp_k0, double gwp_dk) {
+	double gwp_k0, double gwp_dk) {
 	double A = cD_*lC_ / (gwp_dx*gwp_dk*2*M_PI);
 	cout<<"# Setting up GWP with parameters:\n"
 	<<"# gwp_x0 = "<<gwp_x0*AU_nm<<" nm, "<<gwp_x0<<" a.u.\n"
@@ -325,7 +379,7 @@ void WignerFunction::addWavePacket(double gwp_x0, double gwp_dx,
 //  WP evolution (no potential)
 //
 double WignerFunction::WavePacket_TEV(double gwp_x0, double gwp_dx,
-		double gwp_k0, double gwp_dk, double x, double k)
+	double gwp_k0, double gwp_dk, double x, double k)
 	{ return exp( -2*gwp_dx*gwp_dx
 			*(k-gwp_k0)*(k-gwp_k0)-(x-gwp_x0)*(x-gwp_x0)
 			/2./gwp_dx/gwp_dx )/M_PI; }
@@ -363,7 +417,7 @@ void WignerFunction::setBoundCond(){
 					bc_(j) = voigt(k_(j));
 			// TODO: Armadillo convolution
 			// else if (bcType_ == 4)
-			// 	vec a = vec(nk_, fill::zeros), b = vec(nk_, fill::zeros), c;
+			// 	 a = (nk_, arma::fill::zeros), b = (nk_, arma::fill::zeros), c;
 			// 	for (size_t j=0; j<nk_; ++j) {
 			// 		a(j) = supplyFunction(k_(j));
 			// 		b(j) = lorentz(k_(j));
@@ -529,7 +583,7 @@ double WignerFunction::lorentz(double k){
 			7*f(x1-u) * eqFun_x(mu, x1);
 	}
 	fb *= 2*h/4./45.;
-	// vec a(N, fill::zeros), b(N, fill::zeros), c(N, fill::zeros);
+	//  a(N, arma::fill::zeros), b(N, arma::fill::zeros), c(N, arma::fill::zeros);
 	// for (i=0; i<N; ++i) {
 	// 	b(i) = f(i*h-u), a(i) = sf_x(mu, i*h);
 	// }
@@ -616,86 +670,6 @@ double WignerFunction::voigt(double k) {
 
 
 //
-// Other functions
-//
-
-
-void WignerFunction::calc_IVchar(double v_min, double v_max, size_t nv){
-	double dv = (v_max-v_min)/(nv-1), v = 0, curr, currD_range, carrNum;
-	double uBias = uBias_;
-	iv_v_ = vec(nv, fill::zeros), iv_i_ = vec(nv, fill::zeros);
-	iv_iRange_ = vec(nv, fill::zeros), iv_n_ = vec(nv, fill::zeros);
-	// double E;
-	std::ofstream ivChar, vpMap;
-	ivChar.open("out_data/ivChar.out", std::ios::out);
-	vpMap.open("out_data/vpMap.out", std::ios::out);
-	vpMap<<"# u_B [eV]  p [a.u]  1/4  1/2  3/4\n";
-	ivChar<<"# u_B [eV]  J [Acm^{-2}]  |max(J)-min(J)|  N\n";
-	// cout<<"# u_B [eV]  J [Acm^{-2}]  |max(J)-min(J)|  N\n";
-	for (size_t i = 0; i < nv; ++i) {
-		v = v_min+i*dv;
-		// set_uBias(v);
-		// solveWignerEq();
-		solveWignerPoisson(v, 4e-5, 1, 1000);
-		curr = calcCurr();
-		currD_range = range(currD_);
-		carrNum = calcNorm();
-		calcCD_K();
-		// E = i*dv/lD_ * AU_eV/1e3 / AU_cm;
-		ivChar<<v*AU_eV<<' '<<curr*AU_Acm2<<' '<<currD_range*AU_Acm2<<' '<<carrNum/AU_cm2<<endl;
-		// cout<<v*AU_eV<<' '<<curr*AU_Acm2<<' '<<currD_range*AU_Acm2<<' '<<carrNum/AU_cm2<<endl;  // <<' '<<calcNorm()/AU_cm2<<endl;
-		iv_v_(i) = v, iv_i_(i) = curr, iv_iRange_(i) = currD_range, iv_n_(i) = carrNum;
-		for (size_t j=0; j<nk_; ++j) {
-				vpMap<<v*AU_eV<<' '<<k_(j)
-					<<' '<<cdK_(j)
-					// <<' '<<f_(size_t(nx_/4.),j)  // col. 3
-					// <<' '<<f_(size_t(nx_/2.),j)  // col. 4
-					// <<' '<<f_(size_t(nx_*3/4.),j)  // col. 5
-					<<'\n';
-		}
-		vpMap<<'\n';
-	}
-	ivChar.close();
-	vpMap.close();
-	vec fit = polyfit(iv_v_, iv_i_, 1);
-	fit.print();
-	uBias_ = uBias;
-}
-
-
-void WignerFunction::calcMobility() {
-
-	vec el_f(nx_, fill::zeros);
-	vec mob(nx_, fill::zeros);
-
-	calcCD_X();
-	calcCurr();
-	vec dnedx = calcDer(cdX_, dx_);
-
-	for (size_t i = 0; i < nx_; ++i)
-		el_f(i) = -du_(i);
-
-	for (size_t i = 0; i < nx_; ++i) {
-		double m = cdX_(i)*el_f(i)+KB/AU_eV*temp_*dnedx(i);
-		mob(i) = currD_(i)/m * AU_cm2/AU_eV/AU_s;
-	}
-
-	/*
-	for (size_t i = 0; i < nx_; ++i)
-		cout<<x_(i)<<' '<<mob(i)<<' '<<ne(i)<<' '<<dnedx(i) \
-			<<' '<<u_(i)*AU_eV<<' '<<el_f(i)<<' '<<jn(i)<<' '<<mob(i)*KB*temp_<<endl;
-			*/
-
-	// Average mobility
-	double mob_av = 0;
-	for (size_t i = 1; i < nx_; ++i)
-		mob_av += (mob(i-1) + mob(i))*dx_/2./lD_;
-	cout<<m_<<' '<<mob_av<<endl;
-
-}
-
-
-//
 // FERMI INTEGRAL
 //
 
@@ -772,4 +746,84 @@ double calcFermiEn(double n0, double m, double T) {
 	eta = eta*KB*T - M_PI*M_PI*KB*T/12./eta;
 	// cout<<"eta = "<<eta/(KB*T)<<", x = "<<x<<endl;
 	return eta/AU_eV;
+}
+
+
+//
+// Other functions
+//
+
+
+void WignerFunction::calc_IVchar(double v_min, double v_max, size_t nv){
+	double dv = (v_max-v_min)/(nv-1), v = 0, curr, currD_range, carrNum;
+	double uBias = uBias_;
+	iv_v_.resize(nv), iv_i_.resize(nv);
+	iv_iRange_.resize(nv), iv_n_.resize(nv);
+	// double E;
+	std::ofstream ivChar, vpMap;
+	ivChar.open("out_data/ivChar.out", std::ios::out);
+	vpMap.open("out_data/vpMap.out", std::ios::out);
+	vpMap<<"# u_B [eV]  p [a.u]  1/4  1/2  3/4\n";
+	ivChar<<"# u_B [eV]  J [Acm^{-2}]  |max(J)-min(J)|  N\n";
+	// cout<<"# u_B [eV]  J [Acm^{-2}]  |max(J)-min(J)|  N\n";
+	for (size_t i = 0; i < nv; ++i) {
+		v = v_min+i*dv;
+		// set_uBias(v);
+		// solveWignerEq();
+		solveWignerPoisson(v, 1e-5, 1, 1000, false);
+		curr = calcCurr();
+		currD_range = range(currD_);
+		carrNum = calcNorm();
+		calcCD_K();
+		// E = i*dv/lD_ * AU_eV/1e3 / AU_cm;
+		ivChar<<v*AU_eV<<' '<<curr*AU_Acm2<<' '<<currD_range*AU_Acm2<<' '<<carrNum/AU_cm2<<endl;
+		// cout<<v*AU_eV<<' '<<curr*AU_Acm2<<' '<<currD_range*AU_Acm2<<' '<<carrNum/AU_cm2<<endl;  // <<' '<<calcNorm()/AU_cm2<<endl;
+		iv_v_(i) = v, iv_i_(i) = curr, iv_iRange_(i) = currD_range, iv_n_(i) = carrNum;
+		for (size_t j=0; j<nk_; ++j) {
+				vpMap<<v*AU_eV<<' '<<k_(j)
+					<<' '<<cdK_(j)
+					// <<' '<<f_(size_t(nx_/4.),j)  // col. 3
+					// <<' '<<f_(size_t(nx_/2.),j)  // col. 4
+					// <<' '<<f_(size_t(nx_*3/4.),j)  // col. 5
+					<<'\n';
+		}
+		vpMap<<'\n';
+	}
+	ivChar.close();
+	vpMap.close();
+	arma::vec fit = arma::polyfit(iv_v_, iv_i_, 1);
+	fit.print();
+	uBias_ = uBias;
+}
+
+
+void WignerFunction::calcMobility() {
+
+	arma::vec el_f(nx_, arma::fill::zeros);
+	arma::vec mob(nx_, arma::fill::zeros);
+
+	calcCD_X();
+	calcCurr();
+	arma::vec dnedx = calcFirstDer(cdX_, dx_);
+
+	for (size_t i = 0; i < nx_; ++i)
+		el_f(i) = -du_(i);
+
+	for (size_t i = 0; i < nx_; ++i) {
+		double m = cdX_(i)*el_f(i)+KB/AU_eV*temp_*dnedx(i);
+		mob(i) = currD_(i)/m * AU_cm2/AU_eV/AU_s;
+	}
+
+	/*
+	for (size_t i = 0; i < nx_; ++i)
+		cout<<x_(i)<<' '<<mob(i)<<' '<<ne(i)<<' '<<dnedx(i) \
+			<<' '<<u_(i)*AU_eV<<' '<<el_f(i)<<' '<<jn(i)<<' '<<mob(i)*KB*temp_<<endl;
+			*/
+
+	// Average mobility
+	double mob_av = 0;
+	for (size_t i = 1; i < nx_; ++i)
+		mob_av += (mob(i-1) + mob(i))*dx_/2./lD_;
+	cout<<m_<<' '<<mob_av<<endl;
+
 }

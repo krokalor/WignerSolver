@@ -46,7 +46,7 @@ set origin .04,0
 AU_nm = 0.0529
 AU_cm2 = 2.8e-17
 
-splot [:] [:] '../poisson_step.out' u ($2*AU_nm):1:7 with pm3d
+splot [:] [:] '../poisson_step.out' u ($2*AU_nm):1:4 with pm3d
 # splot [-0.05:0.05] 'poisson_step.out' u 2:1:5 with pm3d
 
 

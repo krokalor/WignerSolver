@@ -16,7 +16,7 @@ void Poisson1D::solve_gummel() {
 	double phi_L = uOld_(1)-2*uOld_(0)+dirichletL_;
 	double phi_R = uOld_(nx_-2)-2*uOld_(nx_-1)+dirichletR_;
 
-	vec uD(nx_, fill::zeros);
+	arma::vec uD(nx_, arma::fill::zeros);
 	for (size_t i=1; i<nx_-1; ++i)
 		uD(i) = uOld_(i+1)-2.*uOld_(i)+uOld_(i-1);
 	uD(0) = phi_L, uD(nx_-1) = phi_R;
@@ -27,7 +27,7 @@ void Poisson1D::solve_gummel() {
 
 	// dP_i/du_j
 
-	dPu_ = sp_mat(nx_, nx_);
+	dPu_ = arma::sp_mat(nx_, nx_);
 	for (size_t i=0; i<nx_; ++i) {
 		for (size_t j=0; j<nx_; ++j) {
 			if (i-1 == j || i+1 == j)
@@ -37,11 +37,11 @@ void Poisson1D::solve_gummel() {
 		}
 	}
 
-	vec x(nx_);
-    superlu_opts settings;
+	arma::vec x(nx_);
+    arma::superlu_opts settings;
 	settings.symmetric = true;
 	// settings.refine = superlu_opts::REF_EXTRA;
-	spsolve(x, dPu_, pFun_, "superlu", settings);
+	arma::spsolve(x, dPu_, pFun_, "superlu", settings);
 
 	du_ = x*beta_;
 	uNew_ = uOld_ + du_;
@@ -54,10 +54,10 @@ void Poisson1D::solve_tridiag() {
 
 	double epsilon = epsilonR_/4./M_PI;
 
-	vec b(nx_, fill::ones); b.fill(-2.);  // Diagonal
-	vec c(nx_, fill::ones);  // Upper diagonal
-	vec a(nx_, fill::ones);  // Lower diagonal
-	vec d(nx_, fill::zeros), x(nx_, fill::zeros);  // A*x = d
+	arma::vec b(nx_, arma::fill::ones); b.fill(-2.);  // Diagonal
+	arma::vec c(nx_, arma::fill::ones);  // Upper diagonal
+	arma::vec a(nx_, arma::fill::ones);  // Lower diagonal
+	arma::vec d(nx_, arma::fill::zeros), x(nx_, arma::fill::zeros);  // A*x = d
 
 	for (size_t i=0; i<nx_; ++i)
 		d(i) = -h_*h_/epsilon*rho_(i);

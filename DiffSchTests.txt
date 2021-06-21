@@ -66,6 +66,13 @@
 # RUN TIME: 1.16656e+00 min, 530 it.
 # OSCILATIONS IN CURRENT DENSITY: YES
 
+# K: UDS2, P:UDS1
+# <p> = 1.09162e-03, sqrt(<p^2>) = 1.19529e-02, J(<p>) = 8.47680e+05, J(sqrt(<p^2>)) = 9.28179e+06
+# Final current = 7.14677e+04 [Acm^-2]
+# N = 5.94338e+14 [cm^-2]
+# RUN TIME: 1.00194e+00 min, 349 it.
+# OSCILATIONS IN CURRENT DENSITY: NO
+
 # K: UDS2, P: UDS2
 # <p> = 1.08469e-03, sqrt(<p^2>) = 1.06481e-02, J(<p>) = 8.42405e+05, J(sqrt(<p^2>)) = 8.26960e+06
 # Final current = 6.61976e+04 [Acm^-2]
