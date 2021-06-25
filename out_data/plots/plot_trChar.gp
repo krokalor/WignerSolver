@@ -1,5 +1,5 @@
 set terminal pngcairo size 500,500
-set output "trChar_dRho_discSch.png"
+set output "trChar.png"
 
 set datafile separator ','
 set key autotitle columnhead
@@ -41,19 +41,21 @@ set format y "% .2tx10^{%.0T}"
 
 # set ytics nomirror textcolor '#0000ff   '
 # set y2tics nomirror textcolor '#FF0000'
-set xtics 0,500,2000
+set xtics 0,8000,40000
 
-set xrange[50:300]
-set yrange[1e-2:]
+set xrange[0:]
+set yrange[:]
 
 set key top right
 set logscale y
+set grid
 
 #
 ##### Plot #####
 #
 
-i = 7
+i = 8
+plot '../tr_char.csv' u 1:i w l ls 1
 # plot '../tr_char_100meV_HDS22_2000it_2e-5.csv' title columnhead(i) with lines lc rgb "white",\
 #     '' u 1:i w l ls 1 title 'No dissipation',\
 #     '../tr_char_100meV_HDS22_2000it_2e-5_tR1e-12.csv' u 1:i w l ls 2 title '{/Symbol t}_R = 1E-12 s',\
@@ -63,13 +65,13 @@ i = 7
 # plot '../tr_char_UDS3.csv' title columnhead(i) with lines lc rgb "white",\
 #     '' u 1:i w l ls 1 title '150x150',\
 #     '../tr_char_UDS3_200x200.csv' u 1:i w l ls 2 title '200x200'
-# plot '../tr_char.csv' u 1:2 w lp ls 1, '' u 1:3 w lp ls 2,\
-#     '' u 1:4 w lp ls 3, '' u 1:5 w lp ls 4, '' u 1:6 w lp ls 5, '' u 1:7 w lp ls 6
+# plot '../tr_char.csv' u 1:2 w l ls 1, '' u 1:3 w l ls 2,\
+#     '' u 1:4 w l ls 3, '' u 1:5 w l ls 4, '' u 1:6 w l ls 5, '' u 1:7 w l ls 6
 # plot '../tr_char_100meV_HDS22_2000it_2e-5.csv' title columnhead(i) with lines lc rgb "white",\
 #     '' u 1:i w l ls 1 title '100meV',\
 #     '../tr_char_10meV_HDS22_2000it_2e-5.csv' u 1:i w l ls 2 title '10meV',\
     # '../tr_char_0meV.csv' u 1:i w lp ls 3 title '0meV'
-plot '../tr_char_UDS2.csv' title columnhead(i) with lines lc rgb "white",\
-    '../tr_char_UDS2.csv' u 1:i w l ls 1 title 'UDS2',\
-    '../tr_char_UDS3.csv' u 1:i w l ls 2 title 'UDS3',\
-    '../tr_char_HDS22.csv' u 1:i w l ls 3 title 'HDS22'
+# plot '../tr_char_UDS2.csv' title columnhead(i) with lines lc rgb "white",\
+#     '../tr_char_UDS2.csv' u 1:i w l ls 1 title 'UDS2',\
+#     '../tr_char_UDS3.csv' u 1:i w l ls 2 title 'UDS3',\
+#     '../tr_char_HDS22.csv' u 1:i w l ls 3 title 'HDS22'

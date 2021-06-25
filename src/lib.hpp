@@ -8,9 +8,10 @@
 #include <string>
 #include <ctime>
 #include <map>
-// #include <iomanip.h>
 
-// #include <omp.h>
+// #include <iomanip.h>
+#include <omp.h>
+
 /*
 export OMP_NUM_THREADS = 6
 export OMP_DYNAMIC = false
@@ -18,6 +19,10 @@ export OMP_NESTED = false
 */
 
 #define ARMA_USE_SUPERLU 1
+#define ARMA_OPENMP_THREADS 6
+#define ARMA_PRINT_ERRORS 1
+#define ARMA_WARN_LEVEL 3
+
 #include <armadillo>
 
 // using namespace std;

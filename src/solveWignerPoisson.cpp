@@ -53,13 +53,19 @@ void WignerFunction::solveWignerPoisson
 	std::ofstream poisson_step("out_data/poisson_step.out");
 	poisson_step<<"it,x [nm],rho [cm^{-3}],uNew [eV],{/Symbol d}u [eV],du/dx [au],J [Acm^{-2}]\n";
 
+	std::ofstream tr_char("out_data/tr_char.csv");
+	tr_char<<"it.,J [au],n_E [au],q [au],max({/Symbol d}J/J),max({/Symbol d}U/U),max({/Symbol d}Rho/rho),(J_1-J_0)/J_1,range(J)"<<endl;
 	cout.width( 5 );
 	cout<<"# it.\tCurr. [Acm^-2]\tnE [cm^-2]\tnD [cm^-2]\tq [cm^-2]\tmax(dJ/J)\tmax(dU/U)\tmax(pFun) [ev]\tmax(dRho/rho)"<<endl;
-	while ( !(n_dJ >= n_conv) && n_it < n_max ) {
+	while ( n_it < n_max ) {
 		// !(n_dJ > n_conv && n_dU > n_conv) &&
 
 		n_it += 1;
 		// TODO: Change order (BTE -> PE)
+
+		//
+		// Solve Poisson eq.
+		p.solve();
 
 		//
 		// Solve Wigner/Boltzmann eq
@@ -71,27 +77,24 @@ void WignerFunction::solveWignerPoisson
 
 		//
 		// Mixing old and new el. density
-		if (n_it > 1) rho_new = (1.-alpha)*rho_old + alpha*(nD - cdX_);
-		else rho_new = nD - cdX_;
+		// if (n_it > 1) rho_new = (1.-alpha)*rho_old + alpha*(nD - cdX_);
+		// else rho_new = nD - cdX_;
+		rho_new = (1.-alpha)*rho_old + alpha*(nD - cdX_);
 		p.rho_ = rho_new, p.nE_ = cdX_;
-
-		//
-		// Solve Poisson eq.
-		p.solve();
 
 		//
 		// Check current convergance
 		dj = j0 - j1;  // Vectors
-		dJ_x = max(abs(dj/j1));
+		dJ_x = arma::max(arma::abs(dj/j1));
 		conv = dJ_x < max_dJ ? true : false;
 		n_dJ = conv && n_it > n_min ? n_dJ+1 : 0;  // Ile razy został spełniony warunek
 		// Check potential convergance
-		dU_x = max(abs(p.du_/p.uNew_)), pFun_x = max(abs(p.pFun_));
+		dU_x = arma::max(arma::abs(p.du_/p.uNew_)), pFun_x = arma::max(arma::abs(p.pFun_));
 		conv = dU_x < max_dU ? true : false;
 		// n_dU = conv && n_it > n_min  ? n_dU + 1 : 0;
 		// pFun_zero = pFun_x < max_pFun ? true : false;
 		// Check charge den. convergance
-		dRho_x = max(abs((rho_new-rho_old)/rho_new));
+		dRho_x = arma::max(arma::abs((rho_new-rho_old)/rho_new));
 		conv = dRho_x < max_dRho ? true : false;
 		// n_dRho = conv && n_it > n_min  ? n_dRho + 1 : 0;
 
@@ -113,6 +116,16 @@ void WignerFunction::solveWignerPoisson
 			<<'\t'<<pFun_x*AU_eV
 			<<'\t'<<dRho_x
 			<<'\t'<<n_dJ<<endl;
+
+		tr_char<<n_it
+		<<','<<curr
+		<<','<<nc
+		<<','<<q
+		<<','<<dJ_x
+		<<','<<dU_x
+		<<','<<dRho_x
+		<<','<<calcInt(dj,dx_)/l_/curr
+		<<','<<arma::range(j1)<<endl;
 
 		//
 		// Saving data
@@ -159,18 +172,6 @@ void WignerFunction::solveWignerPoisson
 
 	}
 	poisson_step.close();
-
-	std::ofstream tr_char("out_data/tr_char.csv");
-	tr_char<<"it.,Curr. den. [au],n_E [au],q [au],dJ/J,max(dU/U),max(dRho/rho)"<<endl;
-	for (size_t i=0; i<n_it; ++i)
-		tr_char<<i
-		<<','<<currD_a(i)
-		<<','<<nc_a(i)
-		<<','<<q_a(i)
-		<<','<<dJ_x_a(i)
-		<<','<<dU_x_a(i)
-		<<','<<dRho_x_a(i)<<endl;
-	tr_char.close();
 
 	uStart_ = p.uNew_;
 	// std::ofstream pot_out;

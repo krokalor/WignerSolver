@@ -44,15 +44,20 @@ void WignerFunction::solveWignerEq(){
 
 	// Setting up solver options
 	arma::superlu_opts opts;
-	opts.symmetric = false;
-	opts.equilibrate = true;
-	opts.permutation = arma::superlu_opts::NATURAL;
+	opts.symmetric = true;
+	opts.equilibrate = false;
+	opts.permutation = arma::superlu_opts::COLAMD;
 	opts.refine = arma::superlu_opts::REF_EXTRA;  // 	iterative refinement in extra precision
-	opts.allow_ugly  = true;
-	opts.pivot_thresh = 0.01;
+	// opts.allow_ugly  = false;
+	opts.pivot_thresh = 0;
 
 	arma::vec x(nxk_, arma::fill::zeros);
 	arma::spsolve(x, a_, b_, "superlu", opts);  // use SuperLU solver
+
+	// arma::vec r, s;
+	// r = a_*x-b_, s = arma::abs(a_)*arma::abs(x)+arma::abs(b_);
+	// double berr = max(abs(r)/s);
+	// cout<<"BERR = "<<berr<<endl;
 
 	//
 	// EIGEN
@@ -112,14 +117,15 @@ void WignerFunction::solveTimeEv(){
 	}  // end i loop
 
 	arma::superlu_opts opts;
-	opts.symmetric = false;
-	opts.equilibrate = true;
-	// opts.refine = superlu_opts::REF_NONE;
-	// opts.refine = superlu_opts::REF_EXTRA;  // 	iterative refinement in extra precision
-    // opts.allow_ugly  = true;
+	opts.symmetric = true;
+	opts.equilibrate = false;
+	opts.permutation = arma::superlu_opts::COLAMD;
+	opts.refine = arma::superlu_opts::REF_EXTRA;  // 	iterative refinement in extra precision
+	// opts.allow_ugly  = false;
+	opts.pivot_thresh = 0;
+
 	arma::vec x(nxk_, arma::fill::zeros);
 	arma::spsolve(x, a_, b_, "superlu", opts);  // use SuperLU solver
-	// spsolve(x, a, b, "superlu");
 
 	for (size_t i=0; i<nx_; ++i)
 		for (size_t j=0; j<nk_; ++j)
@@ -131,25 +137,26 @@ void WignerFunction::solveTimeEv(){
 void WignerFunction::diffusionTerm(size_t i, size_t j, double dt){
 	// Fills Boltzmann equation matrix with diffusion term
 	size_t r = i*nk_ + j;
+	double k = k_(j), bc = bc_(j);
 	if (diffSch_K_ == "UDS1") {
 		// UDS1
-		double C = k_(j)/m_/dx_;
-		double B = bc_(j)*C;
+		double C = k/m_/dx_;
+		double B = bc*C;
 		if (dt > 0) C *= dt/2., B *= dt;
-		if (k_(j)<0.) {
+		if (k<0.) {
 			if (i==nx_-1) {
 				a_(r, r) += -C;
-				b_(r) += -bc_(j)*C;
+				b_(r) += -bc*C;
 			}
 			else {
 				a_(r, r) += -C;
 				a_(r, (i+1)*nk_+j) += C;
 			}
 		}
-		if (k_(j)>0.) {
+		if (k>0.) {
 			if (i==0) {
 				a_(r, r) += C;
-				b_(r) += bc_(j)*C;
+				b_(r) += bc*C;
 			}
 			else {
 				a_(r, r) += C;
@@ -159,10 +166,10 @@ void WignerFunction::diffusionTerm(size_t i, size_t j, double dt){
 	}
 	else if (diffSch_K_ == "UDS2") {
 		// UDS1
-		double C = k_(j)/m_/dx_/2.;
-		double B = bc_(j)*C;
+		double C = k/m_/dx_/2.;
+		double B = bc*C;
 		if (dt > 0) C *= dt/2., B *= dt;
-		if (k_(j)<0.) {
+		if (k<0.) {
 			if (i==nx_-1) {
 				a_(r, r) += -3*C;
 				b_(r) += -3*B;
@@ -178,7 +185,7 @@ void WignerFunction::diffusionTerm(size_t i, size_t j, double dt){
 				a_(r, (i+2)*nk_+j) += -C;
 			}
 		}
-		else if (k_(j)>0.) {
+		else if (k>0.) {
 			if (i==0) {
 				a_(r, r) += 3*C;
 				b_(r) += 3*B;
@@ -197,10 +204,10 @@ void WignerFunction::diffusionTerm(size_t i, size_t j, double dt){
 	}
 	else if (diffSch_K_ == "UDS3") {
 		// UDS1
-		double C = k_(j)/m_/dx_/6.;
-		double B = bc_(j)*C;
+		double C = k/m_/dx_/6.;
+		double B = bc*C;
 		if (dt > 0) C *= dt/2., B *= dt;
-		if (k_(j)<0.) {
+		if (k<0.) {
 			if (i==nx_-1) {
 				a_(r, r) += -11*C;
 				b_(r) += -11*B;
@@ -223,7 +230,7 @@ void WignerFunction::diffusionTerm(size_t i, size_t j, double dt){
 				a_(r, (i+3)*nk_+j) += 2*C;
 			}
 		}
-		else if (k_(j)>0.) {
+		else if (k>0.) {
 			if (i==0) {
 				a_(r, r) += 11*C;
 				b_(r) += 11*B;
@@ -249,10 +256,10 @@ void WignerFunction::diffusionTerm(size_t i, size_t j, double dt){
 	}
 	else if (diffSch_K_ == "UDS4") {
 		// UDS4
-		double C = k_(j)/m_/dx_/12.;
-		double B = bc_(j)*C;
+		double C = k/m_/dx_/12.;
+		double B = bc*C;
 		if (dt > 0) C *= dt/2., B *= dt;
-		if (k_(j)<0.) {
+		if (k<0.) {
 			if (i==nx_-1) {
 				a_(r, r) += -25*C;
 				b_(r) += -25*B;
@@ -283,7 +290,7 @@ void WignerFunction::diffusionTerm(size_t i, size_t j, double dt){
 				a_(r, (i+4)*nk_+j) += -3*C;
 			}
 		}
-		else if (k_(j)>0.) {
+		else if (k>0.) {
 			if (i==0) {
 				a_(r, r) += 25*C;
 				b_(r) += 25*C;
@@ -318,11 +325,11 @@ void WignerFunction::diffusionTerm(size_t i, size_t j, double dt){
 	else if (diffSch_K_ == "HDS22") {
 		// HDS22
 		double alpha = 2., beta = 1.;
-		double C = k_(j)/m_/dx_/2.;
+		double C = k/m_/dx_/2.;
 		double D = C/(alpha+beta);
-		double B = bc_(j)*D;
+		double B = bc*D;
 		if (dt > 0) C *= dt/2., D *= dt/2., B *= dt;
-		if (k_(j)<0.) {
+		if (k<0.) {
 			if (i==0) {  // UDS2 is used at outgoing boundary
 				// b_(r) += B*alpha;
 				// a_(r, r) += -3.*beta*D;
@@ -355,7 +362,7 @@ void WignerFunction::diffusionTerm(size_t i, size_t j, double dt){
 				a_(r, (i+2)*nk_ + j) += -beta*D;
 			}
 		}
-		if (k_(j)>0.) {
+		if (k>0.) {
 			if (i==nx_-1) {  // UDS2 is used at outgoing boundary
 				// b_(r) += -alpha*B;
 				// a_(r, r) += 3.*beta*D;

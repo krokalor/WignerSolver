@@ -50,7 +50,7 @@ AU_cm2 = 2.8e-17
 
 set label "U_{bias} = 100 meV" at graph 0.1,0.9 textcolor "white" front
 
-splot [0:4] [:] '../wf.out' u ($1*AU_nm/1e3):2:3 with pm3d
+splot [:] [:] '../wf.out' u ($1*AU_nm/1e3):2:3 with pm3d
 # splot [0:2*pi] [0:2*pi] sin(x)*cos(y)
 
 # set palette rgb 7,5,15; # "traditional pm3d\n(black-blue-red-yellow)"

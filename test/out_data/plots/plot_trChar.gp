@@ -42,18 +42,18 @@ set format y "% .2tx10^{%.0T}"
 # set ytics nomirror textcolor '#0000ff   '
 # set y2tics nomirror textcolor '#FF0000'
 
-set xrange[0:]
+set xrange[8e4:]
 set yrange[:]
 
 set key top right
-set logscale y
+# set logscale y
 
 #
 ##### Plot #####
 #
 
-i = 7
-plot '../tr_char.csv' u 1:i w lp ls 1
+i = 2
+plot '../tr_char.csv' u 1:i w l ls 1
 # plot '../tr_char.csv' u 1:2 w lp ls 1, '' u 1:3 w lp ls 2,\
 #     '' u 1:4 w lp ls 3, '' u 1:5 w lp ls 4, '' u 1:6 w lp ls 5, '' u 1:7 w lp ls 6
 # plot '../tr_char_100meV.csv' u 1:i w l,\

@@ -20,7 +20,7 @@ set style line 10 lc rgb '#000080' lt 1 lw 2 pt 7 ps 1 dashtype 1 # navy
 #
 
 set ylabel 'U [eV]'
-set y2label 'J [Acm^{-2}]'  textcolor '#FF0000'
+set y2label 'y_2'  textcolor '#FF0000'
 set xlabel 'x [nm]'
 set ytics nomirror
 set y2tics nomirror textcolor '#FF0000'

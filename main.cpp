@@ -30,7 +30,7 @@ int main(){
 
 	double nx = 150, nk = 150;
 	double lD = 1000/AU_nm, lC = 1500/AU_nm;
-	double k_max = 0.15;  // -1
+	double k_max = 0.15;  // -1, 0.15
 
 	WignerFunction f(nx, lD, lC, nk, k_max);
 
@@ -43,6 +43,7 @@ int main(){
 	f.set_cD(2e18*AU_cm3);
 	f.set_uF( calcFermiEn(f.get_cD(), f.get_m(), f.get_temp()) );
 	f.set_dt(.005*1e-15/AU_s);
+
 	f.set_rR(0), f.set_rM(0); // 1./(1e-12/AU_s)
 	f.set_rG(0), f.set_rF(0), f.set_lambda(0);
 
@@ -50,7 +51,7 @@ int main(){
 	f.set_useNLP(false);
 	f.set_uBias_BC(true);
 
-	// "UDS1", "UDS2", "UDS3" (only for K), "HDS22"
+	// "UDS1", "UDS2", "UDS3", "HDS22"
 	f.set_diffSch_K("HDS22");
 	f.set_diffSch_P("HDS22");
 	f.set_diffSch_J("HDS22");
@@ -65,10 +66,15 @@ int main(){
 	cout<<"# Setting up potential"<<endl;
 	f.set_uBias(0./AU_eV);
 	// f.setPotBias(0.1/AU_eV);
+	//
 	// f.addRectBarr(0.3/AU_eV, 17.5/AU_nm, 2/AU_nm, 10);
 	// f.addRectBarr(0.3/AU_eV, 22.5/AU_nm, 2/AU_nm, 10);
+	//
+	// f.addRectBarr(0.3/AU_eV, 1750/AU_nm, 200/AU_nm, 10);
+	// f.addRectBarr(0.3/AU_eV, 2250/AU_nm, 200/AU_nm, 10);
 	// f.addGaussBarr(0.3/AU_eV, 2000/AU_nm, 500/AU_nm);
-	f.load_poisson_pot("out_data/poisson_pot/poisson_pot_100meV.bin");
+	//
+	// f.load_poisson_pot("poisson_pot_100meV_4e4it.bin");
 	// f.set_uC(f.get_uStart());
 
 	//
@@ -95,8 +101,8 @@ int main(){
 	//
 	// Boltzmann-Poisson
 	cout<<"# Solving B-P set of equations"<<endl;
-	// solveWignerPoisson(uBias, alpha, beta, n_max, timeDependent)
-	f.solveWignerPoisson(0.1/AU_eV, 2e-5, 1, 10, false);
+	// (uBias, alpha, beta, n_max, timeDependent)
+	f.solveWignerPoisson(0.1/AU_eV, 2e-5, 1, 50, false);
 	f.saveWignerFun();
 
 	// arma::mat wf1, wf2, wf;
@@ -141,6 +147,13 @@ int main(){
 	f.calcCD_X(), f.calcCD_K();
 	arma::vec cdX = f.get_cdX(), cdK = f.get_cdK();
 
+	// Doping profile
+	arma::vec nD(nx, arma::fill::zeros), rho(nx, arma::fill::zeros);
+	double s = 0.005, l = 2*lC+lD;
+	for (size_t i=0; i<nx; ++i)
+		nD(i) = f.get_cD()*(1+1/(1+exp((x_val(i)-lC)/s/l))-1/(1+exp((x_val(i)-l+lC)/s/l)));
+	rho = nD - cdX;
+
 	double n = f.calcNorm();
 	cout<<"# <p> = "<<f.calcEK()<<", sqrt(<p^2>) = "<<sqrt(f.calcEK2())
 		<<", J(<p>) = "<<f.calcEK()/f.get_m()*n/f.get_l()*AU_Acm2
@@ -182,7 +195,7 @@ int main(){
 	out_data.insert_cols(0, x_val*AU_nm), header(0) = "x [nm]";
 	out_data.insert_cols(1, f.get_u()*AU_eV), header(1) = "U [eV]";  // col. 2
 	out_data.insert_cols(2, f.get_currD()*AU_Acm2), header(2) = "J(x) [Acm^{-2}]";  // col. 3
-	out_data.insert_cols(3, cdX/AU_cm3), header(3) = "n [cm^{-3}]";  // col. 4
+	out_data.insert_cols(3, rho/AU_cm3), header(3) = "n [cm^{-3}]";  // col. 4
 	out_data.insert_cols(4, f.get_du()*AU_eV/AU_nm), header(4) = "U' [eV/nm]";  // col. 5
 	out_data.insert_cols(5, f.get_d3u()), header(5) = "U''' [au]";  // col. 6
 	out_data.insert_cols(6, f.get_uB()*AU_eV), header(6) = "U^B [eV]";  // col. 7
