@@ -1,0 +1,38 @@
+## Ubias = 0 meV
+# <p> = 9.99997e-04, sqrt(<p^2>) = 1.05685e-02, J(<p>) = 7.76546e+05, J(sqrt(<p^2>)) = 8.20696e+06
+# Final current = -2.14860e+00 [Acm^-2]
+# N = 5.94350e+14 [cm^-2]
+# RUN TIME: 1.31696e+01 min,
+## 351 it.
+# <p> = 9.99999e-04, sqrt(<p^2>) = 1.05769e-02, J(<p>) = 7.76552e+05, J(sqrt(<p^2>)) = 8.21355e+06
+# Final current = -8.04727e-01 [Acm^-2]
+# N = 5.94353e+14 [cm^-2]
+# RUN TIME: 4.57297e+00 min, 
+
+## Ubias = 200 meV
+# <p> = 1.10241e-03, sqrt(<p^2>) = 1.06335e-02, J(<p>) = 8.55971e+05, J(sqrt(<p^2>)) = 8.25644e+06
+# Final current = 8.00623e+04 [Acm^-2]
+# N = 5.94280e+14 [cm^-2]
+# RUN TIME: 1.34706e+01 min
+
+## Ubias = 100 meV
+# <p> = 1.06430e-03, sqrt(<p^2>) = 1.05882e-02, J(<p>) = 8.26519e+05, J(sqrt(<p^2>)) = 8.22261e+06
+# Final current = 5.02689e+04 [Acm^-2]
+# N = 5.94376e+14 [cm^-2]
+# RUN TIME: 1.39447e+01 min
+
+## Ubias = 10 meV
+# <p> = 1.00708e-03, sqrt(<p^2>) = 1.05716e-02, J(<p>) = 7.82042e+05, J(sqrt(<p^2>)) = 8.20928e+06
+# Final current = 5.53531e+03 [Acm^-2]
+# N = 5.94346e+14 [cm^-2]
+# RUN TIME: 1.33866e+01 min
+## 351 it. <- dU conv.
+# <p> = 1.01041e-03, sqrt(<p^2>) = 1.05781e-02, J(<p>) = 7.84638e+05, J(sqrt(<p^2>)) = 8.21445e+06
+# Final current = 8.13920e+03 [Acm^-2]
+# N = 5.94354e+14 [cm^-2]
+# RUN TIME: 4.70638e+00 min
+## 187 it. <- dJ conv.
+# <p> = 1.02067e-03, sqrt(<p^2>) = 1.05736e-02, J(<p>) = 7.92710e+05, J(sqrt(<p^2>)) = 8.21210e+06
+# Final current = 1.61605e+04 [Acm^-2]
+# N = 5.94434e+14 [cm^-2]
+# RUN TIME: 2.32898e+00 min

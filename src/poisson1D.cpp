@@ -3,7 +3,7 @@
 
 using namespace poisson;
 
-void Poisson1D::solve() { solve_gummel (); }  // solve_gummel solve_tridiag
+void Poisson1D::solve() { solve_tridiag (); }  // solve_gummel solve_tridiag
 
 void Poisson1D::solve_gummel() {
 	// Solving Poisson equation using Gummel algorithm
@@ -16,7 +16,7 @@ void Poisson1D::solve_gummel() {
 	double phi_L = uOld_(1)-2*uOld_(0)+dirichletL_;
 	double phi_R = uOld_(nx_-2)-2*uOld_(nx_-1)+dirichletR_;
 
-	vec uD(nx_, fill::zeros);
+	arma::vec uD(nx_, arma::fill::zeros);
 	for (size_t i=1; i<nx_-1; ++i)
 		uD(i) = uOld_(i+1)-2.*uOld_(i)+uOld_(i-1);
 	uD(0) = phi_L, uD(nx_-1) = phi_R;
@@ -27,7 +27,7 @@ void Poisson1D::solve_gummel() {
 
 	// dP_i/du_j
 
-	dPu_ = sp_mat(nx_, nx_);
+	dPu_ = arma::sp_mat(nx_, nx_);
 	for (size_t i=0; i<nx_; ++i) {
 		for (size_t j=0; j<nx_; ++j) {
 			if (i-1 == j || i+1 == j)
@@ -37,13 +37,13 @@ void Poisson1D::solve_gummel() {
 		}
 	}
 
-	du_.zeros();
-	superlu_opts settings;
-	// settings.symmetric = true;
+	arma::vec x(nx_);
+    arma::superlu_opts settings;
+	settings.symmetric = true;
 	// settings.refine = superlu_opts::REF_EXTRA;
-	spsolve(du_, dPu_, pFun_, "superlu", settings);
+	arma::spsolve(x, dPu_, pFun_, "superlu", settings);
 
-	du_ = du_*beta_;
+	du_ = x*beta_;
 	uNew_ = uOld_ + du_;
 
 }
@@ -54,33 +54,57 @@ void Poisson1D::solve_tridiag() {
 
 	double epsilon = epsilonR_/4./M_PI;
 
-	vec b(nx_, fill::ones); b.fill(-2.);  // Diagonal
-	vec c(nx_, fill::ones);  // Upper diagonal
-	vec a(nx_, fill::ones);  // Lower diagonal
-	vec d(nx_, fill::zeros), x(nx_, fill::zeros);  // A*x = d
+	arma::sp_mat A(nx_, nx_);
+	for (size_t i=nx_; i--;) {
+		A(i,i) = -2;
+		if (i > 0) A(i,i-1) = 1;
+		if (i < nx_-1) A(i,i+1) = 1;
+	}
 
-	for (size_t i=0; i<nx_; ++i)
-		d(i) = -h_*h_/epsilon*rho_(i);
+	// arma::vec b(nx_, arma::fill::ones); b.fill(-2.);  // Diagonal
+	// arma::vec c(nx_, arma::fill::ones);  // Upper diagonal
+	// arma::vec a(nx_, arma::fill::ones);  // Lower diagonal
+	arma::vec d = rho_;
+	arma::vec x(nx_, arma::fill::zeros);  // A*x = d
+
+	for (size_t i=nx_; i--;)
+		d(i) *= h_*h_/epsilon;
 
 	// Dirichlet BC
 	d(0) -= dirichletL_, d(nx_-1) -= dirichletR_;
 
-	c(0) /= b(0);
-	d(0) /= b(0);
+	arma::superlu_opts opts;
+	opts.symmetric = true;
+	opts.equilibrate = false;
+	opts.permutation = arma::superlu_opts::COLAMD;
+	opts.refine = arma::superlu_opts::REF_EXTRA;
+	// opts.allow_ugly  = false;
+	opts.pivot_thresh = 0;
 
-	double m;
-	for (size_t i=1; i<nx_; ++i) {
-		m = 1./(b(i) - a(i)*c(i-1));
-		c(i) *= m;
-		d(i) = (d(i) - a(i)*d(i-1)) * m;
-	}
+	arma::spsolve(x, A, d, "superlu", opts);
 
-	x(nx_-1) = d(nx_-1);
-	for (size_t i=nx_-2; i>0; --i)
-		x(i) = d(i) - c(i)*x(i+1);
-	x(0) = d(0) - c(0)*x(1);
+	// arma::vec r, s;
+	// r = A*x-d, s = arma::abs(A)*arma::abs(x)+arma::abs(d);
+	// double berr = max(abs(r)/s);
+	// cout<<"BERR = "<<berr<<endl;
 
-	uNew_ = (1-beta_)*uOld_ + beta_*x;  // mixing old and new potential
+	// c(0) /= b(0);
+	// d(0) /= b(0);
+	//
+	// double m;
+	// for (size_t i=1; i<nx_; ++i) {
+	// 	m = 1./(b(i) - a(i)*c(i-1));
+	// 	c(i) *= m;
+	// 	d(i) = (d(i) - a(i)*d(i-1)) * m;
+	// }
+	//
+	// x(nx_-1) = d(nx_-1);
+	// for (size_t i=nx_-2; i--;)
+	// 	x(i) = d(i) - c(i)*x(i+1);
+	// x(0) = d(0) - c(0)*x(1);
+
+	// uNew_ = (1-beta_)*uOld_ + beta_*x;  // mixing old and new potential
+	uNew_ = x;
 	du_ = uNew_ - uOld_;
 
 }

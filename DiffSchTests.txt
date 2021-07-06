@@ -1,0 +1,150 @@
+# Schematy różnicowe są zmieniane dla obu wyrazów
+
+#==========================================================================#
+# SET PARAMETERS                                                           #
+# Variable name          variable's value (a.u.)  variable's value (SI)    #
+# m*                     0.067                    -                        #
+# contact_temp_          300                      -                        #
+# L                      75614.4                  4000                     #
+# L_C                    28355.4                  1500                     #
+# L_D                    18903.6                  1000                     #
+# L_YZ                   3.57346e+08              1e+06                    #
+# kmax                   0.15                     2.83554                  #
+# Nx                     150                      -                        #
+# dx                     504.096                  26.6667                  #
+# Nk                     150                      -                        #
+# dk                     0.002                    0.0378072                #
+# dx*dk                  1.00819                  -                        #
+# courant_num            0.91761                  -                        #
+# dt                     206.612                  5e-15                    #
+# fermi_energy           0.00293827               0.0799533                #
+# use NLP?               false                    false                    #
+# rR                     0                        0                        #
+# rM                     0                        0                        #
+# lambda                 0                        0                        #
+# rG                     0                        0                        #
+# dist                   1                        -                        #
+# cD                     2.96e-07                 2e+18                    #
+# v_bias                 0.00367498               0.1                      #
+# BC type                1                        -                        #
+#==========================================================================#
+
+#
+# Boltzmann equation, diff. scheme changed only for diffusion term
+#
+
+# UDS1
+# <p> = 7.58971e-03, sqrt(<p^2>) = 1.37610e-02, J(<p>) = 1.61565e+07, J(sqrt(<p^2>)) = 2.92936e+07
+# Final current = 1.41219e+07 [Acm^-2]
+# N = 1.62928e+15 [cm^-2]
+# RUN TIME: 1.72304e-01 s
+
+# UDS1
+# <p> = 7.58971e-03, sqrt(<p^2>) = 1.37610e-02, J(<p>) = 1.61565e+07, J(sqrt(<p^2>)) = 2.92936e+07
+# Final current = 1.41219e+07 [Acm^-2]
+# N = 1.62928e+15 [cm^-2]
+# RUN TIME: 1.77042e-01 s
+
+# HDS22
+# <p> = 7.58971e-03, sqrt(<p^2>) = 1.37610e-02, J(<p>) = 1.61565e+07, J(sqrt(<p^2>)) = 2.92936e+07
+# Final current = 1.41219e+07 [Acm^-2]
+# N = 1.62928e+15 [cm^-2]
+# RUN TIME: 1.83561e-01 s
+
+#
+# Boltzmann-Poisson, DS changed for both terms
+# alpha = 2e-5
+#
+
+# K: UDS1, P: UDS1
+# NO CONVERGANCE
+
+# K: UDS1, P: UDS2
+# <p> = 1.07514e-03, sqrt(<p^2>) = 1.15597e-02, J(<p>) = 8.33559e+05, J(sqrt(<p^2>)) = 8.96226e+06
+# Final current = 5.80115e+04 [Acm^-2]
+# N = 5.93395e+14 [cm^-2]
+# RUN TIME: 1.16656e+00 min, 530 it.
+# OSCILATIONS IN CURRENT DENSITY: YES
+
+# K: UDS2, P:UDS1
+# <p> = 1.09162e-03, sqrt(<p^2>) = 1.19529e-02, J(<p>) = 8.47680e+05, J(sqrt(<p^2>)) = 9.28179e+06
+# Final current = 7.14677e+04 [Acm^-2]
+# N = 5.94338e+14 [cm^-2]
+# RUN TIME: 1.00194e+00 min, 349 it.
+# OSCILATIONS IN CURRENT DENSITY: NO
+
+# K: UDS2, P: UDS2
+# <p> = 1.08469e-03, sqrt(<p^2>) = 1.06481e-02, J(<p>) = 8.42405e+05, J(sqrt(<p^2>)) = 8.26960e+06
+# Final current = 6.61976e+04 [Acm^-2]
+# N = 5.94412e+14 [cm^-2]
+# RUN TIME: 2.02968e+00 min, 310 it.
+# OSCILATIONS IN CURRENT DENSITY: NO
+
+# K: HDS22, P: HDS22
+# <p> = 1.07808e-03, sqrt(<p^2>) = 1.06278e-02, J(<p>) = 8.37308e+05, J(sqrt(<p^2>)) = 8.25423e+06
+# Final current = 6.11734e+04 [Acm^-2]
+# N = 5.94438e+14 [cm^-2]
+# RUN TIME: 3.91255e+00 min, 299 it.
+# OSCILATIONS IN CURRENT DENSITY: YES
+
+# K: UDS2, P: HDS22
+# <p> = 1.06751e-03, sqrt(<p^2>) = 1.06266e-02, J(<p>) = 8.29189e+05, J(sqrt(<p^2>)) = 8.25418e+06
+# Final current = 5.27662e+04 [Acm^-2]
+# N = 5.94504e+14 [cm^-2]
+# RUN TIME: 2.62450e+00 min, 262 it.
+# OSCILATIONS IN CURRENT DENSITY: NO
+
+# K: HDS22, P: UDS2
+# <p> = 1.08754e-03, sqrt(<p^2>) = 1.06453e-02, J(<p>) = 8.44549e+05, J(sqrt(<p^2>)) = 8.26685e+06
+# Final current = 6.85488e+04 [Acm^-2]
+# N = 5.94367e+14 [cm^-2]
+# RUN TIME: 3.57746e+00 min, 348 it.
+# OSCILATIONS IN CURRENT DENSITY: YES
+
+# K: UDS3, P: UDS2
+# <p> = 1.09221e-03, sqrt(<p^2>) = 1.06373e-02, J(<p>) = 8.48209e+05, J(sqrt(<p^2>)) = 8.26096e+06
+# Final current = 7.21085e+04 [Acm^-2]
+# N = 5.94390e+14 [cm^-2]
+# RUN TIME: 2.81553e+00 min, 358 it.
+# OSCILATIONS IN CURRENT DENSITY: YES
+
+# K: UDS3, P: HDS22
+# <p> = 1.08186e-03, sqrt(<p^2>) = 1.06222e-02, J(<p>) = 8.40270e+05, J(sqrt(<p^2>)) = 8.25014e+06
+# Final current = 6.40469e+04 [Acm^-2]
+# N = 5.94459e+14 [cm^-2]
+# RUN TIME: 4.34398e+00 min, 301 it.
+# OSCILATIONS IN CURRENT DENSITY: YES
+
+# K: UDS3, P: UDS3
+# <p> = 1.09354e-03, sqrt(<p^2>) = 1.06069e-02, J(<p>) = 8.49253e+05, J(sqrt(<p^2>)) = 8.23743e+06
+# Final current = 7.31366e+04 [Acm^-2]
+# N = 5.94396e+14 [cm^-2]
+# RUN TIME: 3.95234e+00 min, 344 it.
+
+# K: UDS2, P: UDS3
+# <p> = 1.08849e-03, sqrt(<p^2>) = 1.06713e-02, J(<p>) = 8.45303e+05, J(sqrt(<p^2>)) = 8.28713e+06
+# Final current = 6.91687e+04 [Acm^-2]
+# N = 5.94374e+14 [cm^-2]
+# RUN TIME: 2.66225e+00 min, 295 it.
+
+#
+# BTE, linear potential
+#
+
+# UDS1
+# <p> = 1.49442e-02, sqrt(<p^2>) = 1.97013e-02, J(<p>) = 1.96269e+07, J(sqrt(<p^2>)) = 2.58746e+07
+# Final current = 1.84367e+07 [Acm^-2]
+# N = 1.00520e+15 [cm^-2]
+# RUN TIME: 2.27562e-01 s, 
+
+# UDS2
+# <p> = 1.49246e-02, sqrt(<p^2>) = 1.96812e-02, J(<p>) = 1.96097e+07, J(sqrt(<p^2>)) = 2.58594e+07
+# Final current = 1.84185e+07 [Acm^-2]
+# N = 1.00564e+15 [cm^-2]
+# RUN TIME: 3.76660e-01 s
+
+# UDS3
+# <p> = 1.49251e-02, sqrt(<p^2>) = 1.96815e-02, J(<p>) = 1.96095e+07, J(sqrt(<p^2>)) = 2.58587e+07
+# Final current = 1.84183e+07 [Acm^-2]
+# N = 1.00559e+15 [cm^-2]
+# RUN TIME: 2.91349e-01 s

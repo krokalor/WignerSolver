@@ -13,13 +13,13 @@ class Poisson1D {
 	public:
 
 		Poisson1D(size_t nx, double h) : nx_ (nx), h_ (h) {
-			rho_ = vec(nx_, fill::zeros);
-			nE_ = vec(nx_, fill::zeros);
-			uOld_ = vec(nx_, fill::zeros);
-			uNew_ = vec(nx_, fill::zeros);
-			du_ = vec(nx_, fill::zeros);
-			dPu_ = sp_mat(nx_, nx_);
-			pFun_ = vec(nx_, fill::zeros);
+			rho_ = arma::vec(nx_, arma::fill::zeros);
+			nE_ = arma::vec(nx_, arma::fill::zeros);
+			uOld_ = arma::vec(nx_, arma::fill::zeros);
+			uNew_ = arma::vec(nx_, arma::fill::zeros);
+			du_ = arma::vec(nx_, arma::fill::zeros);
+			dPu_ = arma::sp_mat(nx_, nx_);
+			pFun_ = arma::vec(nx_, arma::fill::zeros);
 			epsilonR_ = 1, temp_ = 300, beta_ = 1;
 			dirichletL_ = 0, dirichletR_ = 0;
 		}
@@ -32,19 +32,19 @@ class Poisson1D {
 		void testPoisson();
 
 		size_t nx_;
-		double h_, l_;
+		double h_;
 		double dirichletL_, dirichletR_;
 		double epsilonR_, temp_;
 		double beta_;  // potential mixing
 
-		vec rho_;
-		vec nE_;
-		vec uOld_;
-		vec uNew_;
-		vec du_;
+		arma::vec rho_;
+		arma::vec nE_;
+		arma::vec uOld_;
+		arma::vec uNew_;
+		arma::vec du_;
 
-		vec pFun_;
-		sp_mat dPu_;
+		arma::vec pFun_;
+		arma::sp_mat dPu_;
 
 };
 

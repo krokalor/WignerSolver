@@ -46,9 +46,7 @@ set origin .04,0
 AU_nm = 0.0529
 AU_cm2 = 2.8e-17
 
-folder = 'dane/'
-
-splot [0:] [-0.04:0.04] folder.'vpMap.out' u ($1*1e3):2:4 with pm3d
+splot [0:] [:] '../vpMap.out' u 1:2:3 with pm3d
 
 
 # set palette rgb 7,5,15; # "traditional pm3d\n(black-blue-red-yellow)"

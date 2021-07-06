@@ -87,34 +87,32 @@ std::map<std::string, double> readParam(std::string filename){
 
 
 void WignerFunction::saveWignerFun() {
-	size_t i, j;
-	std::ofstream wf;
-	wf.open("out_data/wf.out", std::ios::out);
-	wf<<"# Norma [cm^-2]: "<<calcNorm()/AU_cm2<<'\n';
-	wf<<"# x [nm] k [a.u.] f [a.u.]\n";
-	for (i=0; i<nx_; ++i){
-		// file<<"# "<<i<<' '<<x_(i)*AU_nm<<'\n';
-		for (j=0; j<nk_; ++j)
-			wf<<x_(i)<<' '<<k_(j)<<' '<<f_(i,j)<<'\n';
-			// file<<i*dx_<<' '<<dk_*(j-(nk_-1)*.5)<<' '<<f_(i,j)/s<<"  ! "<<f_(i,j)<<'\n';
-		wf<<"\n";
+	// Saves wigner function to a file readable by gnuplot (wf.out),
+	// a binary file (wf.bin) that may be loaded to a matrix later on
+	// and a *.z format readable by GLE
+	std::ofstream wf_out("out_data/wf.out");
+	wf_out<<"# x [nm] k [a.u.] f [a.u.]\n";
+	for (size_t i=0; i<nx_; ++i){
+		for (size_t j=0; j<nk_; ++j)
+			wf_out<<x_(i)<<' '<<k_(j)<<' '<<f_(i,j)<<'\n';
+		wf_out<<"\n";
 	}
-	wf.close();
-	// wf.open("out_data/wf.z", ios::out);
-	// wf<<"# nx "<<nx_<<" ny "<<nk_<<" xmin "<<0<<" xmax "<<l_*AU_nm<<" ymin "<<-kmax_<<" ymax "<<kmax_<<'\n';
-	// for (j=0; j<nk_; ++j){
-	// 	for (i=0; i<nx_; ++i)
-	// 		wf<<f_(i,j)<<' ';
-	// 		// file<<i*dx_<<' '<<dk_*(j-(nk_-1)*.5)<<' '<<f_(i,j)/s<<"  ! "<<f_(i,j)<<'\n';
-	// 	wf<<'\n';
-	// }
-	// wf.close();
+	wf_out.close();
+	f_.save("out_data/wf.bin");
+	wf_out.open("out_data/wf.z", std::ios::out);
+	wf_out<<"! nx "<<nx_<<" ny "<<nk_<<" xmin "<<0<<" xmax "<<l_*AU_nm<<" ymin "<<-kmax_<<" ymax "<<kmax_<<'\n';
+	for (size_t j=0; j<nk_; ++j){
+		for (size_t i=0; i<nx_; ++i)
+			wf_out<<f_(i,j)<<' ';
+		wf_out<<'\n';
+	}
+	wf_out.close();
 }
 
 
 void WignerFunction::readPotential(std::string input_file){
 	std::ifstream input_pot (input_file);
-	vec x(nx_, fill::zeros), u(nx_, fill::zeros);
+	arma::vec x(nx_, arma::fill::zeros), u(nx_, arma::fill::zeros);
 	size_t j = 0;
 	std::string::size_type sz;
 	if(!input_pot) {
@@ -245,29 +243,6 @@ void WignerFunction::printParam()
 	cout.width(cw_n); cout<<"# dt";
 	cout.width(cw_v); cout<<dt_;
 	cout.width(cw_v); cout<<dt_*AU_s<<'#'<<endl;
-	// ////////// I-V analisys //////////
-	cout.width(cw_n); cout<<"# fermi_energy";
-	cout.width(cw_v); cout<<uF_;
-	cout.width(cw_v); cout<<uF_*AU_eV<<'#'<<endl;
-	// cout.width(cw_n); cout<<"# set_uF";
-	// cout.width(cw_v); cout<<(set_uF_ ? "true" : "false");
-	// cout.width(cw_v); cout<<(set_uF_ ? "true" : "false")<<'#'<<endl;
-	// ////////// Wave packet ////////// WRITE SI OUTPUT#
-	cout.width(cw_n); cout<<"# gwp_x0";
-	cout.width(cw_v); cout<<gwp_x0_;
-	cout.width(cw_v); cout<<'-'<<'#'<<endl;
-	cout.width(cw_n); cout<<"# gwp_dx";
-	cout.width(cw_v); cout<<gwp_dx_;
-	cout.width(cw_v); cout<<'-'<<'#'<<endl;
-	cout.width(cw_n); cout<<"# gwp_p0";
-	cout.width(cw_v); cout<<gwp_p0_;
-	cout.width(cw_v); cout<<'-'<<'#'<<endl;
-	cout.width(cw_n); cout<<"# gwp_dp";
-	cout.width(cw_v); cout<<gwp_dp_;
-	cout.width(cw_v); cout<<'-'<<'#'<<endl;
-	cout.width(cw_n); cout<<"# gwp_A";
-	cout.width(cw_v); cout<<gwp_A_;
-	cout.width(cw_v); cout<<'-'<<'#'<<endl;
 	// ////////// Potential //////////
 	cout.width(cw_n); cout<<"# use NLP?";
 	cout.width(cw_v); cout<<(useNLP_ ? "true" : "false");
@@ -285,21 +260,36 @@ void WignerFunction::printParam()
 	cout.width(cw_n); cout<<"# rG";
 	cout.width(cw_v); cout<<rG_;
 	cout.width(cw_v); cout<<rG_/AU_s<<'#'<<endl;
-	cout.width(cw_n); cout<<"# dist";
-	cout.width(cw_v); cout<<bcType_;
-	cout.width(cw_v); cout<<'-'<<'#'<<endl;
+	// ////////// Boundary condition //////////
 	cout.width(cw_n); cout<<"# cD";
 	cout.width(cw_v); cout<<cD_;
 	cout.width(cw_v); cout<<cD_/AU_cm3<<'#'<<endl;
-	// cout.width(cw_n); cout<<"# cR";
-	// cout.width(cw_v); cout<<cR_;
-	// cout.width(cw_v); cout<<'-'<<'#'<<endl;
+	cout.width(cw_n); cout<<"# fermi_energy (left)";
+	cout.width(cw_v); cout<<uL_;
+	cout.width(cw_v); cout<<uL_*AU_eV<<'#'<<endl;
+	cout.width(cw_n); cout<<"# fermi_energy (right)";
+	cout.width(cw_v); cout<<uR_;
+	cout.width(cw_v); cout<<uR_*AU_eV<<'#'<<endl;
 	cout.width(cw_n); cout<<"# v_bias";
 	cout.width(cw_v); cout<<uBias_;
+	cout.width(cw_v); cout<<'-'<<'#'<<endl;
+	cout.width(cw_n); cout<<"# BC type";
+	cout.width(cw_v); cout<<bcType_;
+	cout.width(cw_v); cout<<'-'<<'#'<<endl;
+	// ////////// Numerical schemes //////////
+	cout.width(cw_n); cout<<"# DS - diffusion";
+	cout.width(cw_v); cout<<diffSch_K_;
+	cout.width(cw_v); cout<<'-'<<'#'<<endl;
+	cout.width(cw_n); cout<<"# DS - drift";
+	cout.width(cw_v); cout<<diffSch_P_;
+	cout.width(cw_v); cout<<'-'<<'#'<<endl;
+	cout.width(cw_n); cout<<"# DS - curr. den.";
+	cout.width(cw_v); cout<<diffSch_J_;
 	cout.width(cw_v); cout<<'-'<<'#'<<endl;
 
 	cout.fill('=');
 	cout.width(cw_n+2*cw_v);
 	cout<<'#'<<'#'<<endl;
+	cout.fill(' ');
 	cout<<endl;
 }
