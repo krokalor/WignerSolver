@@ -1,12 +1,17 @@
 # Makefile
 # Author: KK
 
-CXXFLAGS = -std=c++11 -g -O2\
-	-pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy \
-	-Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op \
-	-Wmissing-declarations -Wmissing-include-dirs -Wnoexcept -Wold-style-cast \
-	-Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-conversion -Wsign-promo \
-	-Wstrict-null-sentinel -Wswitch-default -Wundef -Wno-unused -fopenmp # -Wstrict-overflow=4 -fopenmp -Werror
+CXXFLAGS = -std=c++11 -g -Ofast\
+	-fopenmp -Wpedantic -Wall -Wextra -Werror\
+	-Wdisabled-optimization\
+	-Wlogical-op\
+	-Wmissing-declarations\
+	-Wmissing-include-dirs\
+	-Wredundant-decls\
+	-Wshadow\
+	-Wswitch-default\
+	-Wsign-conversion\
+	-Wfloat-conversion
 CXX = g++ # icpc
 OBJS = src/WignerFunction.o \
 	src/wfIO.o src/wignerTools.o \
@@ -19,8 +24,8 @@ LDLIBS = -larmadillo -lsuperlu -lopenblas -llapack
 #-lsuperlu -L/home/karol/intel/compilers_and_libraries_2019.0.117/linux/mkl/lib -llapack -L/opt/OpenBLAS/lib/ -lm  -lopenblas -lm
 # -lm -- math library
 
-run: $(OBJS)
+run.out: $(OBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
 
 clean:
-	rm -f $(OBJS) run
+	rm -f $(OBJS) run.out

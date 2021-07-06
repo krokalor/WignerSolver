@@ -72,7 +72,7 @@ set size 1,0.54
 
 set format x "%.0f"
 set xlabel "x [nm]"
-# set logscale y
+set logscale y
 set key over
 
 x0 = 35; s = 20; U0 = 0.03

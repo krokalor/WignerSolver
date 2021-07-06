@@ -29,9 +29,11 @@ void WignerFunction::solveWignerEq(){
 	// setEquilibriumFunction();
 
 	// TODO: OpenMP parallel calculations
-	// #pragma omp parallel for collapse(2) shared(a_, b_)
+	#pragma omp parallel for collapse(2) shared(a_, b_)
 	for (size_t i=0; i<nx_; ++i) {
 		for (size_t j=0; j<nk_; ++j) {
+	// for (size_t i=nx_; i--;) {
+	// 	for (size_t j=nk_; j--;) {
 			diffusionTerm(i, j, -1);
 			driftTerm(i, j, -1);
 			scatteringTerm(i, j, -1);
@@ -105,8 +107,8 @@ void WignerFunction::solveTimeEv(){
 	initEq();
 
 	// #pragma omp parallel for collapse(2)
-	for (size_t i=0; i<nx_; ++i) {
-		for (size_t j=0; j<nk_; ++j) {
+	for (size_t i=nx_; i--;) {
+		for (size_t j=nk_; j--;) {
 			a_(i*nk_+j, i*nk_+j) += 1.;
 			b_(i*nk_+j) = 2.*f_(i, j);
 			diffusionTerm(i, j, dt_);

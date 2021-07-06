@@ -28,21 +28,22 @@ int main(){
 	duration<double> t_elapsed;
 	t_start = high_resolution_clock::now();
 
-	double nx = 150, nk = 150;
+	size_t nx = 150, nk = 150;
 	double lD = 1000/AU_nm, lC = 1500/AU_nm;
 	double k_max = 0.15;  // -1, 0.15
 
 	WignerFunction f(nx, lD, lC, nk, k_max);
 
 	arma::vec x_val = f.get_x_arr(), k_val = f.get_k_arr();
-	double dx = f.get_dx(), dk = f.get_dk();
+	// double dx = f.get_dx(), dk = f.get_dk();
 
 	f.set_m(0.067);
-	f.set_temp(300);
+	f.set_temp(4.2);
 	f.set_epsilonR(13.1);
 	f.set_cD(2e18*AU_cm3);
-	f.set_uF( calcFermiEn(f.get_cD(), f.get_m(), f.get_temp()) );
-	f.set_dt(.005*1e-15/AU_s);
+	f.set_uL( calcFermiEn(f.get_cD(), f.get_m(), f.get_temp()) );
+	f.set_uR( calcFermiEn(f.get_cD(), f.get_m(), f.get_temp()) ); // calcFermiEn(f.get_cD(), f.get_m(), f.get_temp())
+	f.set_dt(5*1e-15/AU_s);  // .005*1e-15/AU_s
 
 	f.set_rR(0), f.set_rM(0); // 1./(1e-12/AU_s)
 	f.set_rG(0), f.set_rF(0), f.set_lambda(0);
@@ -76,6 +77,10 @@ int main(){
 	//
 	// f.load_poisson_pot("poisson_pot_100meV_4e4it.bin");
 	// f.set_uC(f.get_uStart());
+	//
+	// Read potential from poisson_test
+	// mat a; a.load("IV_char/out_data_10meV_2e5it/poisson_test.csv", csv_ascii);
+	// f.set_uC(a.col(1)/AU_eV);
 
 	//
 	// FUNKCJA RÓWNOWAGOWA
@@ -84,25 +89,36 @@ int main(){
 	f.printParam();
 
 	//
+	// Iterator test
+	// mat X(5, 5, fill::randn);
+	// X.print();
+	// for (size_t j=5; j--;) {
+	// 	for(arma::mat::col_iterator i = X.begin_col(j)+1; i != X.end_col(j); ++i)
+	// 		cout << *i + *(i-1) << ' ' ;
+	// 	cout << endl;
+	// }
+
+	//
 	// Boltzmann
 	// cout<<"# Solving BTE"<<endl;
 	// f.solveWignerEq();
 	// f.saveWignerFun();
 
-	// f.addWavePacket(500/AU_nm, 100/AU_nm, sqrt(2*f.get_m()*f.get_uF()), 0.005);
-	// double t_total = 1000e-15/AU_s, t = 0, dt = f.get_dt();
+	// f.addWavePacket(500/AU_nm, 100/AU_nm, 0.05, 0.005);  // sqrt(2*f.get_m()*f.get_uL())
+	// f.addWavePacket(3500/AU_nm, 100/AU_nm, -0.05, 0.005);  // sqrt(2*f.get_m()*f.get_uL())
+	// double t_total = 50e-15/AU_s, t = 0, dt = f.get_dt();
 	// while (t <= t_total) {
 	// 	t += dt;
 	// 	f.solveTimeEv();
 	// 	f.saveWignerFun();
-	// 	cout<<t*AU_s*1e15<<' '<<f.calcEK()<<' '<<sqrt(f.calcEK2())<<endl;
+	// 	cout<<t*AU_s*1e15<<' '<<f.calcEK()<<' '<<sqrt(f.calcEK2())<<' '<<f.calcEX()*AU_nm<<endl;
 	// }
 
 	//
 	// Boltzmann-Poisson
 	cout<<"# Solving B-P set of equations"<<endl;
 	// (uBias, alpha, beta, n_max, timeDependent)
-	f.solveWignerPoisson(0.1/AU_eV, 2e-5, 1, 50, false);
+	f.solveWignerPoisson(0.01/AU_eV, 2e-5, 1, 2e5, false);
 	f.saveWignerFun();
 
 	// arma::mat wf1, wf2, wf;
@@ -118,10 +134,18 @@ int main(){
 
 	//
 	// Poisson test
-	// Poisson1D p(200, 1/AU_nm);
-	// p.rho_ = -1*normpdf(linspace(0, 200, 200), 100, 10);
+	// Read potential from poisson_test
+	// mat a; a.load("IV_char/out_data_10meV_2e5it/poisson_test.csv", csv_ascii);
+	// Poisson1D p(nx, dx);
+	// p.dirichletL_ = 0.01/AU_eV/2., p.dirichletR_ = -0.01/AU_eV/2.;  // - bo obniżamy U w prawym kontakcie
+	// p.epsilonR_ = f.get_epsilonR(), p.temp_ = f.get_temp();
+	// p.rho_ = a.col(4)*AU_cm3;
+	// p.uOld_ = a.col(2)/AU_eV;
+	// // p.rho_ = -1*normpdf(linspace(0, 200, 200), 100, 10);
 	// p.solve();
-	// p.rho_.print("# rho:"), p.uNew_.print("\n\n # U^H:");
+	// cout.setf( ios::scientific ), cout.precision( 5 );
+	// for (size_t i=0; i<nx; ++i)
+	// 	cout<<x_val(i)*AU_nm<<'\t'<<p.rho_(i)/AU_cm3<<'\t'<<p.uOld_(i)*AU_eV<<'\t'<<p.uNew_(i)*AU_eV<<endl;
 	// p.testPoisson();
 
 	//
@@ -156,8 +180,8 @@ int main(){
 
 	double n = f.calcNorm();
 	cout<<"# <p> = "<<f.calcEK()<<", sqrt(<p^2>) = "<<sqrt(f.calcEK2())
-		<<", J(<p>) = "<<f.calcEK()/f.get_m()*n/f.get_l()*AU_Acm2
-		<<", J(sqrt(<p^2>)) = "<<sqrt(f.calcEK2())/f.get_m()*n/f.get_l()*AU_Acm2<<endl;
+		<<", J(<p>) = "<<f.calcEK()/f.get_m() * n/f.get_l() * AU_Acm2
+		<<", J(sqrt(<p^2>)) = "<<sqrt(f.calcEK2())/f.get_m() * n/f.get_l() * AU_Acm2<<endl;
 
 	//  exK (nx, arma::fill::zeros), exK2 (nx, arma::fill::zeros);
 	// for (size_t i=0; i<nx; ++i) {
@@ -195,7 +219,7 @@ int main(){
 	out_data.insert_cols(0, x_val*AU_nm), header(0) = "x [nm]";
 	out_data.insert_cols(1, f.get_u()*AU_eV), header(1) = "U [eV]";  // col. 2
 	out_data.insert_cols(2, f.get_currD()*AU_Acm2), header(2) = "J(x) [Acm^{-2}]";  // col. 3
-	out_data.insert_cols(3, rho/AU_cm3), header(3) = "n [cm^{-3}]";  // col. 4
+	out_data.insert_cols(3, cdX/AU_cm3), header(3) = "n [cm^{-3}]";  // col. 4
 	out_data.insert_cols(4, f.get_du()*AU_eV/AU_nm), header(4) = "U' [eV/nm]";  // col. 5
 	out_data.insert_cols(5, f.get_d3u()), header(5) = "U''' [au]";  // col. 6
 	out_data.insert_cols(6, f.get_uB()*AU_eV), header(6) = "U^B [eV]";  // col. 7
@@ -225,7 +249,7 @@ int main(){
 
 	cout<<"# Final current = "<<curr*AU_Acm2<<" [Acm^-2]"<<endl;
 	cout<<"# N = "<<f.calcNorm()/AU_cm2<<" [cm^-2]"<<endl;
-	// cout<<"# int{dp} f_BC = "<<calcInt(f.bc_, f.dk_)/AU_cm3<<" [a.u.]"<<endl;
+	cout<<"# int{dp} f_BC = "<<calcInt(f.get_bc(), f.get_dk())/2./M_PI/AU_cm3<<" [a.u.]"<<endl;
 
 	t_end = high_resolution_clock::now();
 	t_elapsed =  duration_cast<duration<double>>(t_end - t_start);
@@ -407,10 +431,10 @@ void calcTimeChar(WignerFunction& f) {
 	f.gwp_x0_ = 100/AU_nm;
 	f.gwp_dx_ = 25/AU_nm;
 	f.gwp_dp_ = 0.005; // 1./(2*f.gwp_dx_);  // a.u.
-	f.gwp_p0_ = sqrt(2*f.m_*f.uF_);
+	f.gwp_p0_ = sqrt(2*f.m_*f.uL_);
 	f.addWavePacket();
 	f.gwp_x0_ = f.l_-100/AU_nm;
-	f.gwp_p0_ = -sqrt(2*f.m_*f.uF_);
+	f.gwp_p0_ = -sqrt(2*f.m_*f.uR_);
 	f.addWavePacket();
 
 	//

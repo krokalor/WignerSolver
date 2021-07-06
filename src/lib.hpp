@@ -12,16 +12,12 @@
 // #include <iomanip.h>
 #include <omp.h>
 
-/*
-export OMP_NUM_THREADS = 6
-export OMP_DYNAMIC = false
-export OMP_NESTED = false
-*/
-
 #define ARMA_USE_SUPERLU 1
-#define ARMA_OPENMP_THREADS 6
+#define ARMA_OPENMP_THREADS 2
 #define ARMA_PRINT_ERRORS 1
 #define ARMA_WARN_LEVEL 3
+
+#define OMP_NUM_THREADS 2
 
 #include <armadillo>
 
@@ -32,31 +28,31 @@ using std::endl;
 
 // ############################## TYPEDEFs ##############################
 // TODO: put into a namespace
-typedef std::vector<double>::size_type size_t_vec_d;
+// typedef std::vector<double>::size_type size_t_vec_d;
 
 // ############################## GLOBAL VARIABLES ##############################
-#define N_THREADS 4
+// #define N_THREADS 4
 
 // ############################## CONSTANTS ##############################
 
 double const PI {3.141592653589793238};
-double const KB {8.617E-5};				// Boltzmann constant [eV/K]
-double const E0 {1.602E-19};				// Elementary charge [C]
-double const HBAR_J {1.05E-34};   			// Planck constant [Js]
-double const HBAR_eV {6.55E-16};   			// Planck constant [eVs]
-double const M0 {9.11E-31};    			// Electron mass [kg]
-double const A_GaAs {0.565};				// GaAs lattice constant [nm]
+double const KB {8.617E-5};  // Boltzmann constant [eV/K]
+double const E0 {1.602E-19};  // Elementary charge [C]
+double const HBAR_J {1.05E-34};  // Planck constant [Js]
+double const HBAR_eV {6.55E-16};  // Planck constant [eVs]
+double const M0 {9.11E-31};  // Electron mass [kg]
+double const A_GaAs {0.565};  // GaAs lattice constant [nm]
 
 // ############################## atomic units ##############################
 
-double const AU_nm {0.0529};				// Bohr radius [nm] (0.7896 nm)
-double const AU_eV {27.211};     		// Hartree energy [eV]
-double const AU_s {2.42E-17};				// Time [ps = 10^-12 s] (HBAR_eV/AU_eV*1e12)
-double const AU_A {6.62e-3};        // [A]  _e0/_tau0
-double const AU_Acm2 {2.364e14};    // [A/cm**2]  au_A/au_nm/au_nm
-double const AU_cm3 {1.48e-25};     // [cm**3]  (AU_nm*1e-7)**3
-double const AU_cm2 {2.8e-17};      // [cm**2]  (au_nm*1e-7)**2
-double const AU_cm {5.29e-9};      // [cm]  au_nm*1e-7
+double const AU_nm {0.0529};  // Bohr radius [nm] (0.7896 nm)
+double const AU_eV {27.211};  // Hartree energy [eV]
+double const AU_s {2.42E-17};  // Time [ps = 10^-12 s] (HBAR_eV/AU_eV*1e12)
+double const AU_A {6.62e-3};  // [A]  _e0/_tau0
+double const AU_Acm2 {2.364e14};  // [A/cm**2]  au_A/au_nm/au_nm
+double const AU_cm3 {1.48e-25};  // [cm**3]  (AU_nm*1e-7)**3
+double const AU_cm2 {2.8e-17};  // [cm**2]  (au_nm*1e-7)**2
+double const AU_cm {5.29e-9};  // [cm]  au_nm*1e-7
 
 // #################### klasa array ####################
 template <class T>

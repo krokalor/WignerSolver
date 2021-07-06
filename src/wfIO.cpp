@@ -243,13 +243,6 @@ void WignerFunction::printParam()
 	cout.width(cw_n); cout<<"# dt";
 	cout.width(cw_v); cout<<dt_;
 	cout.width(cw_v); cout<<dt_*AU_s<<'#'<<endl;
-	// ////////// I-V analisys //////////
-	cout.width(cw_n); cout<<"# fermi_energy";
-	cout.width(cw_v); cout<<uF_;
-	cout.width(cw_v); cout<<uF_*AU_eV<<'#'<<endl;
-	// cout.width(cw_n); cout<<"# set_uF";
-	// cout.width(cw_v); cout<<(set_uF_ ? "true" : "false");
-	// cout.width(cw_v); cout<<(set_uF_ ? "true" : "false")<<'#'<<endl;
 	// ////////// Potential //////////
 	cout.width(cw_n); cout<<"# use NLP?";
 	cout.width(cw_v); cout<<(useNLP_ ? "true" : "false");
@@ -267,27 +260,31 @@ void WignerFunction::printParam()
 	cout.width(cw_n); cout<<"# rG";
 	cout.width(cw_v); cout<<rG_;
 	cout.width(cw_v); cout<<rG_/AU_s<<'#'<<endl;
-	cout.width(cw_n); cout<<"# dist";
-	cout.width(cw_v); cout<<bcType_;
-	cout.width(cw_v); cout<<'-'<<'#'<<endl;
+	// ////////// Boundary condition //////////
 	cout.width(cw_n); cout<<"# cD";
 	cout.width(cw_v); cout<<cD_;
 	cout.width(cw_v); cout<<cD_/AU_cm3<<'#'<<endl;
-	// cout.width(cw_n); cout<<"# cR";
-	// cout.width(cw_v); cout<<cR_;
-	// cout.width(cw_v); cout<<'-'<<'#'<<endl;
+	cout.width(cw_n); cout<<"# fermi_energy (left)";
+	cout.width(cw_v); cout<<uL_;
+	cout.width(cw_v); cout<<uL_*AU_eV<<'#'<<endl;
+	cout.width(cw_n); cout<<"# fermi_energy (right)";
+	cout.width(cw_v); cout<<uR_;
+	cout.width(cw_v); cout<<uR_*AU_eV<<'#'<<endl;
 	cout.width(cw_n); cout<<"# v_bias";
 	cout.width(cw_v); cout<<uBias_;
 	cout.width(cw_v); cout<<'-'<<'#'<<endl;
-	//
 	cout.width(cw_n); cout<<"# BC type";
 	cout.width(cw_v); cout<<bcType_;
 	cout.width(cw_v); cout<<'-'<<'#'<<endl;
+	// ////////// Numerical schemes //////////
 	cout.width(cw_n); cout<<"# DS - diffusion";
 	cout.width(cw_v); cout<<diffSch_K_;
 	cout.width(cw_v); cout<<'-'<<'#'<<endl;
 	cout.width(cw_n); cout<<"# DS - drift";
 	cout.width(cw_v); cout<<diffSch_P_;
+	cout.width(cw_v); cout<<'-'<<'#'<<endl;
+	cout.width(cw_n); cout<<"# DS - curr. den.";
+	cout.width(cw_v); cout<<diffSch_J_;
 	cout.width(cw_v); cout<<'-'<<'#'<<endl;
 
 	cout.fill('=');

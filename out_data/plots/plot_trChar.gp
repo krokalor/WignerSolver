@@ -31,7 +31,7 @@ set style line 22 lc rgb '#0000ff' lt 1 lw 2 pt 2 ps 1 dashtype 4 # blue
 set style line 32 lc rgb '#FF0000' lt 1 lw 2 pt 4 ps 1 dashtype 4 # red
 
 set xlabel "Iteracja"
-set ylabel "Liczona wielkość (legenda)"  # Gęstość prądu [Acm^{-2}]
+set ylabel "Gęstość prądu [Acm^{-2}]"  # Gęstość prądu [Acm^{-2}]
 
 set mytics
 set my2tics
@@ -41,21 +41,29 @@ set format y "% .2tx10^{%.0T}"
 
 # set ytics nomirror textcolor '#0000ff   '
 # set y2tics nomirror textcolor '#FF0000'
-set xtics 0,8000,40000
+# set xtics 0,8000,40000
 
 set xrange[0:]
 set yrange[:]
 
-set key top right
+set key top right # title 'Schemat r.'
 set logscale y
 set grid
+
+set label "p=0.01" at graph 0.05,0.95 textcolor 'black'
 
 #
 ##### Plot #####
 #
 
-i = 8
-plot '../tr_char.csv' u 1:i w l ls 1
+i = 2
+plot '../tr_char.csv' u 1:i w l ls 2
+# plot '../tr_char_p001.csv' u 1:i w l ls 2 title 'UDS3',\
+#     '../tr_char_p001_HDS22.csv' u 1:i w l ls 3 title 'HDS22'
+    # '../tr_char_p0008.csv' u 1:i w l ls 2 title '0.008',\
+    # '../tr_char_p0006.csv' u 1:i w l ls 3 title '0.006',\
+    # '../tr_char_p0004.csv' u 1:i w l ls 4 title '0.004',\
+    # '../tr_char_p0002.csv' u 1:i w l ls 5 title '0.002'
 # plot '../tr_char_100meV_HDS22_2000it_2e-5.csv' title columnhead(i) with lines lc rgb "white",\
 #     '' u 1:i w l ls 1 title 'No dissipation',\
 #     '../tr_char_100meV_HDS22_2000it_2e-5_tR1e-12.csv' u 1:i w l ls 2 title '{/Symbol t}_R = 1E-12 s',\

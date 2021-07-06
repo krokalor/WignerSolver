@@ -13,7 +13,7 @@ class WignerFunction{
 	double lD_, lC_;  // total lenght, devie len., contacts len.
 	double l_;
 	double dx_;  // x-space step size (lattice constant)
-	double nk_;
+	size_t nk_;
 	double kmax_;  // k-space range
 	double dk_;  // k-space step size (Brillouin zone / Nk)
 	size_t nk2_, nxk_;  // x/k-space nr of steps
@@ -24,8 +24,7 @@ class WignerFunction{
 	double m_ = 0.067;
 	double temp_ = 77;  // Contacts temperature [K]
 	double beta_ = 1./KB/temp_*AU_eV;  // beta = 1/kb/T
-	double uF_ = 0.087/AU_eV;
-	double uR_ = uF_, uL_ = uF_;  // Fermi energy in left/right contact
+	double uR_ = 0.087/AU_eV, uL_ = 0.087/AU_eV;  // Fermi energy in left/right contact
 	double cD_ = 2e18/AU_cm3;  // cL_, cR_;
 	double epsilonR_ = 13.1;  // relative permitivitty (for GaAs)
 
@@ -179,8 +178,10 @@ public:
 	double get_lC() { return lC_; }
 	double get_m() { return m_; }
 	double get_temp() { return temp_; }
+	double get_epsilonR() { return epsilonR_; }
 	double get_cD() { return cD_; }
-	double get_uF() { return uF_; }
+	double get_uL() { return uL_; }
+	double get_uR() { return uR_; }
 	double get_dt(){ return dt_; }
 	double get_rR() { return rR_; }
 	double get_rM() { return rM_; }
@@ -198,6 +199,7 @@ public:
 	arma::vec get_currD() { return currD_; }
 	arma::vec get_cdX() { return cdX_; }
 	arma::vec get_cdK() { return cdK_; }
+	arma::vec get_bc() { return bc_; }
 	arma::mat get_wf() { return f_; }
 
 	void set_m(double m) { m_ = m; }
@@ -206,10 +208,8 @@ public:
 		beta_ = 1./KB/temp_*AU_eV;
 	}
 	void set_cD(double cD) { cD_ = cD; }
-	void set_uF(double uF) {
-		uF_ = uF;
-		uL_ = uF_, uR_ = uF_;
-	}
+	void set_uL(double uL) { uL_ = uL; }
+	void set_uR(double uR) { uR_ = uR; }
 	void set_dt(double dt) {
 		dt_ = dt;
 		courant_num_ = dt_*kmax_/m_/dx_;
@@ -281,7 +281,6 @@ public:
 
 	double maxwell_boltzmann(double);
 	double gaussian_bc(double);
-	double gaussian_x(double, double);
 
 	double eqFun_x(double, double);
 	double lorentz(double);  // Lorentz profile
@@ -293,7 +292,7 @@ public:
 	void addGaussBarr(double, double, double);
 	void addRectBarr(double, double, double, double);
 	void addWavePacket(double, double, double, double);
-	double WavePacket_TEV(double, double, double, double, double, double);
+	double wavePacket_TEV(double, double, double, double, double, double);
 	double nC(double, double);
 	double fermiInt(double, double);
 	double calcFermiEn(double, double, double);

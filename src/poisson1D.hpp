@@ -32,7 +32,7 @@ class Poisson1D {
 		void testPoisson();
 
 		size_t nx_;
-		double h_, l_;
+		double h_;
 		double dirichletL_, dirichletR_;
 		double epsilonR_, temp_;
 		double beta_;  // potential mixing
