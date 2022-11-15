@@ -9,17 +9,6 @@ using namespace poisson;
 void WignerFunction::solveWignerPoisson
 	(double u_bias, double i_alpha, double i_beta, size_t i_n_max, bool timeDependent){
 
-	Poisson1D p(nx_, dx_);
-	p.dirichletL_ = u_bias/2., p.dirichletR_ = -u_bias/2.;  // - bo obniżamy U w prawym kontakcie
-	p.epsilonR_ = epsilonR_, p.temp_ = temp_;
-	p.uNew_ = uStart_, p.uOld_ = uStart_;
-
-	// Doping profile
-	arma::vec nD(nx_, arma::fill::zeros);
-	double s = 0.01;
-	for (size_t i=0; i<nx_; ++i)
-		nD(i) = cD_*(1+1/(1+exp((x_(i)-lC_)/s/l_))-1/(1+exp((x_(i)-l_+lC_)/s/l_)));
-
 	arma::vec j0(nx_, arma::fill::zeros), j1(nx_, arma::fill::zeros);
 	arma::vec dj(nx_, arma::fill::zeros);
 	arma::vec u_der(nx_, arma::fill::zeros);
@@ -27,18 +16,42 @@ void WignerFunction::solveWignerPoisson
 	arma::vec currD_a, nc_a, q_a, dJ_x_a, dU_x_a, dRho_x_a;
 	arma::vec rho_test(nx_, arma::fill::zeros);
 
+	Poisson1D p(nx_, dx_);  // Setting up Poisson solver
+	p.dirichletL_ = u_bias/2., p.dirichletR_ = -u_bias/2.;  // Potential bias
+	p.epsilonR_ = epsilonR_, p.temp_ = temp_;   // Permittivity and temperature
+	p.uNew_ = uStart_, p.uOld_ = uStart_;  // Starting potential values
+
+	// Doping profile
+	arma::vec nD(nx_, arma::fill::zeros);
+	double s = 0.01;
+	for (size_t i=0; i<nx_; ++i)
+		nD(i) = cD_*(1+1/(1+exp((x_(i)-lC_)/s/l_))-1/(1+exp((x_(i)-l_+lC_)/s/l_)));
+
 	// Convergence criteria
 	size_t n_max = i_n_max, n_min = 10;
 	size_t n_dJ = 0, n_dU = 0, n_conv = 10;
 	double max_dJ = 1e-6, max_dU = 1e-3;
 	bool conv = false;
 
-	// Mixing parameters
 	double alpha = i_alpha;  // Density mixing parameter
 	p.beta_ = i_beta;  // Potential mixing parameter
 
 	double curr = 0, nc = 0, nd = 0, q = 0;  // Current, carrier nr, dopant nr, total charge
 	double dJ_x = 0, dU_x = 0, pFun_x = 0;  // Maximum and minimum values
+
+	// Initial conditions
+	p.rho_.zeros();
+	uBias_ = 0;
+	setBoundCond();
+	f_.zeros();
+	for (size_t i=0; i<nx_; ++i) {
+		// cout<<i*dx_*AU_nm*1e-3<<'\t'<<lC_*AU_nm*1e-3<<endl;
+		for (size_t j=0; j<nk_; ++j) {
+				f_(i,j) = bc_(j)*nD(i)/cD_;
+			}
+	}
+	calcCD_X();
+	// solveWignerEq();
 
 	// TODO: Pointers to functions
 	// void (WignerFunction::*solve)();
@@ -53,12 +66,27 @@ void WignerFunction::solveWignerPoisson
 	// poisson_step<<"it,x [nm],rho [cm^{-3}],uNew [eV],{/Symbol d}u [eV],du/dx [au],J [Acm^{-2}]\n";
 
 	std::ofstream tr_char("out_data/tr_char.csv");
-	tr_char<<"it.,J [au],n_E [au],q [au],max({/Symbol d}J/J),max({/Symbol d}U/U),max({/Symbol d}Rho/rho),(J_1-J_0)/J_1,range(J)"<<endl;
+	if ( timeDependent ) {
+		tr_char<<"t[fs],J [au],n_E [au],q [au],max({/Symbol d}J/J),max({/Symbol d}U/U)"<<endl;
+	}
+	else {
+		tr_char<<"it.,J [au],n_E [au],q [au],max({/Symbol d}J/J),max({/Symbol d}U/U)"<<endl;
+	}
 	cout.width( 5 );
-	cout<<"# it.\tCurr. [Acm^-2]\tnE [cm^-2]\tnD [cm^-2]\tq [cm^-2]\tmax(dJ/J)\tmax(dU/U)\tmax(pFun) [ev]"<<endl;
+	if ( timeDependent ) {
+		cout<<"# it.\tt[fs]\tCurr. [Acm^-2]\tnE [cm^-2]\tnD [cm^-2]\tq [cm^-2]\tmax(dJ/J)\tmax(dU/U)\tmax(pFun) [ev]"<<endl;
+	}
+	else {
+		cout<<"# it.\tCurr. [Acm^-2]\tnE [cm^-2]\tnD [cm^-2]\tq [cm^-2]\tmax(dJ/J)\tmax(dU/U)\tmax(pFun) [ev]"<<endl;
+	}
 	for ( size_t n_it = 0; n_it < n_max; ++n_it ) {
 
 		// TODO: Change order (BTE -> PE)
+
+		//
+		// Mixing old and new el. density
+		rho_new = (1.-alpha)*rho_old + alpha*(nD - cdX_);
+		p.rho_ = rho_new, p.nE_ = cdX_;
 
 		//
 		// Solve Poisson eq.
@@ -68,15 +96,9 @@ void WignerFunction::solveWignerPoisson
 		// Solve Wigner/Boltzmann eq
 		uC_ = p.uNew_;
 		timeDependent ? solveTimeEv() : solveWignerEq();
-		calcCD_X();
-		// calcCD_K();
+		calcCD_X(); // calcCD_K();
 		curr = calcCurr();
 		j0 = j1, j1 = currD_;
-
-		//
-		// Mixing old and new el. density
-		rho_new = (1.-alpha)*rho_old + alpha*(nD - cdX_);
-		p.rho_ = rho_new, p.nE_ = cdX_;
 
 		//
 		// Maximum values
@@ -91,10 +113,16 @@ void WignerFunction::solveWignerPoisson
 
 		cout.width( 5 );
 		cout<<n_it;
+		if ( timeDependent ) {
+			// cout.setf( ios::fixed ),
+			cout.precision( 2 );
+			cout<<'\t'<<std::fixed<<n_it*dt_*AU_s*1e15;
+		}
 		cout.width( 5 );
-		cout.setf( ios::scientific );
+		// cout.setf( ios::scientific );
 		cout.precision( 3 );
-		cout<<'\t'<<curr*AU_Acm2
+		cout<<std::scientific
+			<<'\t'<<curr*AU_Acm2
 			<<'\t'<<nc
 			<<'\t'<<nd
 			<<'\t'<<q
@@ -102,13 +130,13 @@ void WignerFunction::solveWignerPoisson
 			<<'\t'<<dU_x
 			<<'\t'<<pFun_x*AU_eV<<endl;
 
-		tr_char<<n_it
-		<<','<<curr
+		if (timeDependent) { tr_char<<std::fixed<<n_it*dt_*AU_s*1e15; }
+		else { tr_char<<n_it; }
+		tr_char<<std::scientific<<','<<curr
 		<<','<<nc
 		<<','<<q
 		<<','<<dJ_x
-		<<','<<dU_x
-		<<','<<calcInt(dj,dx_)/l_/curr<<endl;
+		<<','<<dU_x<<endl;
 
 		//
 		// Saving data

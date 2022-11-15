@@ -70,14 +70,18 @@ plot [:] [:] file u 1:2 w l ls 2 axes x1y2,\
 set origin 0,0
 set size 1,0.54
 
+set format y "% .2E"
+set format y2 "% .2E"
 set format x "%.0f"
 set xlabel "x [nm]"
 set logscale y
+set logscale y2
 set key over
 
 x0 = 35; s = 20; U0 = 0.03
-plot [:] file u 1:2 w l ls 2 axes x1y2,\
-    '' u 1:4 w l ls 1
+plot [:] file u 1:($6) w l ls 2 axes x1y2,\
+    '' u 1:4 w l ls 1,\
+    '' u 1:5 w l ls 31
     # '' u 1:7 w l ls 3 axes x1y2,\
     # '' u 1:5 w l ls 1
     # U0*exp(-(x-x0)*(x-x0)/s/s)*(-8./s/s/s/s/s/s*(x-x0)*(x-x0)*(x-x0)+12/s/s/s/s*(x-x0))

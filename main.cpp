@@ -38,19 +38,19 @@ int main(){
 	// double dx = f.get_dx(), dk = f.get_dk();
 
 	f.set_m(0.067);
-	f.set_temp(4.2);
+	f.set_temp(300);
 	f.set_epsilonR(13.1);
 	f.set_cD(2e18*AU_cm3);
 	f.set_uL( calcFermiEn(f.get_cD(), f.get_m(), f.get_temp()) );
 	f.set_uR( calcFermiEn(f.get_cD(), f.get_m(), f.get_temp()) ); // calcFermiEn(f.get_cD(), f.get_m(), f.get_temp())
-	f.set_dt(5*1e-15/AU_s);  // .005*1e-15/AU_s
+	f.set_dt(0.1e-15/AU_s);  // .005*1e-15/AU_s
 
-	f.set_rR(0), f.set_rM(0); // 1./(1e-12/AU_s)
+	f.set_rR(0), f.set_rM(0); // 1./(1e-12/AU_s)  // Dissipation terms
 	f.set_rG(0), f.set_rF(0), f.set_lambda(0);
 
-	f.set_useQC(false);
-	f.set_useNLP(false);
-	f.set_uBias_BC(true);
+	f.set_useQC(false);  // Quantum correction term (third 'p' derivative)?
+	f.set_useNLP(false);  // Calculations with non-local potential?
+	f.set_uBias_BC(true);  // Voltage bias given through BC?
 
 	// "UDS1", "UDS2", "UDS3", "HDS22"
 	f.set_diffSch_K("HDS22");
@@ -64,8 +64,8 @@ int main(){
 
 	//
 	// Potencjał
-	cout<<"# Setting up potential"<<endl;
-	f.set_uBias(0./AU_eV);
+	// cout<<"# Setting up potential"<<endl;
+	// f.set_uBias(0.0/AU_eV);
 	// f.setPotBias(0.1/AU_eV);
 	//
 	// f.addRectBarr(0.3/AU_eV, 17.5/AU_nm, 2/AU_nm, 10);
@@ -73,7 +73,7 @@ int main(){
 	//
 	// f.addRectBarr(0.3/AU_eV, 1750/AU_nm, 200/AU_nm, 10);
 	// f.addRectBarr(0.3/AU_eV, 2250/AU_nm, 200/AU_nm, 10);
-	// f.addGaussBarr(0.3/AU_eV, 2000/AU_nm, 500/AU_nm);
+	// f.addGaussBarr(0.05/AU_eV, 20/AU_nm, 1/AU_nm);
 	//
 	// f.load_poisson_pot("poisson_pot_100meV_4e4it.bin");
 	// f.set_uC(f.get_uStart());
@@ -104,9 +104,10 @@ int main(){
 	// f.solveWignerEq();
 	// f.saveWignerFun();
 
+	// Wave packet time evolution
 	// f.addWavePacket(500/AU_nm, 100/AU_nm, 0.05, 0.005);  // sqrt(2*f.get_m()*f.get_uL())
 	// f.addWavePacket(3500/AU_nm, 100/AU_nm, -0.05, 0.005);  // sqrt(2*f.get_m()*f.get_uL())
-	// double t_total = 50e-15/AU_s, t = 0, dt = f.get_dt();
+	// double t_total = 1000e-15/AU_s, t = 0, dt = f.get_dt();
 	// while (t <= t_total) {
 	// 	t += dt;
 	// 	f.solveTimeEv();
@@ -118,7 +119,7 @@ int main(){
 	// Boltzmann-Poisson
 	cout<<"# Solving B-P set of equations"<<endl;
 	// (uBias, alpha, beta, n_max, timeDependent)
-	f.solveWignerPoisson(0.01/AU_eV, 2e-5, 1, 2e5, false);
+    f.solveWignerPoisson(0/AU_eV, 1e-05, 1, 100, false);
 	f.saveWignerFun();
 
 	// arma::mat wf1, wf2, wf;
@@ -173,7 +174,7 @@ int main(){
 
 	// Doping profile
 	arma::vec nD(nx, arma::fill::zeros), rho(nx, arma::fill::zeros);
-	double s = 0.005, l = 2*lC+lD;
+	double s = 0.01, l = 2*lC+lD;
 	for (size_t i=0; i<nx; ++i)
 		nD(i) = f.get_cD()*(1+1/(1+exp((x_val(i)-lC)/s/l))-1/(1+exp((x_val(i)-l+lC)/s/l)));
 	rho = nD - cdX;
@@ -183,6 +184,7 @@ int main(){
 		<<", J(<p>) = "<<f.calcEK()/f.get_m() * n/f.get_l() * AU_Acm2
 		<<", J(sqrt(<p^2>)) = "<<sqrt(f.calcEK2())/f.get_m() * n/f.get_l() * AU_Acm2<<endl;
 
+	// @TODO: Comments!
 	//  exK (nx, arma::fill::zeros), exK2 (nx, arma::fill::zeros);
 	// for (size_t i=0; i<nx; ++i) {
 	// 	for (size_t j=1; j<nk; ++j) {
@@ -195,6 +197,7 @@ int main(){
 	// 		<<' '<<exK(i)*cdX(i)/f.get_m()*AU_Acm2
 	// 		<<' '<<sqrt(exK2(i))*cdX(i)/f.get_m()*AU_Acm2<<endl;
 
+	// @TODO: Comments!
 	//  nx_1 (f.nx_, arma::fill::zeros), nx_2 (f.nx_, arma::fill::zeros);
 	//  jx_1 (f.nx_, arma::fill::zeros), jx_2 (f.nx_, arma::fill::zeros);
 	// for (size_t i=0; i<f.nx_; ++i) {
@@ -208,28 +211,25 @@ int main(){
 	// 	}
 	// }
 
-	arma::vec an_pot (nx, arma::fill::zeros);
-	double sig = 20/AU_nm, x0 = 35/AU_nm;
-	for (size_t i=0; i<nx; ++i)
-		an_pot(i) = 0.03/AU_eV*exp(-(x_val(i)-x0)*(x_val(i)-x0)/sig/sig)
-		*(-8/pow(sig,6)*pow(x_val(i)-x0,3)+12/pow(sig,4)*(x_val(i)-x0));
+	// @TODO: Comments!
+	// arma::vec an_pot (nx, arma::fill::zeros);
+	// double sig = 20/AU_nm, x0 = 35/AU_nm;
+	// for (size_t i=0; i<nx; ++i)
+	// 	an_pot(i) = 0.03/AU_eV*exp(-(x_val(i)-x0)*(x_val(i)-x0)/sig/sig)
+	// 	*(-8/pow(sig,6)*pow(x_val(i)-x0,3)+12/pow(sig,4)*(x_val(i)-x0));
 
-	field<std::string> header(8);
+	field<std::string> header(6);
 	arma::mat out_data;
-	out_data.insert_cols(0, x_val*AU_nm), header(0) = "x [nm]";
+	out_data.insert_cols(0, x_val*AU_nm), header(0) = "x [nm]"; // col. 1
 	out_data.insert_cols(1, f.get_u()*AU_eV), header(1) = "U [eV]";  // col. 2
-	out_data.insert_cols(2, f.get_currD()*AU_Acm2), header(2) = "J(x) [Acm^{-2}]";  // col. 3
+	out_data.insert_cols(2, f.get_currD()-arma::mean(f.get_currD())), header(2) = "J(x)-[J(x)]";  // col. 3
 	out_data.insert_cols(3, cdX/AU_cm3), header(3) = "n [cm^{-3}]";  // col. 4
-	out_data.insert_cols(4, f.get_du()*AU_eV/AU_nm), header(4) = "U' [eV/nm]";  // col. 5
-	out_data.insert_cols(5, f.get_d3u()), header(5) = "U''' [au]";  // col. 6
-	out_data.insert_cols(6, f.get_uB()*AU_eV), header(6) = "U^B [eV]";  // col. 7
-	out_data.insert_cols(7, f.get_uC()*AU_eV), header(7) = "U^C [eV]";  // col. 7
-	// out_data.insert_cols(5, nx_1/AU_cm3), header(5) = "nx+[cm^-3]";  // col. 6
-	// out_data.insert_cols(6, nx_2/AU_cm3), header(6) = "nx-[cm^-3]";  // col. 7
-	// out_data.insert_cols(7, (nx_2-nx_1)/AU_cm3), header(7) = "(nx+)-(nx-)[cm^-3]";  // col. 8
-	// out_data.insert_cols(8, jx_1*AU_Acm2), header(8) = "J+[Acm^-2]";  // col. 9
-	// out_data.insert_cols(9, jx_2*AU_Acm2), header(9) = "J-[Acm^-2]";  // col. 10
-	// out_data.insert_cols(10, (jx_2+jx_1)*AU_Acm2), header(10) = "(J+)+(J-)[Acm^-2]";  // col. 11
+	out_data.insert_cols(4, nD/AU_cm3), header(4) = "n_D [cm^{-3}]";  // col. 5
+	out_data.insert_cols(5, rho/AU_cm3), header(5) = "rho [cm^{-3}]";  // col. 6
+	// out_data.insert_cols(6, f.get_du()*AU_eV/AU_nm), header(6) = "U' [eV/nm]";  // col. 7
+	// out_data.insert_cols(7, f.get_d3u()), header(7) = "U''' [au]";  // col. 8
+	// out_data.insert_cols(8, f.get_uB()*AU_eV), header(8) = "U^B [eV]";  // col. 9
+	// out_data.insert_cols(9, f.get_uC()*AU_eV), header(9) = "U^C [eV]";  // col. 10
 	out_data.save( csv_name("out_data/test.csv", header) );
 
 	std::ofstream file;
