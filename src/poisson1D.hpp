@@ -22,6 +22,8 @@ class Poisson1D {
 			pFun_ = arma::vec(nx_, arma::fill::zeros);
 			epsilonR_ = 1, temp_ = 300, beta_ = 1;
 			dirichletL_ = 0, dirichletR_ = 0;
+			neumannL_ = 0, neumannR_ = 0;
+			pBC_D_ = true, pBC_vN_ = false;
 		}
 		~Poisson1D(){};
 
@@ -34,6 +36,8 @@ class Poisson1D {
 		size_t nx_;
 		double h_;
 		double dirichletL_, dirichletR_;
+		double neumannL_, neumannR_;
+		bool pBC_D_, pBC_vN_;
 		double epsilonR_, temp_;
 		double beta_;  // potential mixing
 

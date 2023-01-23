@@ -58,6 +58,7 @@ class WignerFunction{
 	arma::mat sin_;  // Sine function values
 	arma::vec cdX_;  // Carrier density in x / k
 	arma::vec cdK_;
+	arma::vec nD_;  // Doping profile
 	arma::vec currD_;  // Current density
 
 	arma::sp_mat a_;
@@ -96,6 +97,7 @@ public:
 		sin_(arma::mat(nk_,nk_*nk2_)),
 		cdX_(arma::vec(nx_, arma::fill::zeros)),
 		cdK_(arma::vec(nk_, arma::fill::zeros)),
+		nD_(arma::vec(nx_, arma::fill::zeros)),
 		currD_(arma::vec(nx_, arma::fill::zeros)),
 		a_(arma::sp_mat(nxk_, nxk_)),
 		b_(arma::vec(nxk_, arma::fill::zeros))
@@ -146,6 +148,7 @@ public:
 		sin_(arma::mat(nk_,nk_*nk2_)),
 		cdX_(arma::vec(nx_, arma::fill::zeros)),
 		cdK_(arma::vec(nk_, arma::fill::zeros)),
+		nD_(arma::vec(nx_, arma::fill::zeros)),
 		currD_(arma::vec(nx_, arma::fill::zeros)),
 		a_(arma::sp_mat(nxk_, nxk_)),
 		b_(arma::vec(nxk_, arma::fill::zeros))
@@ -188,6 +191,8 @@ public:
 	double get_rF() { return rF_; }
 	double get_rG() { return rG_; }
 	double get_lambda() { return lambda_; }
+	double get_lDeb() { return sqrt(epsilonR_/4/M_PI*KB*temp_/AU_eV/cD_); }  // Debye length = sqrt(13.1*EPS0*1.380649E-23*300/(E0*E0*2E24))
+	double get_plFreq() { return sqrt(cD_/epsilonR_/m_*4*M_PI); }  // Plasma frequency = sqrt(EO*E0*2E24/13.1/EPS0/m)
 	arma::vec get_x_arr() { return x_; }
 	arma::vec get_k_arr() { return k_; }
 	arma::vec get_u() { return u_; }
@@ -199,6 +204,7 @@ public:
 	arma::vec get_currD() { return currD_; }
 	arma::vec get_cdX() { return cdX_; }
 	arma::vec get_cdK() { return cdK_; }
+	arma::vec get_nD() { return nD_; }
 	arma::vec get_bc() { return bc_; }
 	arma::mat get_wf() { return f_; }
 

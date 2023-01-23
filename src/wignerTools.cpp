@@ -476,11 +476,13 @@ double WignerFunction::fermiDirac(double k){
 
 // Maxwell-Boltzmann distribution
 double WignerFunction::maxwell_boltzmann(double k){;
-	double mu = k > 0 ? uL_ : uR_;
+	// double mu = k > 0 ? uL_ : uR_;
 	double m = m_;
-	double v = k/m;
-	double c = pow(2.*M_PI*m*(KB/AU_eV*temp_), 0.5);  // * cD_
-	double ex = exp(-(m*v*v/2.-mu)/(KB/AU_eV*temp_));	 // [au]
+    double c = cD_*pow(2*M_PI*m*KB/AU_eV*temp_, -3./2.);
+    double ex = exp(-k*k/2/2./(KB/AU_eV*temp_));
+	// double v = k/m;
+	// double c = pow(2.*M_PI*m*(KB/AU_eV*temp_), 0.5);  // * cD_
+	// double ex = exp(-(m*v*v/2.-mu)/(KB/AU_eV*temp_));	 // [au]
 	// double c = 4*M_PI*m*KB/AU_eV*temp_, ex = -(k*k/m/2.-mu)/(KB/AU_eV*temp_);	 // [au]
 	return c * ex;
 }

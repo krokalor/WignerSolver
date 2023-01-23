@@ -16,8 +16,8 @@ set pm3d map interpolate 0,0
 
 set border linecolor rgb "white" lw 1
 
-set ylabel 'n_{it}' textcolor "black" # offset -0.5,0
-set xlabel 'x [nm]' # offset 0,-0.5
+set ylabel 't [fs]' textcolor "black" # offset -0.5,0
+set xlabel 'x [{/symbol m}m]' # offset 0,-0.5
 # set xlabel 'p [au]' # offset 0,-0.5
 
 set xtics textcolor "black" # 0,0.1,0.4
@@ -31,23 +31,24 @@ set xrange [:]
 
 set cbrange [:]
 set cbtics textcolor "black"
-# set cblabel 'du^H/dx [a.u.]' offset 1
+set cblabel 'u^H [eV]' offset 1
 
 # set logscale cb
 
 set border linecolor rgb "white" lw 1
 
 # unset key
-set key under
+unset key
 
-set size 0.8,1.1
-set origin .04,0
+set size 1,1.1
+set origin .0,0
 
 AU_nm = 0.0529
 AU_cm2 = 2.8e-17
+AU_eV = 27.211
 
-splot [:] [:] '../poisson_step.out' u ($2*AU_nm):1:4 with pm3d
-# splot [-0.05:0.05] 'poisson_step.out' u 2:1:5 with pm3d
+splot [:] [:] '../poisson_step.out' u ($2*AU_nm*1e-3):($1*0.01):($4*AU_eV) with pm3d
+# splot [-0.05:0.05] 'poisson_step.out' u 2:($1*0.1):5 with pm3d
 
 
 # set palette rgb 7,5,15; # "traditional pm3d\n(black-blue-red-yellow)"

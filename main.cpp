@@ -24,13 +24,9 @@ int main(){
 	// cout<<"omp_get_max_threads(): "<<omp_get_max_threads() <<endl;
 	// cout<<"omp_get_num_threads(): "<<omp_get_num_threads()<<endl;
 
-	high_resolution_clock::time_point t_start, t_end;
-	duration<double> t_elapsed;
-	t_start = high_resolution_clock::now();
-
-	size_t nx = 150, nk = 150;
-	double lD = 1000/AU_nm, lC = 1500/AU_nm;
-	double k_max = 0.15;  // -1, 0.15
+	size_t nx = 500, nk = 500;
+	double lD = 400/AU_nm, lC = 300/AU_nm;
+	double k_max = 0.05;  // -1, 0.15
 
 	WignerFunction f(nx, lD, lC, nk, k_max);
 
@@ -43,29 +39,29 @@ int main(){
 	f.set_cD(2e18*AU_cm3);
 	f.set_uL( calcFermiEn(f.get_cD(), f.get_m(), f.get_temp()) );
 	f.set_uR( calcFermiEn(f.get_cD(), f.get_m(), f.get_temp()) ); // calcFermiEn(f.get_cD(), f.get_m(), f.get_temp())
-	f.set_dt(0.1e-15/AU_s);  // .005*1e-15/AU_s
+	f.set_dt(1e-15/AU_s);  // .005*1e-15/AU_s
 
 	f.set_rR(0), f.set_rM(0); // 1./(1e-12/AU_s)  // Dissipation terms
 	f.set_rG(0), f.set_rF(0), f.set_lambda(0);
 
 	f.set_useQC(false);  // Quantum correction term (third 'p' derivative)?
 	f.set_useNLP(false);  // Calculations with non-local potential?
-	f.set_uBias_BC(true);  // Voltage bias given through BC?
+	f.set_uBias_BC(false);  // Voltage bias given through BC?
 
-	// "UDS1", "UDS2", "UDS3", "HDS22"
-	f.set_diffSch_K("HDS22");
-	f.set_diffSch_P("HDS22");
-	f.set_diffSch_J("HDS22");
+	// "CDS1", "UDS1", "UDS2", "UDS3", "HDS22"
+	f.set_diffSch_K("CDS1");
+	f.set_diffSch_P("CDS1");
+	f.set_diffSch_J("UDS1");
 
 	// Warunek brzegowy
 	// 0 -> 0, 1 -> SF, 2:4 -> splot with SF, -1 -> Gauss, -2:-4 splot with Gauss
 	cout<<"# Setting up BC"<<endl;
-	f.set_bcType(1);
+	f.set_bcType(-1);
 
 	//
-	// Potencjał
+	// Potential
 	// cout<<"# Setting up potential"<<endl;
-	// f.set_uBias(0.0/AU_eV);
+	f.set_uBias(0.0/AU_eV);
 	// f.setPotBias(0.1/AU_eV);
 	//
 	// f.addRectBarr(0.3/AU_eV, 17.5/AU_nm, 2/AU_nm, 10);
@@ -73,7 +69,7 @@ int main(){
 	//
 	// f.addRectBarr(0.3/AU_eV, 1750/AU_nm, 200/AU_nm, 10);
 	// f.addRectBarr(0.3/AU_eV, 2250/AU_nm, 200/AU_nm, 10);
-	// f.addGaussBarr(0.05/AU_eV, 20/AU_nm, 1/AU_nm);
+	// f.addGaussBarr(0.3/AU_eV, 500/AU_nm, 100/AU_nm);
 	//
 	// f.load_poisson_pot("poisson_pot_100meV_4e4it.bin");
 	// f.set_uC(f.get_uStart());
@@ -87,6 +83,13 @@ int main(){
 	// f.setEquilibriumFunction("out_data/wf_feq_BP.bin", true);
 
 	f.printParam();
+
+	cout<<"Debye length: "<<f.get_lDeb()*AU_nm<<endl;
+	cout<<"Plasma frequency: "<<f.get_plFreq()/AU_s<<", 1/Plasma frequency: "<<1/f.get_plFreq()*AU_s<<endl;
+
+	high_resolution_clock::time_point t_start, t_end;
+	duration<double> t_elapsed;
+	t_start = high_resolution_clock::now();
 
 	//
 	// Iterator test
@@ -119,7 +122,7 @@ int main(){
 	// Boltzmann-Poisson
 	cout<<"# Solving B-P set of equations"<<endl;
 	// (uBias, alpha, beta, n_max, timeDependent)
-    f.solveWignerPoisson(0/AU_eV, 1e-05, 1, 100, false);
+     f.solveWignerPoisson(0/AU_eV, 1, 1, 50, true);
 	f.saveWignerFun();
 
 	// arma::mat wf1, wf2, wf;
@@ -224,7 +227,7 @@ int main(){
 	out_data.insert_cols(1, f.get_u()*AU_eV), header(1) = "U [eV]";  // col. 2
 	out_data.insert_cols(2, f.get_currD()-arma::mean(f.get_currD())), header(2) = "J(x)-[J(x)]";  // col. 3
 	out_data.insert_cols(3, cdX/AU_cm3), header(3) = "n [cm^{-3}]";  // col. 4
-	out_data.insert_cols(4, nD/AU_cm3), header(4) = "n_D [cm^{-3}]";  // col. 5
+	out_data.insert_cols(4, f.get_nD()/AU_cm3), header(4) = "n_D [cm^{-3}]";  // col. 5
 	out_data.insert_cols(5, rho/AU_cm3), header(5) = "rho [cm^{-3}]";  // col. 6
 	// out_data.insert_cols(6, f.get_du()*AU_eV/AU_nm), header(6) = "U' [eV/nm]";  // col. 7
 	// out_data.insert_cols(7, f.get_d3u()), header(7) = "U''' [au]";  // col. 8
@@ -249,7 +252,7 @@ int main(){
 
 	cout<<"# Final current = "<<curr*AU_Acm2<<" [Acm^-2]"<<endl;
 	cout<<"# N = "<<f.calcNorm()/AU_cm2<<" [cm^-2]"<<endl;
-	cout<<"# int{dp} f_BC = "<<calcInt(f.get_bc(), f.get_dk())/2./M_PI/AU_cm3<<" [a.u.]"<<endl;
+	cout<<"# int{dp} f_BC = "<<calcInt(f.get_bc(), f.get_dk())/AU_cm3<<" [cm^-3]"<<endl;  // /2./M_PI
 
 	t_end = high_resolution_clock::now();
 	t_elapsed =  duration_cast<duration<double>>(t_end - t_start);

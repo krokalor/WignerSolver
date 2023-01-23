@@ -30,7 +30,7 @@ set style line 31 lc rgb '#FF0000' lt 1 lw 2 pt 4 ps 1 dashtype 2 # red
 set style line 22 lc rgb '#0000ff' lt 1 lw 2 pt 2 ps 1 dashtype 4 # blue
 set style line 32 lc rgb '#FF0000' lt 1 lw 2 pt 4 ps 1 dashtype 4 # red
 
-set xlabel "Iteration"
+set xlabel "Time [fs]"
 # set ylabel "Gęstość prądu [Acm^{-2}]"  # Gęstość prądu [Acm^{-2}]
 # set ylabel "dU/U"
 
@@ -59,7 +59,7 @@ set grid
 set origin 0,0
 set size 0.52,0.5
 i = 2
-plot '../tr_char.csv' u 1:i w l ls 2
+plot '../tr_char.csv' u ($1*1):i w l ls 2
 
 #
 ##### Plot 2 #####
@@ -68,7 +68,7 @@ plot '../tr_char.csv' u 1:i w l ls 2
 set origin 0.48,0
 set size 0.52,0.5
 i = 3
-plot '../tr_char.csv' u 1:i w l ls 2
+plot '../tr_char.csv' u ($1*1):i w l ls 2
 
 set logscale y
 
@@ -79,7 +79,7 @@ set logscale y
 set origin 0.0,0.5
 set size 0.52,0.5
 i = 5
-plot '../tr_char.csv' u 1:i w l ls 2
+plot '../tr_char.csv' u ($1*1):i w l ls 2
 
 #
 ##### Plot 4 #####
@@ -88,7 +88,7 @@ plot '../tr_char.csv' u 1:i w l ls 2
 set origin 0.48,0.5
 set size 0.52,0.5
 i = 6
-plot '../tr_char.csv' u 1:i w l ls 2
+plot '../tr_char.csv' u ($1*1):i w l ls 2
 
 # plot '../tr_char_p001.csv' u 1:i w l ls 2 title 'UDS3',\
 #     '../tr_char_p001_HDS22.csv' u 1:i w l ls 3 title 'HDS22'

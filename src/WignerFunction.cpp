@@ -140,7 +140,33 @@ void WignerFunction::diffusionTerm(size_t i, size_t j, double dt){
 	// Fills Boltzmann equation matrix with diffusion term
 	size_t r = i*nk_ + j;
 	double k = k_(j), bc = bc_(j);
-	if (diffSch_K_ == "UDS1") {
+	if (diffSch_K_ == "CDS1") {
+		// CDS1
+		double C = k/m_/dx_/2.;
+		double B = bc*C;
+		if (dt > 0) C *= dt/2., B *= dt;
+		if (k<0.) {
+			if (i==nx_-1) {
+				a_(r, r) += -C;
+				b_(r) += -bc*C;
+			}
+			else {
+				a_(r, r) += -C;
+				a_(r, (i+1)*nk_+j) += C;
+			}
+		}
+		if (k>0.) {
+			if (i==0) {
+				a_(r, r) += C;
+				b_(r) += bc*C;
+			}
+			else {
+				a_(r, r) += C;
+				a_(r, (i-1)*nk_+j) += -C;
+			}
+		}
+	}
+	else if (diffSch_K_ == "UDS1") {
 		// UDS1
 		double C = k/m_/dx_;
 		double B = bc*C;
@@ -444,7 +470,33 @@ void WignerFunction::driftTerm(size_t i, size_t j, double dt){
 	}  // end if
 	else {
 		// Classical force
-		if (diffSch_P_ == "UDS1") {
+		if (diffSch_P_ == "CDS1") {
+			// CDS1
+			double F = -du_(i);  // klasyczna siła równa -du/dx
+			double C = F/dk_/2.;
+			if (dt > 0) C *= dt/2.;
+			if (F <= 0) {
+				if (j == nk_-1) {
+					a_(r, r) += -C;
+					b_(r) += -fermiDirac(kmax_)*C;
+				}
+				else{
+					a_(r, r) += -C;
+					a_(r, r+1) += C;
+				}
+			}
+			else if (F > 0) {
+				if (j == 0) {
+					a_(r, r) += C;
+					b_(r) += fermiDirac(-kmax_)*C;
+				}
+				else {
+					a_(r, r) += C;
+					a_(r, r-1) += -C;
+				}
+			}
+		}
+		else if (diffSch_P_ == "UDS1") {
 			// UDS1
 			double F = -du_(i);  // klasyczna siła równa -du/dx
 			double C = F/dk_;

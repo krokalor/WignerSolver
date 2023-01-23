@@ -17,15 +17,17 @@ void WignerFunction::solveWignerPoisson
 	arma::vec rho_test(nx_, arma::fill::zeros);
 
 	Poisson1D p(nx_, dx_);  // Setting up Poisson solver
-	p.dirichletL_ = u_bias/2., p.dirichletR_ = -u_bias/2.;  // Potential bias
+	p.pBC_D_ = true, p.pBC_vN_ = false;  // Poisson BC type (Dirichlet / von Neumann)
+	p.dirichletL_ = u_bias/2., p.dirichletR_ = -u_bias/2.;  // Dirichlet BC
+	p.neumannL_ = 0, p.neumannR_ = 0;  // von Neumann BC
 	p.epsilonR_ = epsilonR_, p.temp_ = temp_;   // Permittivity and temperature
-	p.uNew_ = uStart_, p.uOld_ = uStart_;  // Starting potential values
+	// p.uNew_ = uStart_, p.uOld_ = uStart_;  // Starting potential values
+	p.uNew_.zeros(), p.uOld_.zeros(); 
 
 	// Doping profile
-	arma::vec nD(nx_, arma::fill::zeros);
-	double s = 0.01;
+	double s = 0.006;
 	for (size_t i=0; i<nx_; ++i)
-		nD(i) = cD_*(1+1/(1+exp((x_(i)-lC_)/s/l_))-1/(1+exp((x_(i)-l_+lC_)/s/l_)));
+		nD_(i) = cD_*(1+1/(1+exp((x_(i)-lC_)/s/l_))-1/(1+exp((x_(i)-l_+lC_)/s/l_)));
 
 	// Convergence criteria
 	size_t n_max = i_n_max, n_min = 10;
@@ -47,7 +49,7 @@ void WignerFunction::solveWignerPoisson
 	for (size_t i=0; i<nx_; ++i) {
 		// cout<<i*dx_*AU_nm*1e-3<<'\t'<<lC_*AU_nm*1e-3<<endl;
 		for (size_t j=0; j<nk_; ++j) {
-				f_(i,j) = bc_(j)*nD(i)/cD_;
+				f_(i,j) = bc_(j)*nD_(i)/cD_;
 			}
 	}
 	calcCD_X();
@@ -62,8 +64,8 @@ void WignerFunction::solveWignerPoisson
 	// solveWignerEq();
 	// calcCD_X();
 
-	// std::ofstream poisson_step("out_data/poisson_step.out");
-	// poisson_step<<"it,x [nm],rho [cm^{-3}],uNew [eV],{/Symbol d}u [eV],du/dx [au],J [Acm^{-2}]\n";
+	std::ofstream poisson_step("out_data/poisson_step.out");
+	poisson_step<<"it,x [nm],rho [cm^{-3}],uNew [eV],{/Symbol d}u [eV],du/dx [au],J [Acm^{-2}]\n";
 
 	std::ofstream tr_char("out_data/tr_char.csv");
 	if ( timeDependent ) {
@@ -85,7 +87,7 @@ void WignerFunction::solveWignerPoisson
 
 		//
 		// Mixing old and new el. density
-		rho_new = (1.-alpha)*rho_old + alpha*(nD - cdX_);
+		rho_new = (1.-alpha)*rho_old + alpha*(nD_ - cdX_);
 		p.rho_ = rho_new, p.nE_ = cdX_;
 
 		//
@@ -107,7 +109,7 @@ void WignerFunction::solveWignerPoisson
 		dU_x = arma::max(arma::abs(p.du_/p.uNew_));
 		pFun_x = arma::max(arma::abs(p.pFun_));
 
-		nc = calcNorm(), nd = calcInt(nD, dx_), q = nd - nc;
+		nc = calcNorm(), nd = calcInt(nD_, dx_), q = nd - nc;
 		// u_der = calcFirstDer(p.uNew_, dx_);
 		// rho_test = calcSecondDer(p.uNew_, dx_)*epsilonR_/4./M_PI;
 
@@ -148,7 +150,7 @@ void WignerFunction::solveWignerPoisson
 		for (size_t i=0; i<nx_; ++i)
 			test<<x_(i)*AU_nm<<','<<p.uNew_(i)*AU_eV<<','<<p.uOld_(i)*AU_eV<<','
 			<<p.du_(i)*AU_eV<<','<<rho_new(i)*E0/AU_cm3<<','<<rho_old(i)*E0/AU_cm3<<','
-			<<cdX_(i)/AU_cm3<<','<<nD(i)/AU_cm3<<','<<j1(i)*AU_Acm2<<endl;
+			<<cdX_(i)/AU_cm3<<','<<nD_(i)/AU_cm3<<','<<j1(i)*AU_Acm2<<endl;
 		test.close();
 
 		// field<std::string> header(9);
@@ -160,30 +162,33 @@ void WignerFunction::solveWignerPoisson
 		// out_data.insert_cols(4, rho_new/AU_cm3), header(4) = "{/Symbol r}_{new} [cm^{-3}]";
 		// out_data.insert_cols(5, rho_old/AU_cm3), header(5) = "{/Symbol r}_{old} [cm^{-3}]";
 		// out_data.insert_cols(6, cdX_/AU_cm3), header(6) = "n_{E} [cm^{-3}]";
-		// out_data.insert_cols(7, nD/AU_cm3), header(7) = "n_{D} [cm^{-3}]";
+		// out_data.insert_cols(7, nD_/AU_cm3), header(7) = "n_{D} [cm^{-3}]";
 		// out_data.insert_cols(8, j1*AU_Acm2), header(8) = "J [Acm^{-2}]";
 		// // out_data.insert_cols(9, rho_test/AU_cm3), header(9) = "{/Symbol r}_{test} [cm^{-3}]";
 		// out_data.save(csv_name("out_data/poisson_test.csv", header));
 
 		saveWignerFun();
 
-		// poisson_step<<"## it  j [au]  n_el [au]  n_D [au]  q [au]  max(du)"<<endl;
-		// poisson_step<<"# "<<n_it
-		// 	// <<' '<<n_it*dt_*AU_s*1e12
-		// 	<<'\t'<<curr
-		// 	<<'\t'<<nc
-		// 	<<'\t'<<nd
-		// 	<<'\t'<<q
-		// 	<<'\t'<<dU_x<<'\n';
-		// poisson_step<<"## it  x [au]  rho [au]  uNew [au]  du [au]  u_der [au]  j [au]\n";
-		// for (size_t i=0; i<nx_; ++i)
-		// 	poisson_step<<n_it<<','<<x_(i)
-		// 		<<','<<p.rho_(i)/AU_cm3  // col. 3
-		// 		<<','<<p.uNew_(i)*AU_eV  // col. 4
-		// 		<<','<<p.du_(i)*AU_eV  // col. 5
-		// 		<<','<<u_der(i)  // col. 6
-		// 		<<','<<j1(i)*AU_Acm2<<'\n';  // col. 7
-		// poisson_step<<"\n";
+		poisson_step<<"## it  j [au]  n_el [au]  n_D [au]  q [au]  max(du)"<<endl;
+		poisson_step<<"# "
+			// <<n_it
+			<<n_it*dt_*AU_s*1e15
+			<<'\t'<<curr
+			<<'\t'<<nc
+			<<'\t'<<nd
+			<<'\t'<<q
+			<<'\t'<<dU_x<<'\n';
+		poisson_step<<"## it  x [au]  rho [au]  uNew [au]  du [au]  u_der [au]  j [au]\n";
+		for (size_t i=0; i<nx_; ++i)
+			poisson_step
+				<<n_it  // col. 1
+				<<','<<x_(i)  // col. 2
+				<<','<<p.rho_(i)/AU_cm3  // col. 3
+				<<','<<p.uNew_(i)*AU_eV  // col. 4
+				<<','<<p.du_(i)*AU_eV  // col. 5
+				<<','<<u_der(i)  // col. 6
+				<<','<<j1(i)*AU_Acm2<<'\n';  // col. 7
+		poisson_step<<"\n";
 		// currD_a.resize(n_it), nc_a.resize(n_it), q_a.resize(n_it);
 		// dJ_x_a.resize(n_it), dU_x_a.resize(n_it), dRho_x_a.resize(n_it);
 		// currD_a(n_it-1) = curr, nc_a(n_it-1) = nc, q_a(n_it-1) = q;
@@ -192,7 +197,7 @@ void WignerFunction::solveWignerPoisson
 		//
 		// Check convergance
 		conv = dJ_x < max_dJ ? true : false;
-		n_dJ = conv && n_it > n_min ? n_dJ+1 : 0;  // Ile razy został spełniony warunek
+		n_dJ = conv && n_it > n_min ? n_dJ+1 : 0;  // How many times the condition has been met
 		//
 		conv = dU_x < max_dU ? true : false;
 		n_dU = conv && n_it > n_min  ? n_dU + 1 : 0;
@@ -203,7 +208,7 @@ void WignerFunction::solveWignerPoisson
 		p.uOld_ = p.uNew_;
 
 	}
-	// poisson_step.close();
+	poisson_step.close();
 
 	p.uNew_.save("out_data/poisson_pot.bin");
 	p.rho_.save("out_data/poisson_rho.bin");

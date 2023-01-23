@@ -75,7 +75,7 @@ set format y2 "% .2E"
 set format x "%.0f"
 set xlabel "x [nm]"
 set logscale y
-set logscale y2
+# set logscale y2
 set key over
 
 x0 = 35; s = 20; U0 = 0.03

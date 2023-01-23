@@ -9,7 +9,6 @@
 #include <ctime>
 #include <map>
 
-// #include <iomanip.h>
 #include <omp.h>
 
 #define ARMA_USE_SUPERLU 1
@@ -35,24 +34,26 @@ using std::endl;
 
 // ############################## CONSTANTS ##############################
 
-double const PI {3.141592653589793238};
-double const KB {8.617E-5};  // Boltzmann constant [eV/K]
-double const E0 {1.602E-19};  // Elementary charge [C]
-double const HBAR_J {1.05E-34};  // Planck constant [Js]
-double const HBAR_eV {6.55E-16};  // Planck constant [eVs]
-double const M0 {9.11E-31};  // Electron mass [kg]
+double const PI {M_PI};
+double const KB {8.617333262145179E-05};  // Boltzmann constant [eV/K]
+double const E0 {1.602176634E-19};  // Elementary charge [C]
+double const HBAR_J {1.0545718176461565E-34};  // Reduced Planck constant [Js]
+double const HBAR_eV {6.582119569509067E-16};  // Reduced Planck constant [eVs]
+double const M0 {9.1093837015E-31};  // Electron mass [kg]
+double const EPS0 {8.8541878128E-12};  // Electric constant
 double const A_GaAs {0.565};  // GaAs lattice constant [nm]
 
 // ############################## atomic units ##############################
 
-double const AU_nm {0.0529};  // Bohr radius [nm] (0.7896 nm)
-double const AU_eV {27.211};  // Hartree energy [eV]
-double const AU_s {2.42E-17};  // Time [ps = 10^-12 s] (HBAR_eV/AU_eV*1e12)
-double const AU_A {6.62e-3};  // [A]  _e0/_tau0
-double const AU_Acm2 {2.364e14};  // [A/cm**2]  au_A/au_nm/au_nm
-double const AU_cm3 {1.48e-25};  // [cm**3]  (AU_nm*1e-7)**3
-double const AU_cm2 {2.8e-17};  // [cm**2]  (au_nm*1e-7)**2
-double const AU_cm {5.29e-9};  // [cm]  au_nm*1e-7
+double const AU_nm {0.0529177210903};  // Bohr radius [nm]
+double const AU_m {0.0529177210903E-9};  // Bohr radius [m]
+double const AU_eV {27.211386245988};  // Hartree energy [eV]
+double const AU_s {2.4188843265857225E-17};  // Time [ps = 10^-12 s] (HBAR_eV/AU_eV*1e12)
+double const AU_A {6.623618237509881E-3};  // [A]  _e0/_tau0
+double const AU_Acm2 {2.365337010944052E14};  // [A/cm**2]  AU_A/AU_nm/AU_nm
+double const AU_cm3 {1.481847114721628E-25};  // [cm**3]  (AU_nm*1e-7)**3
+double const AU_cm2 {2.800285205390781E-17};  // [cm**2]  (AU_nm*1e-7)**2
+double const AU_cm {5.2917721090299995E-09};  // [cm]  AU_nm*1e-7
 
 // #################### klasa array ####################
 template <class T>
