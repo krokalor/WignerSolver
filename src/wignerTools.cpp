@@ -100,7 +100,7 @@ double WignerFunction::calcCurr() {
 	}
 	else {
 		cout<<"ERROR: WRONG DIFFERENTIATION SCHEME IN CURRENT DENSITY"
-		"PLEASE CHOOSE: UDS1, UDS2 OR HDS22"<<endl;
+		"PLEASE CHOOSE: UDS1, UDS2, UDS3 OR HDS22"<<endl;
 		exit(0);
 	}
 	//
@@ -548,11 +548,12 @@ double WignerFunction::lorentz(double k){
 	double mu = k > 0 ? uL_ : uR_;
 	double m = m_;
 	double u = k*k/m/2., g = Gamma_;
+	double beta = 1/(KB/AU_eV*temp_);
 	// Lorentz profile
 	auto f = [g](double x) { return g/(x*x+g*g)/M_PI; };
 	// convolution
 	size_t N = 1e4, i;
-	double h = (40/beta_+mu)/float(N);  // 40 from exp(x) -> 0 in SF
+	double h = (40/beta+mu)/float(N);  // 40 from exp(x) -> 0 in SF
 	double fb = 0;
 	double x0, x1, xm1, xm2, xm3;
 	for (i=1; i<N-1; i++){
@@ -580,6 +581,7 @@ double WignerFunction::gauss(double k){
 	double mu = k > 0 ? uL_ : uR_;
 	double m = m_;
 	double u = k*k/m/2., g = Gamma_;
+	double beta = 1/(KB/AU_eV*temp_);
 	// Gauss profile
 	auto f = [g](double x) { return 1/g/sqrt(2*M_PI)*exp(-x*x/2./g/g); };
 	// Equilibrium function for electrons in contact
@@ -592,7 +594,7 @@ double WignerFunction::gauss(double k){
 	// convolution
 	int N = 1e4, i;
 	double fb = 0;
-	double h = (40/beta_+mu)/float(N);  // 40 from exp(x) -> 0 in SF
+	double h = (40/beta+mu)/float(N);  // 40 from exp(x) -> 0 in SF
 	double x0, x1, xm1, xm2, xm3;
 	for (i=1; i<N-1; i++){
 		x0 = i*h, x1 = (i+1)*h;
@@ -612,6 +614,7 @@ double WignerFunction::voigt(double k) {
 	double mu = k > 0 ? uL_ : uR_;
 	double m = m_;
 	double u = k*k/m/2., g = Gamma_;
+	double beta = 1/(KB/AU_eV*temp_);
 	// Calculating eta - mixing parameter in pseudo-Voigt profile
 	double gammaL = 2*Gamma_, gammaG = 2*sqrt(2*log(2))*Gamma_;
 	double gamma = pow(pow(gammaG,5) +
@@ -634,7 +637,7 @@ double WignerFunction::voigt(double k) {
 	// convolution
 	int N = 1e4, i;
 	double fb = 0;
-	double h = (40/beta_+mu)/float(N);  // 40 from exp(x) -> 0 in SF
+	double h = (40/beta+mu)/float(N);  // 40 from exp(x) -> 0 in SF
 	double x0, x1, xm1, xm2, xm3;
 	for (i=1; i<N-1; i++){
 		x0 = i*h, x1 = (i+1)*h;

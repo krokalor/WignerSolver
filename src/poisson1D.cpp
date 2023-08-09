@@ -3,7 +3,7 @@
 
 using namespace poisson;
 
-void Poisson1D::solve() { solve_tridiag (); }  // solve_gummel solve_tridiag
+void Poisson1D::solve() { solve_tridiag(); }  // solve_gummel solve_tridiag
 
 void Poisson1D::solve_gummel() {
 	// Solving Poisson equation using Gummel algorithm
@@ -122,7 +122,7 @@ void Poisson1D::testPoisson() {
 
 	double sigma = -1e-3; // 10^-3 C/m^2
 
-	rho_(nx_/2) = sigma/(h_*AU_nm*1e-9);
+	rho_(nx_/2) = sigma/(h_*AU_m);
 	rho_(nx_/2) *= 1e-6*AU_cm3/E0;
 
 	dirichletL_ = 5.64717/AU_eV;  // Energia potencjalna
@@ -132,8 +132,8 @@ void Poisson1D::testPoisson() {
 	solve();
 
 	cout<<"# sigma = "<<sigma<<" dirichletL "<<dirichletL_<<" dirichletR "<<dirichletR_<<" n "<<nx_<<" h "<<h_<<endl;
-	for (size_t i = 0; i < nx_; ++i)
-		cout<<i*h_*AU_nm<<' '<<uNew_(i)*AU_eV<<' '<<rho_(i)*E0/AU_cm3<<endl;
+//	for (size_t i = 0; i < nx_; ++i)
+//		cout<<i*h_*AU_nm<<' '<<uNew_(i)*AU_eV<<' '<<rho_(i)*E0/AU_cm3<<endl;
 
 	// Run example:
 	// Poisson1D p(200, 1./AU_nm);

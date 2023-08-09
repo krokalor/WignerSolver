@@ -12,11 +12,10 @@
 #include <omp.h>
 
 #define ARMA_USE_SUPERLU 1
-#define ARMA_OPENMP_THREADS 2
-#define ARMA_PRINT_ERRORS 1
-#define ARMA_WARN_LEVEL 3
-
-#define OMP_NUM_THREADS 2
+// #define ARMA_OPENMP_THREADS 2
+// #define ARMA_PRINT_ERRORS 1
+// #define ARMA_WARN_LEVEL 3
+// #define OMP_NUM_THREADS 2
 
 #include <armadillo>
 
@@ -36,24 +35,74 @@ using std::endl;
 
 double const PI {M_PI};
 double const KB {8.617333262145179E-05};  // Boltzmann constant [eV/K]
+double const KB_J {1.380649e-23};  // Boltzmann constant [J/K]
 double const E0 {1.602176634E-19};  // Elementary charge [C]
 double const HBAR_J {1.0545718176461565E-34};  // Reduced Planck constant [Js]
 double const HBAR_eV {6.582119569509067E-16};  // Reduced Planck constant [eVs]
 double const M0 {9.1093837015E-31};  // Electron mass [kg]
 double const EPS0 {8.8541878128E-12};  // Electric constant
+
+// ############################## SYSTEM CONSTANTS ##############################
+
 double const A_GaAs {0.565};  // GaAs lattice constant [nm]
+double const EPS_GaAs {13.1};  // GaAs relative permittivity
+double const M_GaAs {0.067};  // GaAs effective mass
+double const TEMP {300};
+double const DIFF {1};  // Diffusion coefficient [cm^2/s]
+double const ND {2E18};  // Donor concentration [cm^-3]
 
 // ############################## atomic units ##############################
 
 double const AU_nm {0.0529177210903};  // Bohr radius [nm]
-double const AU_m {0.0529177210903E-9};  // Bohr radius [m]
+// double const AU_m {0.0529177210903E-9};  // Bohr radius [m]
+double const AU_m {AU_nm*1E-9};  // Bohr radius [m]
 double const AU_eV {27.211386245988};  // Hartree energy [eV]
-double const AU_s {2.4188843265857225E-17};  // Time [ps = 10^-12 s] (HBAR_eV/AU_eV*1e12)
-double const AU_A {6.623618237509881E-3};  // [A]  _e0/_tau0
-double const AU_Acm2 {2.365337010944052E14};  // [A/cm**2]  AU_A/AU_nm/AU_nm
-double const AU_cm3 {1.481847114721628E-25};  // [cm**3]  (AU_nm*1e-7)**3
-double const AU_cm2 {2.800285205390781E-17};  // [cm**2]  (AU_nm*1e-7)**2
-double const AU_cm {5.2917721090299995E-09};  // [cm]  AU_nm*1e-7
+double const AU_s {HBAR_eV/AU_eV};  // Time [s]
+// double const AU_s {2.4188843265857225E-17};
+// double const AU_cm {5.2917721090299995E-09};  // [cm]  AU_nm*1e-7
+// double const AU_cm2 {2.800285205390781E-17};  // [cm**2]  (AU_nm*1e-7)**2
+// double const AU_cm3 {1.481847114721628E-25};  // [cm**3]  (AU_nm*1e-7)**3
+double const AU_cm {AU_m*1e-2};  // [cm]
+double const AU_cm2 {AU_cm*AU_cm};  // [cm**2]  (AU_nm*1e-7)**2
+double const AU_cm3 {AU_cm*AU_cm*AU_cm};  // [cm**3]  (AU_nm*1e-7)**3
+// double const AU_A {6.623618237509881E-3};  // [A]  _e0/_tau0
+double const AU_A {E0/AU_s};  // [A]  _e0/_tau0
+// double const AU_Acm2 {2.365337010944052E14};  // [A/cm**2]  AU_A/AU_nm/AU_nm
+double const AU_Acm2 {AU_A/AU_cm2};  // [A/cm**2]  AU_A/AU_cm/AU_cm
+
+// double const AU_m {4.*M_PI*EPS0*HBAR_J*HBAR_J/M0/E0/E0};  // Bohr radius [m] also 1./(4.*M_PI*EPS0*AU_eV)
+// double const AU_eV {HBAR_J*HBAR_J/M0/AU_m/AU_m*1/E0 };  // Hartree energy [eV] (*1/E0: J -> eV)
+// double const AU_s {HBAR_eV/AU_eV};  // Time [s]
+// double const AU_nm {AU_m*1E9};  // Bohr radius [nm]
+// double const AU_cm {AU_m*1e-2};  // [cm]
+// double const AU_cm2 {AU_cm*AU_cm};  // [cm**2]  (AU_nm*1e-7)**2
+// double const AU_cm3 {AU_cm*AU_cm*AU_cm};  // [cm**3]  (AU_nm*1e-7)**3
+// double const AU_A {E0/AU_s};  // [A]  _e0/_tau0
+// double const AU_Acm2 {AU_A/AU_cm2};  // [A/cm**2]  AU_A/AU_cm/AU_cm
+
+// ############################## atomic units - simplified ##############################
+
+// double const AU_nm {0.053};  // Bohr radius [nm]
+// double const AU_m {AU_nm*1E-9};  // Bohr radius [m]
+// double const AU_eV {27.21};  // Hartree energy [eV]
+// double const AU_s {2.42E-17};  // Time [s]
+// double const AU_cm {AU_nm*1e-7};  // [cm]  AU_nm*1e-7
+// double const AU_cm2 {AU_cm*AU_cm};  // [cm**2]  (AU_nm*1e-7)**2
+// double const AU_cm3 {AU_cm*AU_cm*AU_cm};  // [cm**3]  (AU_nm*1e-7)**3
+// double const AU_A {6.62E-3};  // [A]  _e0/_tau0
+// double const AU_Acm2 {AU_A/AU_cm2};  // [A/cm**2]  AU_A/AU_cm/AU_cm
+
+// ############################## scaling factors ##############################
+
+// double const AU_m {sqrt(EPS0*EPS_GaAs*KB_J*TEMP/E0/E0/(ND*1E6))};  // Debye length [m] (*1e6: cm->m)
+// double const AU_eV {KB*TEMP};  // Thermal energy [eV]
+// double const AU_s {AU_cm*AU_cm/DIFF};  // Time [s]
+// double const AU_nm {AU_m*1E9};  // Bohr radius [nm]
+// double const AU_cm {AU_m*1e-2};  // [cm]
+// double const AU_cm2 {AU_cm*AU_cm};  // [cm**2]  (AU_nm*1e-7)**2
+// double const AU_cm3 {AU_cm*AU_cm*AU_cm};  // [cm**3]  (AU_nm*1e-7)**3
+// double const AU_A {E0/AU_s};  // [A]  _e0/_tau0
+// double const AU_Acm2 {AU_A/AU_cm2};  // [A/cm**2]  AU_A/AU_cm/AU_cm
 
 // #################### klasa array ####################
 template <class T>

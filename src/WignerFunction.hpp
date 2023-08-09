@@ -191,8 +191,8 @@ public:
 	double get_rF() { return rF_; }
 	double get_rG() { return rG_; }
 	double get_lambda() { return lambda_; }
-	double get_lDeb() { return sqrt(epsilonR_/4/M_PI*KB*temp_/AU_eV/cD_); }  // Debye length = sqrt(13.1*EPS0*1.380649E-23*300/(E0*E0*2E24))
-	double get_plFreq() { return sqrt(cD_/epsilonR_/m_*4*M_PI); }  // Plasma frequency = sqrt(EO*E0*2E24/13.1/EPS0/m)
+	// double get_lDeb() { return sqrt(epsilonR_/4/M_PI*KB*temp_/AU_eV/cD_); }  // Debye length = sqrt(13.1*EPS0*1.380649E-23*300/(E0*E0*2E24))
+	// double get_plFreq() { return sqrt(cD_/epsilonR_/m_*4*M_PI); }  // Plasma frequency = sqrt(EO*E0*2E24/13.1/EPS0/m)
 	arma::vec get_x_arr() { return x_; }
 	arma::vec get_k_arr() { return k_; }
 	arma::vec get_u() { return u_; }
@@ -209,10 +209,7 @@ public:
 	arma::mat get_wf() { return f_; }
 
 	void set_m(double m) { m_ = m; }
-	void set_temp(double temp) {
-		temp_ = temp;
-		beta_ = 1./KB/temp_*AU_eV;
-	}
+	void set_temp(double temp) { temp_ = temp; }
 	void set_cD(double cD) { cD_ = cD; }
 	void set_uL(double uL) { uL_ = uL; }
 	void set_uR(double uR) { uR_ = uR; }

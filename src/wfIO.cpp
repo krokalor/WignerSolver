@@ -292,4 +292,41 @@ void WignerFunction::printParam()
 	cout<<'#'<<'#'<<endl;
 	cout.fill(' ');
 	cout<<endl;
+
+	cout.fill('=');
+	cout.width(cw_n+2*cw_v);
+	cout<<'#'<<'#'<<endl;
+	cout.fill(' ');
+
+	cout.width(cw_n+2*cw_v); cout<<"# SCALING PARAMETERS"<<'#'<<endl;
+	cout.width(cw_n); cout<<"# Variable name";
+	cout.width(cw_v); cout<<"variable's value (a.u.)";
+	cout.width(cw_v); cout<<"variable's value (SI)"<<'#'<<endl;
+	cout.width(cw_n); cout<<"# AU_nm";
+	cout.width(cw_v); cout<<1;
+	cout.width(cw_v); cout<<AU_nm<<'#'<<endl;
+	cout.width(cw_n); cout<<"# AU_eV";
+	cout.width(cw_v); cout<<1;
+	cout.width(cw_v); cout<<AU_eV<<'#'<<endl;
+	cout.width(cw_n); cout<<"# AU_s";
+	cout.width(cw_v); cout<<1;
+	cout.width(cw_v); cout<<AU_s<<'#'<<endl;
+	cout.width(cw_n); cout<<"# AU_A";
+	cout.width(cw_v); cout<<1;
+	cout.width(cw_v); cout<<AU_A<<'#'<<endl;
+	cout.width(cw_n); cout<<"# AU_cm";
+	cout.width(cw_v); cout<<1;
+	cout.width(cw_v); cout<<AU_cm<<'#'<<endl;
+	cout.width(cw_n); cout<<"# AU_cm^2";
+	cout.width(cw_v); cout<<1;
+	cout.width(cw_v); cout<<AU_cm2<<'#'<<endl;
+	cout.width(cw_n); cout<<"# AU_cm^3";
+	cout.width(cw_v); cout<<1;
+	cout.width(cw_v); cout<<AU_cm3<<'#'<<endl;
+
+	cout.fill('=');
+	cout.width(cw_n+2*cw_v);
+	cout<<'#'<<'#'<<endl;
+	cout.fill(' ');
+	cout<<endl;
 }

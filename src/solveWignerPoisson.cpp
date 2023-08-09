@@ -30,9 +30,9 @@ void WignerFunction::solveWignerPoisson
 		nD_(i) = cD_*(1+1/(1+exp((x_(i)-lC_)/s/l_))-1/(1+exp((x_(i)-l_+lC_)/s/l_)));
 
 	// Convergence criteria
-	size_t n_max = i_n_max, n_min = 10;
-	size_t n_dJ = 0, n_dU = 0, n_conv = 10;
-	double max_dJ = 1e-6, max_dU = 1e-3;
+	size_t n_max = i_n_max, n_min = 2;
+	size_t n_dJ = 0, n_dU = 0, n_conv = 2;
+	double max_dJ = 1e-6, max_dU = 1e-6;
 	bool conv = false;
 
 	double alpha = i_alpha;  // Density mixing parameter
@@ -46,10 +46,11 @@ void WignerFunction::solveWignerPoisson
 	uBias_ = 0;
 	setBoundCond();
 	f_.zeros();
+	// Creating starting density function with condition that int(f_*dj) = nD_(i)
 	for (size_t i=0; i<nx_; ++i) {
 		// cout<<i*dx_*AU_nm*1e-3<<'\t'<<lC_*AU_nm*1e-3<<endl;
 		for (size_t j=0; j<nk_; ++j) {
-				f_(i,j) = bc_(j)*nD_(i)/cD_;
+				f_(i,j) = bc_(j); // *nD_(i)/cD_
 			}
 	}
 	calcCD_X();
@@ -88,7 +89,8 @@ void WignerFunction::solveWignerPoisson
 		//
 		// Mixing old and new el. density
 		rho_new = (1.-alpha)*rho_old + alpha*(nD_ - cdX_);
-		p.rho_ = rho_new, p.nE_ = cdX_;
+		p.rho_ = rho_new;
+		p.nE_ = cdX_;
 
 		//
 		// Solve Poisson eq.
@@ -202,7 +204,8 @@ void WignerFunction::solveWignerPoisson
 		conv = dU_x < max_dU ? true : false;
 		n_dU = conv && n_it > n_min  ? n_dU + 1 : 0;
 		//
-		if (n_dJ > n_conv) break;  //  && n_dU > n_conv
+		// if (n_dU > n_conv) break;  //  && n_dU > n_conv
+		if (n_dU > n_conv) continue;  //  && n_dU > n_conv
 
 		rho_old = rho_new;
 		p.uOld_ = p.uNew_;

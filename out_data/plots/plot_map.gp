@@ -1,4 +1,4 @@
-set terminal pngcairo enhanced size 600,600 # font 'Times Roman, 12'
+set terminal pngcairo enhanced size 700,600 # font 'Times Roman, 12'
 set output 'map.png'
 set datafile separator ','
 set key autotitle columnhead
@@ -37,10 +37,9 @@ set cblabel 'u^H [eV]' offset 1
 
 set border linecolor rgb "white" lw 1
 
-# unset key
 unset key
 
-set size 1,1.1
+set size .95,1.1
 set origin .0,0
 
 AU_nm = 0.0529

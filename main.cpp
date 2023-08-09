@@ -24,7 +24,7 @@ int main(){
 	// cout<<"omp_get_max_threads(): "<<omp_get_max_threads() <<endl;
 	// cout<<"omp_get_num_threads(): "<<omp_get_num_threads()<<endl;
 
-	size_t nx = 500, nk = 500;
+	size_t nx = 100, nk = 100;
 	double lD = 400/AU_nm, lC = 300/AU_nm;
 	double k_max = 0.05;  // -1, 0.15
 
@@ -33,10 +33,11 @@ int main(){
 	arma::vec x_val = f.get_x_arr(), k_val = f.get_k_arr();
 	// double dx = f.get_dx(), dk = f.get_dk();
 
-	f.set_m(0.067);
-	f.set_temp(300);
-	f.set_epsilonR(13.1);
-	f.set_cD(2e18*AU_cm3);
+	// constants are given in src/lib.hpp
+	f.set_m(M_GaAs);
+	f.set_temp(TEMP);
+	f.set_epsilonR(EPS_GaAs);
+	f.set_cD(ND*AU_cm3);
 	f.set_uL( calcFermiEn(f.get_cD(), f.get_m(), f.get_temp()) );
 	f.set_uR( calcFermiEn(f.get_cD(), f.get_m(), f.get_temp()) ); // calcFermiEn(f.get_cD(), f.get_m(), f.get_temp())
 	f.set_dt(1e-15/AU_s);  // .005*1e-15/AU_s
@@ -49,9 +50,9 @@ int main(){
 	f.set_uBias_BC(false);  // Voltage bias given through BC?
 
 	// "CDS1", "UDS1", "UDS2", "UDS3", "HDS22"
-	f.set_diffSch_K("CDS1");
-	f.set_diffSch_P("CDS1");
-	f.set_diffSch_J("UDS1");
+	f.set_diffSch_K("UDS2");
+	f.set_diffSch_P("UDS2");
+	f.set_diffSch_J("UDS2");
 
 	// Warunek brzegowy
 	// 0 -> 0, 1 -> SF, 2:4 -> splot with SF, -1 -> Gauss, -2:-4 splot with Gauss
@@ -84,8 +85,8 @@ int main(){
 
 	f.printParam();
 
-	cout<<"Debye length: "<<f.get_lDeb()*AU_nm<<endl;
-	cout<<"Plasma frequency: "<<f.get_plFreq()/AU_s<<", 1/Plasma frequency: "<<1/f.get_plFreq()*AU_s<<endl;
+	// cout<<"Debye length: "<<f.get_lDeb()*AU_nm<<endl;
+	// cout<<"Plasma frequency: "<<f.get_plFreq()/AU_s<<", 1/Plasma frequency: "<<1/f.get_plFreq()*AU_s<<endl;
 
 	high_resolution_clock::time_point t_start, t_end;
 	duration<double> t_elapsed;
@@ -104,7 +105,7 @@ int main(){
 	//
 	// Boltzmann
 	// cout<<"# Solving BTE"<<endl;
-	// f.solveWignerEq();
+//	 f.solveWignerEq();
 	// f.saveWignerFun();
 
 	// Wave packet time evolution
@@ -120,10 +121,10 @@ int main(){
 
 	//
 	// Boltzmann-Poisson
-	cout<<"# Solving B-P set of equations"<<endl;
-	// (uBias, alpha, beta, n_max, timeDependent)
-     f.solveWignerPoisson(0/AU_eV, 1, 1, 50, true);
-	f.saveWignerFun();
+	// cout<<"# Solving B-P set of equations"<<endl;
+	// // (uBias, alpha, beta, n_max, timeDependent)
+    // f.solveWignerPoisson(0.01/AU_eV, 1, 1, 100, true);
+	// f.saveWignerFun();
 
 	// arma::mat wf1, wf2, wf;
 	// wf = f.get_wf();
@@ -140,7 +141,7 @@ int main(){
 	// Poisson test
 	// Read potential from poisson_test
 	// mat a; a.load("IV_char/out_data_10meV_2e5it/poisson_test.csv", csv_ascii);
-	// Poisson1D p(nx, dx);
+	 Poisson1D p(nx, f.get_dx());
 	// p.dirichletL_ = 0.01/AU_eV/2., p.dirichletR_ = -0.01/AU_eV/2.;  // - bo obniżamy U w prawym kontakcie
 	// p.epsilonR_ = f.get_epsilonR(), p.temp_ = f.get_temp();
 	// p.rho_ = a.col(4)*AU_cm3;
@@ -150,7 +151,7 @@ int main(){
 	// cout.setf( ios::scientific ), cout.precision( 5 );
 	// for (size_t i=0; i<nx; ++i)
 	// 	cout<<x_val(i)*AU_nm<<'\t'<<p.rho_(i)/AU_cm3<<'\t'<<p.uOld_(i)*AU_eV<<'\t'<<p.uNew_(i)*AU_eV<<endl;
-	// p.testPoisson();
+	 p.testPoisson();
 
 	//
 	// Barriera gaussowska
@@ -250,7 +251,7 @@ int main(){
 		file<<k_val(j)<<'\t'<<cdK(j)<<'\n';
 	file.close();
 
-	cout<<"# Final current = "<<curr*AU_Acm2<<" [Acm^-2]"<<endl;
+	cout<<"# Final current density = "<<curr*AU_Acm2<<" [Acm^-2]"<<endl;
 	cout<<"# N = "<<f.calcNorm()/AU_cm2<<" [cm^-2]"<<endl;
 	cout<<"# int{dp} f_BC = "<<calcInt(f.get_bc(), f.get_dk())/AU_cm3<<" [cm^-3]"<<endl;  // /2./M_PI
 
