@@ -53,11 +53,10 @@ double const ND {2E18};  // Donor concentration [cm^-3]
 
 // ############################## atomic units ##############################
 
+double const AU_eV {27.211386245988};  // Hartree energy [eV]
 double const AU_nm {0.0529177210903};  // Bohr radius [nm]
 // double const AU_m {0.0529177210903E-9};  // Bohr radius [m]
 double const AU_m {AU_nm*1E-9};  // Bohr radius [m]
-double const AU_eV {27.211386245988};  // Hartree energy [eV]
-double const AU_s {HBAR_eV/AU_eV};  // Time [s]
 // double const AU_s {2.4188843265857225E-17};
 // double const AU_cm {5.2917721090299995E-09};  // [cm]  AU_nm*1e-7
 // double const AU_cm2 {2.800285205390781E-17};  // [cm**2]  (AU_nm*1e-7)**2
@@ -66,6 +65,7 @@ double const AU_cm {AU_m*1e-2};  // [cm]
 double const AU_cm2 {AU_cm*AU_cm};  // [cm**2]  (AU_nm*1e-7)**2
 double const AU_cm3 {AU_cm*AU_cm*AU_cm};  // [cm**3]  (AU_nm*1e-7)**3
 // double const AU_A {6.623618237509881E-3};  // [A]  _e0/_tau0
+double const AU_s {HBAR_eV/AU_eV};  // Time [s]
 double const AU_A {E0/AU_s};  // [A]  _e0/_tau0
 // double const AU_Acm2 {2.365337010944052E14};  // [A/cm**2]  AU_A/AU_nm/AU_nm
 double const AU_Acm2 {AU_A/AU_cm2};  // [A/cm**2]  AU_A/AU_cm/AU_cm

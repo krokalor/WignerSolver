@@ -57,7 +57,7 @@ int main(){
 	// Warunek brzegowy
 	// 0 -> 0, 1 -> SF, 2:4 -> splot with SF, -1 -> Gauss, -2:-4 splot with Gauss
 	cout<<"# Setting up BC"<<endl;
-	f.set_bcType(-1);
+	f.set_bcType(1);
 
 	//
 	// Potential
@@ -105,7 +105,7 @@ int main(){
 	//
 	// Boltzmann
 	// cout<<"# Solving BTE"<<endl;
-//	 f.solveWignerEq();
+	// f.solveWignerEq();
 	// f.saveWignerFun();
 
 	// Wave packet time evolution
@@ -121,10 +121,10 @@ int main(){
 
 	//
 	// Boltzmann-Poisson
-	// cout<<"# Solving B-P set of equations"<<endl;
-	// // (uBias, alpha, beta, n_max, timeDependent)
-    // f.solveWignerPoisson(0.01/AU_eV, 1, 1, 100, true);
-	// f.saveWignerFun();
+	cout<<"# Solving B-P set of equations"<<endl;
+	// (uBias, alpha, beta, n_max, timeDependent)
+    f.solveWignerPoisson(0.0/AU_eV, 0.01, 1, 100, false);
+	f.saveWignerFun();
 
 	// arma::mat wf1, wf2, wf;
 	// wf = f.get_wf();
@@ -141,7 +141,7 @@ int main(){
 	// Poisson test
 	// Read potential from poisson_test
 	// mat a; a.load("IV_char/out_data_10meV_2e5it/poisson_test.csv", csv_ascii);
-	 Poisson1D p(nx, f.get_dx());
+	//  Poisson1D p(nx, f.get_dx());
 	// p.dirichletL_ = 0.01/AU_eV/2., p.dirichletR_ = -0.01/AU_eV/2.;  // - bo obniżamy U w prawym kontakcie
 	// p.epsilonR_ = f.get_epsilonR(), p.temp_ = f.get_temp();
 	// p.rho_ = a.col(4)*AU_cm3;
@@ -151,7 +151,7 @@ int main(){
 	// cout.setf( ios::scientific ), cout.precision( 5 );
 	// for (size_t i=0; i<nx; ++i)
 	// 	cout<<x_val(i)*AU_nm<<'\t'<<p.rho_(i)/AU_cm3<<'\t'<<p.uOld_(i)*AU_eV<<'\t'<<p.uNew_(i)*AU_eV<<endl;
-	 p.testPoisson();
+	//  p.testPoisson();
 
 	//
 	// Barriera gaussowska
@@ -178,15 +178,15 @@ int main(){
 
 	// Doping profile
 	arma::vec nD(nx, arma::fill::zeros), rho(nx, arma::fill::zeros);
-	double s = 0.01, l = 2*lC+lD;
+	double s = 0.006, l = 2*lC+lD;
 	for (size_t i=0; i<nx; ++i)
 		nD(i) = f.get_cD()*(1+1/(1+exp((x_val(i)-lC)/s/l))-1/(1+exp((x_val(i)-l+lC)/s/l)));
 	rho = nD - cdX;
 
-	double n = f.calcNorm();
-	cout<<"# <p> = "<<f.calcEK()<<", sqrt(<p^2>) = "<<sqrt(f.calcEK2())
-		<<", J(<p>) = "<<f.calcEK()/f.get_m() * n/f.get_l() * AU_Acm2
-		<<", J(sqrt(<p^2>)) = "<<sqrt(f.calcEK2())/f.get_m() * n/f.get_l() * AU_Acm2<<endl;
+	// double n = f.calcNorm();
+	// cout<<"# <p> = "<<f.calcEK()<<", sqrt(<p^2>) = "<<sqrt(f.calcEK2())
+	// 	<<", J(<p>) = "<<f.calcEK()/f.get_m() * n/f.get_l() * AU_Acm2
+	// 	<<", J(sqrt(<p^2>)) = "<<sqrt(f.calcEK2())/f.get_m() * n/f.get_l() * AU_Acm2<<endl;
 
 	// @TODO: Comments!
 	//  exK (nx, arma::fill::zeros), exK2 (nx, arma::fill::zeros);
@@ -236,6 +236,16 @@ int main(){
 	// out_data.insert_cols(9, f.get_uC()*AU_eV), header(9) = "U^C [eV]";  // col. 10
 	out_data.save( csv_name("out_data/test.csv", header) );
 
+	cout<<"# Final current density: "<<curr*AU_Acm2<<" [Acm^-2]"<<endl;
+	// cout<<"# N = "<<f.calcNorm()/AU_cm2<<" [cm^-2]"<<endl;
+	cout<<"# Integral[dp](f_BC): "<<calcInt(f.get_bc(), f.get_dk())/2./M_PI/AU_cm3<<" cm^-3."<<endl;  // /2./M_PI
+	cout<<"# Given value: "<<ND<<" cm^-3."<<endl;
+	cout<<"# Value from a function: "<<cdX(0)/AU_cm3<<" cm^-3."<<endl;
+
+	//
+	// File outputs
+	//
+
 	std::ofstream file;
 	file.open("out_data/cdX.out", std::ios::out);
 	file<<"# Carrier density in 'x' space\n";
@@ -251,9 +261,9 @@ int main(){
 		file<<k_val(j)<<'\t'<<cdK(j)<<'\n';
 	file.close();
 
-	cout<<"# Final current density = "<<curr*AU_Acm2<<" [Acm^-2]"<<endl;
-	cout<<"# N = "<<f.calcNorm()/AU_cm2<<" [cm^-2]"<<endl;
-	cout<<"# int{dp} f_BC = "<<calcInt(f.get_bc(), f.get_dk())/AU_cm3<<" [cm^-3]"<<endl;  // /2./M_PI
+	//
+	// Calculation time
+	//
 
 	t_end = high_resolution_clock::now();
 	t_elapsed =  duration_cast<duration<double>>(t_end - t_start);

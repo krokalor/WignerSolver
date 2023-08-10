@@ -87,6 +87,11 @@ void WignerFunction::solveWignerPoisson
 		// TODO: Change order (BTE -> PE)
 
 		//
+		// Values from previous iteration are set to *_old
+		rho_old = rho_new;
+		p.uOld_ = p.uNew_;
+
+		//
 		// Mixing old and new el. density
 		rho_new = (1.-alpha)*rho_old + alpha*(nD_ - cdX_);
 		p.rho_ = rho_new;
@@ -206,10 +211,6 @@ void WignerFunction::solveWignerPoisson
 		//
 		// if (n_dU > n_conv) break;  //  && n_dU > n_conv
 		if (n_dU > n_conv) continue;  //  && n_dU > n_conv
-
-		rho_old = rho_new;
-		p.uOld_ = p.uNew_;
-
 	}
 	poisson_step.close();
 
