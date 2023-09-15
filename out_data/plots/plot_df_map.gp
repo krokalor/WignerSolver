@@ -1,4 +1,4 @@
-set terminal pngcairo enhanced size 500,500 # font 'Times Roman, 12'
+set terminal pngcairo enhanced font "Times New Roman,18.0" size 1000,1000
 set output 'df_map.png'
 # set terminal postscript eps size 6cm,5cm enhanced color # font 'Times New Roman, 12'
 # set output 'df_map.eps'
@@ -43,8 +43,8 @@ set border linecolor rgb "white" lw 1
 
 unset key
 
-set size 0.8,1.1
-set origin .04,0
+set size 1,1.1
+set origin 0,-0.04
 
 AU_nm = 0.0529
 AU_cm2 = 2.8e-17

@@ -122,18 +122,18 @@ void Poisson1D::testPoisson() {
 
 	double sigma = -1e-3; // 10^-3 C/m^2
 
-	rho_(nx_/2) = sigma/(h_*AU_m);
-	rho_(nx_/2) *= 1e-6*AU_cm3/E0;
+	rho_(nx_/2) = sigma/(h_*AU_m)*1e-6;
+	rho_(nx_/2) *= AU_cm3/E0;  // SI -> AU
 
-	dirichletL_ = 5.64717/AU_eV;  // Energia potencjalna
-	dirichletR_ = 5.64717/AU_eV;
-	epsilonR_ = 1.;  // 8.854e-12;
+	dirichletL_ = -5.64717/AU_eV;
+	dirichletR_ = -5.64717/AU_eV;
+	epsilonR_ = 1;
 
 	solve();
 
 	cout<<"# sigma = "<<sigma<<" dirichletL "<<dirichletL_<<" dirichletR "<<dirichletR_<<" n "<<nx_<<" h "<<h_<<endl;
-//	for (size_t i = 0; i < nx_; ++i)
-//		cout<<i*h_*AU_nm<<' '<<uNew_(i)*AU_eV<<' '<<rho_(i)*E0/AU_cm3<<endl;
+	for (size_t i = 0; i < nx_; ++i)
+		cout<<i*h_*AU_nm<<' '<<uNew_(i)*AU_eV<<' '<<rho_(i)*E0/AU_cm3<<endl;
 
 	// Run example:
 	// Poisson1D p(200, 1./AU_nm);

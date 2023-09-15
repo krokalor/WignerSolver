@@ -1,4 +1,4 @@
-set terminal pngcairo enhanced size 700,600 # font 'Times Roman, 12'
+set terminal pngcairo enhanced font "Times New Roman,18.0" size 1000,1000
 set output 'map.png'
 set datafile separator ','
 set key autotitle columnhead
@@ -16,7 +16,7 @@ set pm3d map interpolate 0,0
 
 set border linecolor rgb "white" lw 1
 
-set ylabel 't [fs]' textcolor "black" # offset -0.5,0
+set ylabel 'It. nr' textcolor "black" # offset -0.5,0
 set xlabel 'x [{/symbol m}m]' # offset 0,-0.5
 # set xlabel 'p [au]' # offset 0,-0.5
 
@@ -32,6 +32,7 @@ set xrange [:]
 set cbrange [:]
 set cbtics textcolor "black"
 set cblabel 'u^H [eV]' offset 1
+# set cblabel 'rho' offset 1
 
 # set logscale cb
 
@@ -39,14 +40,14 @@ set border linecolor rgb "white" lw 1
 
 unset key
 
-set size .95,1.1
-set origin .0,0
+set size 1,1.1
+set origin 0,-0.04
 
 AU_nm = 0.0529
 AU_cm2 = 2.8e-17
 AU_eV = 27.211
 
-splot [:] [:] '../poisson_step.out' u ($2*AU_nm*1e-3):($1*0.01):($4*AU_eV) with pm3d
+splot [:] [:] '../poisson_step.out' u ($2*AU_nm*1e-3):($1):($4) with pm3d
 # splot [-0.05:0.05] 'poisson_step.out' u 2:($1*0.1):5 with pm3d
 
 

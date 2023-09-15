@@ -890,3 +890,44 @@ void WignerFunction::quantumCorrTerm(size_t i, size_t j, double dt){
 		a_(r, r-2) += -C/2.;
 	}
 }
+
+
+void WignerFunction::solveSchrEq(){
+	u_ = uB_ + uC_;
+	size_t n = nx_;
+	double m = m_, l = l_;
+	double a = -1./2./m/dx_/dx_;
+	arma::mat A(n, n);
+	for (size_t i=n; i--;) {
+		A(i,i) = -2*a+u_(i);
+		if (i>0) A(i,i-1) = a;
+		if (i<n-1) A(i,i+1) = a;
+	}
+	A.brief_print("A:");
+	arma::vec eigval;
+	arma::mat eigvec;
+	eig_sym(eigval, eigvec, A);
+	// for (size_t i=n; i--;)
+	// 	eigval.col(i) /= arma::max(eigval.col(i));
+	eigvec.each_col( [](arma::vec& c){ c /= arma::sum(c); } );
+	arma::vec ne = arma::abs(eigvec.col(0))*arma::abs(eigvec.col(0));
+	//
+	// Results
+	(eigval*AU_eV).brief_print("Eigenvalues [eV:");
+	// cout<<eigvec<<endl;
+	// eigvec(0).print("Eigenvector(0):");
+	eigvec.save( arma::csv_name("eigvec.csv") );
+	cout<<"Normalization: "<<arma::sum(eigvec.col(0))<<endl;
+	arma::mat out_data;
+	arma::field<std::string> header(3);
+	out_data.insert_cols(0, x_), header(0) = "x [au]"; // col. 1
+	out_data.insert_cols(1, u_*AU_eV), header(1) = "U [eV]";  // col. 2
+	out_data.insert_cols(2, eigvec.col(0)), header(2) = "Psi";  // col. 3
+	out_data.save( arma::csv_name("SchrEqResults.csv", header) );
+	// cout<<eigvec(0)*eigval(0)<<A*eigvec(0)<<endl;
+	//
+	// Theory
+	// double l = l_, m = m_;
+	auto an_eigval = [l, m](int i) { return i*i*M_PI*M_PI/2./m/l/l; };
+	cout<<"Eigen values, theory: "<<an_eigval(1)*AU_eV<<' '<<an_eigval(2)*AU_eV<<' '<<an_eigval(3)*AU_eV<<" eV"<<endl;
+}

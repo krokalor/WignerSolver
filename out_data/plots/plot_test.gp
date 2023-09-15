@@ -1,4 +1,4 @@
-set terminal pngcairo size 700,800
+set terminal pngcairo enhanced font "Times New Roman,18.0" size 1000,1000
 set output "test.png"
 set datafile separator ','
 set key autotitle columnhead

@@ -259,11 +259,14 @@ public:
 	void readPotential(std::string);                       // Read potential from file pot.in
 	void printParam();
 	void saveWignerFun();
+	void saveTest();
+	void printResults();
 
 	void initEq();
 	void solveWignerEq();
 	void solveTimeEv();
 	void solveWignerPoisson(double, double, double, size_t, bool);
+	void solveSchrEq();
 
 	void setBoundCond();  // Boundary conditions
 	void setEquilibriumFunction(std::string, bool);  // Calculating equilibrium function

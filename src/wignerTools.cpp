@@ -47,7 +47,21 @@ double WignerFunction::calcCurr() {
 	// 	// if (bcType_ > 0) nc(i) /= 2.*M_PI, nc_eq(i) /= 2.*M_PI;
 	// }
 	// Current density is calculated in node i+1/2
-	if (diffSch_J_ == "UDS1") {
+	if (diffSch_J_ == "CDS1") {
+		for (size_t i=1; i<nx_; ++i) {
+			for (size_t j=0; j<nk2_; ++j)  // k < 0
+				currD_(i) += k_(j)*f_(i, j);
+				// currD_(i) += k_(j)*f_(i+1, j);  // j(i-1/2)
+			for (size_t j=nk2_; j<nk_; ++j)  // k > 0
+				currD_(i) += k_(j)*f_(i-1, j);
+				// currD_(i) += k_(j)*f_(i, j);  // j(i-1/2)
+			// currD_(i) /= 2.;
+			// currD_(i) -= rR_*(nc(i)-nc_eq(i));
+		}
+		currD_(0) = currD_(1);
+		currD_(nx_-1) = currD_(nx_-2);
+	}
+	else if (diffSch_J_ == "UDS1") {
 		for (size_t i=1; i<nx_; ++i) {
 			for (size_t j=0; j<nk2_; ++j)  // k < 0
 				currD_(i) += k_(j)*f_(i, j);
@@ -99,7 +113,7 @@ double WignerFunction::calcCurr() {
 		currD_(nx_-1) = currD_(nx_-2);
 	}
 	else {
-		cout<<"ERROR: WRONG DIFFERENTIATION SCHEME IN CURRENT DENSITY"
+		cout<<"ERROR: WRONG DIFFERENTIATION SCHEME IN CURRENT DENSITY. "
 		"PLEASE CHOOSE: UDS1, UDS2, UDS3 OR HDS22"<<endl;
 		exit(0);
 	}
@@ -351,6 +365,7 @@ void WignerFunction::addGaussBarr(double u0 = 0.3/AU_eV, double x0 = 1000, doubl
 
 
 void WignerFunction::addRectBarr(double u0 = 0.3/AU_eV, double x0 = 1000, double wB = 100, double p = 10) {
+	// x0 - middle, wB - width, p - rectangularity parameter
 	double sig = wB/2.;
 	for (size_t i=0; i<nx_; ++i)
 		uB_(i) += exp(-pow(x_(i)-x0, 2*p)/2./pow(sig, 2*p))*u0;
@@ -501,7 +516,6 @@ double WignerFunction::gaussian_bc(double k){
 	double ex = exp(-(k*k/2./m)/kBT/sigma/sigma);  // (k-pF)*(k-pF)
 	return c * ex;
 }
-
 
 
 // Supply function (x)

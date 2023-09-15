@@ -1,4 +1,4 @@
-set terminal pngcairo enhanced size 600,600 # font 'Times Roman, 12'
+set terminal pngcairo enhanced font "Times New Roman,12.0" size 800,800
 set output 'tpMap.png'
 
 set multiplot

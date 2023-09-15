@@ -1,4 +1,4 @@
-set terminal pngcairo enhanced size 800,800
+set terminal pngcairo enhanced font "Times New Roman,18.0" size 1000,1000
 set output 'poisson_test.png'
 set datafile separator ','
 set key autotitle columnhead
@@ -33,7 +33,7 @@ set key over
 
 AU_nm = 0.0529; E0 = 1.602E-19; AU_cm2 = 2.8e-17; AU_cm = 5.29e-9
 
-set label "U_{bias} = 10 meV\nliczba iteracji = 5820\np=0.01\nHDS22" at graph 0.05,0.95 textcolor 'black'
+set label "U_{bias} = 0 meV\np=2E-04\nUDS2" at graph 0.05,0.95 textcolor 'black'
 
 # 1: x, 2: U, 3: Delta_U, 4: nC, 5: Current
 plot '../poisson_test.csv' u 1:2 w l ls 1, '' u 1:3 w l ls 2, '' u 1:4 w l ls 4,\
