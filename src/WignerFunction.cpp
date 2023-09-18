@@ -903,6 +903,8 @@ void WignerFunction::solveSchrEq(){
 		if (i>0) A(i,i-1) = a;
 		if (i<n-1) A(i,i+1) = a;
 	}
+	// VN BC
+	// A(0, 0) = -a+u_(0), A(n-1, n-1) = -a+u_(n-1);
 	A.brief_print("A:");
 	arma::vec eigval;
 	arma::mat eigvec;
@@ -910,7 +912,7 @@ void WignerFunction::solveSchrEq(){
 	// for (size_t i=n; i--;)
 	// 	eigval.col(i) /= arma::max(eigval.col(i));
 	eigvec.each_col( [](arma::vec& c){ c /= arma::sum(c); } );
-	arma::vec ne = arma::abs(eigvec.col(0))*arma::abs(eigvec.col(0));
+	// arma::vec ne = arma::abs(eigvec.col(0))*arma::abs(eigvec.col(0));
 	//
 	// Results
 	(eigval*AU_eV).brief_print("Eigenvalues [eV:");

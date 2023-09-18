@@ -66,8 +66,8 @@ int main(){
 	f.set_uBias(0.0/AU_eV);
 	// f.setPotBias(0.1/AU_eV);
 	//
-	f.addRectBarr(0.3/AU_eV, 300, 100, 10);
-	f.addRectBarr(0.3/AU_eV, 700, 100, 10);
+	// f.addRectBarr(0.3/AU_eV, 300, 100, 10);
+	// f.addRectBarr(0.3/AU_eV, 700, 100, 10);
 	//
 	// f.addRectBarr(0.3/AU_eV, 1750/AU_nm, 200/AU_nm, 10);
 	// f.addRectBarr(0.3/AU_eV, 2250/AU_nm, 200/AU_nm, 10);
